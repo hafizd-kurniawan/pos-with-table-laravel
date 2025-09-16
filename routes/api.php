@@ -37,6 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // CATEGORIES
     Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+    
+    // CATEGORIES - Flutter Compatible Routes
+    Route::get('/api-categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
 
     // PRODUCTS  
     Route::get('/products', [\App\Http\Controllers\Api\ProductController::class, 'index']);
@@ -46,6 +49,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // DISCOUNTS (Migrated from laravel-old)
     Route::apiResource('/discounts', \App\Http\Controllers\Api\DiscountController::class);
     Route::get('/discounts-active', [\App\Http\Controllers\Api\DiscountController::class, 'active']);
+    
+    // DISCOUNTS - Flutter Compatible Routes
+    Route::get('/api-discounts', [\App\Http\Controllers\Api\DiscountController::class, 'index']);
+    Route::post('/api-discounts', [\App\Http\Controllers\Api\DiscountController::class, 'store']);
+
+    // TAXES & SERVICE CHARGES
+    Route::apiResource('/taxes', \App\Http\Controllers\Api\TaxController::class);
+    Route::get('/taxes-active', [\App\Http\Controllers\Api\TaxController::class, 'active']);
+    Route::get('/taxes-by-type', [\App\Http\Controllers\Api\TaxController::class, 'byType']);
+    Route::post('/taxes-calculate', [\App\Http\Controllers\Api\TaxController::class, 'calculate']);
+    
+    // TAXES - Flutter Compatible Routes
+    Route::get('/api-taxes', [\App\Http\Controllers\Api\TaxController::class, 'index']);
+    Route::post('/api-taxes', [\App\Http\Controllers\Api\TaxController::class, 'store']);
 
     // STOCK MANAGEMENT
     Route::post('/stock/check', [\App\Http\Controllers\Api\StockController::class, 'checkStock']);
@@ -92,6 +109,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/paid', [\App\Http\Controllers\Api\OrderController::class, 'paidOrders']);
     Route::get('/orders/cooking', [\App\Http\Controllers\Api\OrderController::class, 'cookingOrders']);
     Route::put('/orders/{order}/status', [\App\Http\Controllers\Api\OrderController::class, 'updateStatus']);
+    
+    // ORDERS - Flutter Compatible Routes  
+    Route::post('/save-order', [\App\Http\Controllers\Api\OrderController::class, 'saveOrder']);
+    Route::get('/order-item', [\App\Http\Controllers\Api\OrderController::class, 'orderItems']);
+    Route::get('/order-sales', [\App\Http\Controllers\Api\OrderController::class, 'orderSales']);
+    Route::get('/summary', [\App\Http\Controllers\Api\OrderController::class, 'summary']);
 
     // REPORTS
     Route::get('/reports/summary', [\App\Http\Controllers\Api\ReportController::class, 'summary']);

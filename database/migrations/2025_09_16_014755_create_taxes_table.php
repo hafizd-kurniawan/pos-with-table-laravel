@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('table_categories', function (Blueprint $table) {
+        Schema::create('taxes', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->string('icon')->nullable();
-            $table->string('color')->default('#6366f1');
+            $table->string('name');
+            $table->enum('type', ['layanan', 'pajak'])->default('pajak');
+            $table->decimal('value', 5, 2); // Percentage value (e.g., 10.50 for 10.5%)
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
     }
@@ -28,7 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_categories');
+        Schema::dropIfExists('taxes');
     }
 };
-
