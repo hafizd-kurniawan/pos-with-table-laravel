@@ -69,7 +69,7 @@ class OrderController extends Controller
     {
         //find user is login
         $user = User::where('is_login', true)->first();
-        if ($user && $$user->fcm_token) {
+        if ($user && $user->fcm_token) {
             $token = $user->fcm_token;
 
             // Kirim notifikasi ke perangkat Android

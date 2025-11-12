@@ -8,11 +8,15 @@ use Illuminate\Support\Facades\Cache;
 class Setting extends Model
 {
     protected $fillable = [
-        'key', 'value', 'type', 'group', 'label', 'description', 'options'
+        'key', 'value', 'type', 'group', 'label', 'description', 'options',
+        'selected_discount_ids', 'selected_tax_ids', 'selected_service_ids'
     ];
 
     protected $casts = [
-        'options' => 'array'
+        'options' => 'array',
+        'selected_discount_ids' => 'array',
+        'selected_tax_ids' => 'array',
+        'selected_service_ids' => 'array',
     ];
 
     /**
@@ -76,5 +80,38 @@ class Setting extends Model
         foreach ($keys as $key) {
             Cache::forget("setting.{$key}");
         }
+    }
+
+    /**
+     * Get selected discounts
+     */
+    public function getSelectedDiscounts()
+    {
+        if (!$this->selected_discount_ids) {
+            return collect();
+        }
+        return \App\Models\Discount::active()->whereIn('id', $this->selected_discount_ids)->get();
+    }
+
+    /**
+     * Get selected taxes
+     */
+    public function getSelectedTaxes()
+    {
+        if (!$this->selected_tax_ids) {
+            return collect();
+        }
+        return \App\Models\Tax::active()->whereIn('id', $this->selected_tax_ids)->get();
+    }
+
+    /**
+     * Get selected services
+     */
+    public function getSelectedServices()
+    {
+        if (!$this->selected_service_ids) {
+            return collect();
+        }
+        return \App\Models\Tax::active()->whereIn('id', $this->selected_service_ids)->get();
     }
 }

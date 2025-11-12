@@ -5,8 +5,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\QRCodeController;
 
 Route::get('/', function () {
-    // Redirect to the order page with a default table number
-    return redirect()->route('order.menu', ['tablenumber' => 1]);
+    // Show navigation page
+    return view('navigation');
 })->name('home');
 
 Route::get('/order/{tablenumber}', [OrderController::class, 'index'])->name('order.menu');
@@ -62,4 +62,10 @@ Route::prefix('table-categories')->name('table-categories.')->group(function () 
     Route::get('/{tableCategory}/edit', [App\Http\Controllers\Web\TableCategoryController::class, 'edit'])->name('edit');
     Route::put('/{tableCategory}', [App\Http\Controllers\Web\TableCategoryController::class, 'update'])->name('update');
     Route::delete('/{tableCategory}', [App\Http\Controllers\Web\TableCategoryController::class, 'destroy'])->name('destroy');
+});
+
+// Order Settings Management (Discount, Tax, Service Charge)
+Route::prefix('order-settings')->name('order-settings.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Web\OrderSettingController::class, 'index'])->name('index');
+    Route::put('/update', [App\Http\Controllers\Web\OrderSettingController::class, 'update'])->name('update');
 });

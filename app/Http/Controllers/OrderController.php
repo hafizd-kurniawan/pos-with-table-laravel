@@ -430,13 +430,23 @@ class OrderController extends Controller
                 $table = Table::where('name', $tablenumber)->firstOrFail();
                 $paymentMethod = $request->input('payment_method', 'qris');
 
-                [$total_amount_taxt, $tax_amount] = $this->calculateTax($cart);
+                // Calculate totals with discount, tax, and service charge
+                $totals = $this->calculateOrderTotals($cart, $request->input('discount_id'));
                 
-                // Create order
+                Log::info('CHECKOUT: Calculated totals', $totals);
+                
+                // Create order with all calculations
                 $order = Order::create([
                     'table_id' => $table->id,
                     'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::whereDate('created_at', now())->count() + 1, 4, '0'),
-                    'total_amount' => $total_amount_taxt,
+                    'subtotal' => $totals['subtotal'],
+                    'discount_id' => $totals['discount_id'],
+                    'discount_amount' => $totals['discount_amount'],
+                    'tax_percentage' => $totals['tax_percentage'],
+                    'tax_amount' => $totals['tax_amount'],
+                    'service_charge_percentage' => $totals['service_charge_percentage'],
+                    'service_charge_amount' => $totals['service_charge_amount'],
+                    'total_amount' => $totals['total_amount'],
                     'status' => 'pending',
                     'placed_at' => now(),
                     'payment_method' => $paymentMethod,
@@ -485,7 +495,7 @@ class OrderController extends Controller
                 session()->forget('cart_' . $tablenumber);
 
                 // Handle payment methods
-                return $this->processPayment($order, $cart, $paymentMethod, $tablenumber, $tax_amount);
+                return $this->processPayment($order, $cart, $paymentMethod, $tablenumber, $totals);
 
             }, 5); // Retry 5 kali jika deadlock
             
@@ -503,29 +513,54 @@ class OrderController extends Controller
     /**
      * Process payment berdasarkan payment method
      */
-    private function processPayment($order, $cart, $paymentMethod, $tablenumber, $tax_amount)
+    private function processPayment($order, $cart, $paymentMethod, $tablenumber, $totals)
     {
+        // Build item details untuk Midtrans
+        $itemDetails = collect($cart)->map(function ($i) {
+            return [
+                "id"       => $i['product_id'],
+                "price"    => $i['price'],
+                "quantity" => $i['qty'],
+                "name"     => $i['name'] ?? 'Menu',
+            ];
+        })->toArray();
+        
+        // Add discount as negative item (if exists)
+        if ($totals['discount_amount'] > 0) {
+            $itemDetails[] = [
+                "id" => "discount",
+                "price" => -1 * $totals['discount_amount'],
+                "quantity" => 1,
+                "name" => "Discount"
+            ];
+        }
+        
+        // Add tax (if exists)
+        if ($totals['tax_amount'] > 0) {
+            $itemDetails[] = [
+                "id" => "tax",
+                "price" => $totals['tax_amount'],
+                "quantity" => 1,
+                "name" => "Tax ({$totals['tax_percentage']}%)"
+            ];
+        }
+        
+        // Add service charge (if exists)
+        if ($totals['service_charge_amount'] > 0) {
+            $itemDetails[] = [
+                "id" => "service",
+                "price" => $totals['service_charge_amount'],
+                "quantity" => 1,
+                "name" => "Service Charge ({$totals['service_charge_percentage']}%)"
+            ];
+        }
+        
         $params = [
             "transaction_details" => [
                 "order_id"      => $order->code,
-                "gross_amount"  => $order->total_amount,
+                "gross_amount"  => (int) $order->total_amount,
             ],
-            "item_details" => array_merge(
-                collect($cart)->map(function ($i) {
-                    return [
-                        "id"       => $i['product_id'],
-                        "price"    => $i['price'],
-                        "quantity" => $i['qty'],
-                        "name"     => $i['name'] ?? 'Menu',
-                    ];
-                })->toArray(),
-                $tax_amount > 0 ? [[
-                    "id"       => "tax",
-                    "price"    => $tax_amount,
-                    "quantity" => 1,
-                    "name"     => "Tax ({$order->tax_percentage}%)",
-                ]] : []
-            ),
+            "item_details" => $itemDetails,
             "customer_details" => [
                 "first_name" => $order->customer_name ?? 'Guest',
                 "email"      => $order->customer_email ?? 'guest@example.com',
@@ -866,24 +901,57 @@ class OrderController extends Controller
     }
 
 
-    public function calculateTax($items)
+    /**
+     * Calculate order totals with discount, tax, and service charge
+     */
+    private function calculateOrderTotals($cart, $discountId = null)
     {
-        // Get tax percentage from settings
-        $taxPercentage = tax_percentage();
+        // 1. Calculate items subtotal
+        $itemsSubtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
         
-        // Calculate subtotal
-        $subtotal = collect($items)->sum(fn($item) => $item['price'] * $item['qty']);
+        // 2. Apply discount (if enabled and provided)
+        $discountAmount = 0;
+        $discount = null;
+        if (is_discount_enabled() && $discountId) {
+            $discount = \App\Models\Discount::active()->find($discountId);
+            if ($discount) {
+                $discountAmount = $discount->calculateDiscount($itemsSubtotal);
+            }
+        }
         
-        // Calculate tax amount
-        $taxAmount = round($subtotal * ($taxPercentage / 100),2 );
+        // 3. Subtotal after discount
+        $subtotal = $itemsSubtotal - $discountAmount;
         
-        // Set properties
-        // $this->tax_percentage = $taxPercentage;
-        // $this->tax_amount = round($taxAmount, 2);
-        // $this->subtotal = $subtotal;
-        $total_amount = $subtotal + $taxAmount;
+        // 4. Calculate tax (if enabled)
+        $taxPercentage = 0;
+        $taxAmount = 0;
+        if (is_tax_enabled()) {
+            $taxPercentage = tax_percentage();
+            $taxAmount = round($subtotal * ($taxPercentage / 100), 2);
+        }
         
-        return [$total_amount, $taxAmount];
+        // 5. Calculate service charge (if enabled)
+        $serviceChargePercentage = 0;
+        $serviceChargeAmount = 0;
+        if (is_service_charge_enabled()) {
+            $serviceChargePercentage = get_active_service_charge();
+            $serviceChargeAmount = round($subtotal * ($serviceChargePercentage / 100), 2);
+        }
+        
+        // 6. Total amount
+        $totalAmount = $subtotal + $taxAmount + $serviceChargeAmount;
+        
+        return [
+            'items_subtotal' => $itemsSubtotal,
+            'discount_id' => $discount?->id,
+            'discount_amount' => $discountAmount,
+            'subtotal' => $subtotal,
+            'tax_percentage' => $taxPercentage,
+            'tax_amount' => $taxAmount,
+            'service_charge_percentage' => $serviceChargePercentage,
+            'service_charge_amount' => $serviceChargeAmount,
+            'total_amount' => $totalAmount,
+        ];
     }
 
     /**

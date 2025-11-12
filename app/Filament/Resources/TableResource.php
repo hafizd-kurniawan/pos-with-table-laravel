@@ -105,7 +105,7 @@ class TableResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('category'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['category', 'currentReservation']))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Table Name')
@@ -133,6 +133,27 @@ class TableResource extends Resource
                     ->tooltip(function (TableModel $record): ?string {
                         return $record->location;
                     })
+                    ->toggleable(),
+                    
+                // NEW: Customer Name from reservation
+                Tables\Columns\TextColumn::make('customer_name')
+                    ->label('Customer')
+                    ->searchable()
+                    ->placeholder('No customer')
+                    ->weight('medium')
+                    ->icon('heroicon-m-user')
+                    ->color(fn ($state) => $state ? 'success' : 'gray')
+                    ->toggleable(),
+                    
+                // NEW: Customer Phone from reservation
+                Tables\Columns\TextColumn::make('customer_phone')
+                    ->label('Phone')
+                    ->searchable()
+                    ->placeholder('No phone')
+                    ->icon('heroicon-m-phone')
+                    ->copyable()
+                    ->copyMessage('Phone copied!')
+                    ->color(fn ($state) => $state ? 'info' : 'gray')
                     ->toggleable(),
                     
                 Tables\Columns\ImageColumn::make('qr_code_image')
@@ -188,14 +209,16 @@ class TableResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->formatStateUsing(fn ($state, $record) => 
-                        $state > 0 ? "{$state}/{$record->capacity}" : 'Empty'
+                        $state > 0 ? "{$state}/{$record->capacity} people" : 'Empty'
                     )
+                    ->badge()
                     ->color(fn ($state, $record) => match(true) {
-                        $state == 0 => 'success',
+                        $state == 0 => 'gray',
                         $state >= $record->capacity => 'danger', 
                         $state >= ($record->capacity * 0.8) => 'warning',
-                        default => 'primary'
+                        default => 'success'
                     })
+                    ->icon(fn ($state) => $state > 0 ? 'heroicon-m-users' : 'heroicon-m-user-minus')
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('reservation_time')
@@ -203,7 +226,15 @@ class TableResource extends Resource
                     ->dateTime('M j, H:i')
                     ->sortable()
                     ->placeholder('No reservation')
-                    ->color('info')
+                    ->icon('heroicon-m-clock')
+                    ->badge()
+                    ->color(fn ($state) => $state ? 'warning' : 'gray')
+                    ->tooltip(function (TableModel $record) {
+                        if (!$record->reservation_time) return null;
+                        $reservation = $record->currentReservation;
+                        if (!$reservation) return 'Reserved until: ' . $record->reservation_time->format('M j, Y H:i');
+                        return "Reservation by: {$reservation->customer_name}\nParty Size: {$reservation->party_size} people\nStatus: " . ucfirst($reservation->status);
+                    })
                     ->toggleable(),
                     
                 Tables\Columns\TextColumn::make('created_at')

@@ -12,12 +12,19 @@ class Order extends Model
         'code',
         'status',
         'total_amount',
+        'subtotal',
+        'discount_id',
+        'discount_amount',
+        'tax_amount',
+        'tax_percentage',
+        'service_charge_amount',
+        'service_charge_percentage',
         'placed_at',
         'payment_method',
         'notes',
         'customer_name',
         'customer_phone',
-        'customer_email', // Added field for customer email
+        'customer_email',
         'expired_at',
     ];
 
@@ -30,6 +37,11 @@ class Order extends Model
     public function table()
     {
         return $this->belongsTo(Table::class);
+    }
+
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class);
     }
 
     public function products()

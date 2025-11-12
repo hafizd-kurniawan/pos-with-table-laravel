@@ -25,9 +25,13 @@ class Reservation extends Model
 
     protected $casts = [
         'reservation_date' => 'date',
-        'reservation_time' => 'datetime:H:i',
         'party_size' => 'integer',
     ];
+    
+    /**
+     * Get reservation_time as time string (H:i:s format)
+     * Don't cast to datetime to avoid confusion with date
+     */
 
     // Relationships
     public function table()
@@ -67,6 +71,11 @@ class Reservation extends Model
         return $this->status === 'confirmed';
     }
 
+    public function isCheckedIn()
+    {
+        return $this->status === 'checked_in';
+    }
+
     public function isCancelled()
     {
         return $this->status === 'cancelled';
@@ -77,9 +86,33 @@ class Reservation extends Model
         return $this->status === 'completed';
     }
 
+    public function isNoShow()
+    {
+        return $this->status === 'no_show';
+    }
+
+    public function isActive()
+    {
+        return in_array($this->status, ['confirmed', 'checked_in']);
+    }
+
+    /**
+     * Get combined reservation datetime
+     */
     public function getReservationDateTimeAttribute()
     {
-        return Carbon::parse($this->reservation_date->format('Y-m-d') . ' ' . $this->reservation_time);
+        $date = $this->reservation_date->format('Y-m-d');
+        $time = $this->reservation_time; // Already in H:i:s format from DB
+        
+        return Carbon::parse("{$date} {$time}");
+    }
+    
+    /**
+     * Get formatted time for display
+     */
+    public function getFormattedTimeAttribute()
+    {
+        return Carbon::parse($this->reservation_time)->format('H:i');
     }
 
     public function canBeCancelled()
