@@ -15,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register ReportService as singleton
+        $this->app->singleton(\App\Services\ReportService::class, function ($app) {
+            return new \App\Services\ReportService();
+        });
     }
 
     /**

@@ -282,6 +282,53 @@ class OrderController extends Controller
     }
 
     /**
+     * Configure Midtrans API credentials from tenant settings
+     */
+    private function configureMidtrans()
+    {
+        // Get current user's tenant settings
+        $userId = auth()->id();
+        if (!$userId) {
+            throw new \Exception('User not authenticated');
+        }
+        
+        $user = \DB::table('users')->where('id', $userId)->first();
+        if (!$user || !$user->tenant_id) {
+            throw new \Exception('User tenant not found');
+        }
+        
+        // Get Midtrans settings from key-value table
+        $serverKey = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+            ->where('key', 'midtrans_server_key')
+            ->value('value');
+            
+        $clientKey = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+            ->where('key', 'midtrans_client_key')
+            ->value('value');
+            
+        $isProduction = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+            ->where('key', 'midtrans_is_production')
+            ->value('value');
+        
+        if (!$serverKey || !$clientKey) {
+            throw new \Exception('Midtrans credentials not configured. Please set Server Key and Client Key in Settings.');
+        }
+        
+        // Set Midtrans configuration
+        \Midtrans\Config::$serverKey = $serverKey;
+        \Midtrans\Config::$clientKey = $clientKey;
+        \Midtrans\Config::$isProduction = (bool) $isProduction;
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
+        
+        Log::info('MIDTRANS: Configuration set', [
+            'tenant_id' => $user->tenant_id,
+            'is_production' => \Midtrans\Config::$isProduction,
+            'server_key_prefix' => substr($serverKey, 0, 10) . '...',
+        ]);
+    }
+
+    /**
      * Validate semua items di cart untuk stock availability
      */
     private function validateCartStock($cart)
@@ -438,7 +485,7 @@ class OrderController extends Controller
                 // Create order with all calculations
                 $order = Order::create([
                     'table_id' => $table->id,
-                    'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::whereDate('created_at', now())->count() + 1, 4, '0'),
+                    'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::withoutGlobalScope('tenant')->whereDate('created_at', now())->count() + 1, 4, '0'),
                     'subtotal' => $totals['subtotal'],
                     'discount_id' => $totals['discount_id'],
                     'discount_amount' => $totals['discount_amount'],
@@ -589,29 +636,75 @@ class OrderController extends Controller
 
     private function processQrisPayment($order, $params, $tablenumber)
     {
-        $params["payment_type"] = "qris";
-        Log::info('CHECKOUT: memanggil CoreApi::charge', $params);
+        try {
+            // CRITICAL: Set Midtrans configuration from tenant settings
+            $this->configureMidtrans();
+            
+            $params["payment_type"] = "qris";
+            Log::info('CHECKOUT: memanggil CoreApi::charge', $params);
 
-        $qris = CoreApi::charge($params);
+            $qris = CoreApi::charge($params);
 
-        $order->payment_url = $qris->actions[0]->url ?? null;
-        $order->qr_string = $qris->qr_string ?? null;
-        $order->save();
+            $order->payment_url = $qris->actions[0]->url ?? null;
+            $order->qr_string = $qris->qr_string ?? null;
+            $order->save();
 
-        Log::info('CHECKOUT: QRIS berhasil dibuat', [
-            'order_id' => $order->id,
-            'qr_string' => $order->qr_string,
-            'payment_url' => $order->payment_url
-        ]);
+            Log::info('CHECKOUT: QRIS berhasil dibuat', [
+                'order_id' => $order->id,
+                'qr_string' => $order->qr_string,
+                'payment_url' => $order->payment_url
+            ]);
 
-        // Send webhook notification
-        $this->sendWebhookNotification($order);
+            // Send webhook notification
+            $this->sendWebhookNotification($order);
 
-        return redirect()->route('order.qris', [$tablenumber, $order->code]);
+            return redirect()->route('order.qris', [$tablenumber, $order->code]);
+            
+        } catch (\Exception $e) {
+            // Cancel order if payment fails
+            $order->status = 'cancelled';
+            $order->save();
+            
+            // CRITICAL: Restore stock that was reserved
+            foreach ($order->items as $item) {
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $product->increment('stock', $item->quantity);
+                    Log::info('QRIS: Stock restored after payment failure', [
+                        'product_id' => $product->id,
+                        'quantity_restored' => $item->quantity,
+                        'new_stock' => $product->fresh()->stock
+                    ]);
+                }
+            }
+            
+            Log::error('QRIS Payment failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            // User-friendly error message
+            $errorMessage = 'Payment failed: ';
+            if (str_contains($e->getMessage(), 'credentials not configured')) {
+                $errorMessage .= 'Payment gateway not configured. Please contact restaurant admin.';
+            } elseif (str_contains($e->getMessage(), 'settings not found')) {
+                $errorMessage .= 'Payment settings not found. Please contact restaurant admin.';
+            } elseif (str_contains($e->getMessage(), 'API error')) {
+                $errorMessage .= 'Payment gateway temporary issue. Please try again or use cash payment.';
+            } else {
+                $errorMessage .= 'Technical error. Please try cash payment or contact staff.';
+            }
+            
+            return redirect()->route('order.cart', $tablenumber)
+                ->withErrors($errorMessage);
+        }
     }
 
     private function processGopayPayment($order, $params, $tablenumber)
     {
+        // CRITICAL: Set Midtrans configuration from tenant settings
+        $this->configureMidtrans();
+        
         $params["payment_type"] = "gopay";
         $params["gopay"] = [
             "enable_callback" => true,
@@ -657,8 +750,9 @@ class OrderController extends Controller
     // Halaman QRIS (dummy)
     public function qris($tablenumber, $code)
     {
-        $order = Order::where('code', $code)->firstOrFail();
-        $table = Table::where('name', $tablenumber)->firstOrFail();
+        // Public route - bypass tenant scope
+        $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
+        $table = Table::withoutGlobalScope('tenant')->where('name', $tablenumber)->firstOrFail();
         return view('order.qris', compact('order', 'table'));
     }
 
@@ -695,7 +789,8 @@ class OrderController extends Controller
 
     public function qrisConfirm(Request $request, $tablenumber, $code)
     {
-        $order = Order::where('code', $code)->firstOrFail();
+        // Public route - bypass tenant scope
+        $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
 
         try {
             // Cek status transaksi di Midtrans
@@ -770,8 +865,9 @@ class OrderController extends Controller
     // Sukses
     public function success($tablenumber, $code)
     {
-        $order = Order::where('code', $code)->firstOrFail();
-        $table = Table::where('name', $tablenumber)->firstOrFail();
+        // Public route - bypass tenant scope
+        $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
+        $table = Table::withoutGlobalScope('tenant')->where('name', $tablenumber)->firstOrFail();
         return view('order.success', compact('order', 'table'));
     }
 
@@ -782,7 +878,8 @@ class OrderController extends Controller
         $orderId = $notif->order_id;
         $transaction = $notif->transaction_status;
 
-        $order = Order::where('code', $orderId)->first();
+        // Public callback - bypass tenant scope
+        $order = Order::withoutGlobalScope('tenant')->where('code', $orderId)->first();
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
@@ -1021,7 +1118,8 @@ class OrderController extends Controller
     public function checkPaymentStatus(Request $request, $tablenumber, $code)
     {
         try {
-            $order = Order::where('code', $code)->firstOrFail();
+            // Public route - bypass tenant scope
+            $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
             
             // Jika order sudah paid di database, langsung return success
             if ($order->status === 'paid') {
@@ -1110,7 +1208,8 @@ class OrderController extends Controller
         }
         
         try {
-            $order = Order::where('code', $code)->firstOrFail();
+            // Debug route - bypass tenant scope
+            $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
             $order->status = 'paid';
             $order->completed_at = now();
             $order->save();

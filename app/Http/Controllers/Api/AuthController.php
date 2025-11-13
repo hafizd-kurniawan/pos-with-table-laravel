@@ -16,10 +16,22 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        // Get current tenant from middleware
+        $currentTenant = app()->has('tenant') ? app('tenant') : null;
+        
+        // Find user by email
         $user = \App\Models\User::where('email', $loginData['email'])->first();
 
         if (!$user) {
             return response()->json(['message' => 'Email not found'], 404);
+        }
+        
+        // Validate tenant matching (security check)
+        if ($currentTenant && $user->tenant_id !== $currentTenant->id) {
+            return response()->json([
+                'message' => 'Access denied. This user does not belong to the current tenant.',
+                'hint' => 'Please check your tenant subdomain.'
+            ], 403);
         }
 
         if (!Hash::check($loginData['password'], $user->password)) {

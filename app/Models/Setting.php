@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\BelongsToTenant;
 
 class Setting extends Model
 {
+    use BelongsToTenant;
+    
     protected $fillable = [
         'key', 'value', 'type', 'group', 'label', 'description', 'options',
         'selected_discount_ids', 'selected_tax_ids', 'selected_service_ids'
@@ -18,6 +21,69 @@ class Setting extends Model
         'selected_tax_ids' => 'array',
         'selected_service_ids' => 'array',
     ];
+    
+    /**
+     * Set value attribute - convert array to JSON if needed
+     */
+    public function setValueAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['value'] = json_encode($value);
+        } else {
+            $this->attributes['value'] = $value;
+        }
+    }
+    
+    /**
+     * Get value attribute - keep as string, don't decode JSON
+     * Only decode for display purposes, not for forms
+     */
+    public function getValueAttribute($value)
+    {
+        // Don't process if already an array (Filament form state)
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        // Ensure value is never null for form fields
+        if (is_null($value)) {
+            return '';
+        }
+        
+        // For color type, always return string
+        if (isset($this->attributes['type']) && $this->attributes['type'] === 'color') {
+            return (string) $value;
+        }
+        
+        // For file upload, always return string
+        if (isset($this->attributes['type']) && $this->attributes['type'] === 'file') {
+            return (string) $value;
+        }
+        
+        // For text-based types, ensure string
+        if (isset($this->attributes['type']) && in_array($this->attributes['type'], ['text', 'textarea', 'email', 'url', 'number'])) {
+            return (string) $value;
+        }
+        
+        // Check if it's a JSON string and if type requires array
+        if (isset($this->attributes['type']) && $this->attributes['type'] === 'select' && is_string($value) && $this->isJson($value)) {
+            return json_decode($value, true);
+        }
+        
+        return $value;
+    }
+    
+    /**
+     * Check if string is JSON
+     */
+    private function isJson($string)
+    {
+        if (!is_string($string)) {
+            return false;
+        }
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
 
     /**
      * Get setting value by key

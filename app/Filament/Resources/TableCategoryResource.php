@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TableCategoryResource\Pages;
 use App\Filament\Resources\TableCategoryResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\TableCategory;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TableCategoryResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = TableCategory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';

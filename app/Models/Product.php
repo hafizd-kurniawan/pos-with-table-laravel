@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use App\Traits\BelongsToTenant;
 
 class Product extends Model
 {
+    use BelongsToTenant;
+    
     //
     protected $fillable = [
         'name', 

@@ -4,9 +4,12 @@ namespace App\Models;
 
 use App\Services\QRCodeService;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToTenant;
 
 class Table extends Model
 {
+    use BelongsToTenant;
+    
     protected $fillable = [
         'category_id',
         'name', 

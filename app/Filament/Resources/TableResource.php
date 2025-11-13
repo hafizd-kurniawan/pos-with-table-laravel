@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TableResource\Pages;
 use App\Filament\Resources\TableResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Table as TableModel;
 use App\Services\QRCodeService;
 use Filament\Forms;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TableResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = TableModel::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
@@ -29,6 +32,27 @@ class TableResource extends Resource
     protected static ?string $modelLabel = 'Table';
 
     protected static ?string $pluralModelLabel = 'Tables';
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_tables');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('create_tables');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('edit_tables');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('delete_tables');
+    }
 
     public static function form(Form $form): Form
     {

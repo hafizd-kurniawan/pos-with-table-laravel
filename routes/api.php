@@ -11,13 +11,55 @@ Route::get('/health', [\App\Http\Controllers\Api\HealthController::class, 'check
 Route::get('/ping', [\App\Http\Controllers\Api\HealthController::class, 'ping']);
 
 // ========================================
+// TENANT ENDPOINTS (with auth + tenant middleware)
+// ========================================
+Route::middleware(['auth:sanctum', 'tenant'])->prefix('tenant')->group(function () {
+    // Tenant Info
+    Route::get('/info', function (Request $request) {
+        $tenant = app('tenant');
+        return response()->json([
+            'success' => true,
+            'tenant' => [
+                'id' => $tenant->id,
+                'subdomain' => $tenant->subdomain,
+                'business_name' => $tenant->business_name,
+                'email' => $tenant->email,
+                'status' => $tenant->status,
+                'status_label' => $tenant->status_label,
+                'days_until_expiry' => $tenant->getDaysUntilExpiry(),
+                'trial_ends_at' => $tenant->trial_ends_at?->format('d M Y H:i'),
+                'subscription_ends_at' => $tenant->subscription_ends_at?->format('d M Y H:i'),
+            ],
+        ]);
+    });
+    
+    // Tenant Settings Management
+    Route::get('/settings', [\App\Http\Controllers\Api\TenantSettingsController::class, 'index']);
+    
+    // Midtrans Configuration
+    Route::post('/settings/midtrans', [\App\Http\Controllers\Api\TenantSettingsController::class, 'updateMidtrans']);
+    Route::delete('/settings/midtrans', [\App\Http\Controllers\Api\TenantSettingsController::class, 'deleteMidtrans']);
+    Route::post('/settings/midtrans/test', [\App\Http\Controllers\Api\TenantSettingsController::class, 'testMidtrans']);
+    
+    // N8N Webhook Configuration
+    Route::post('/settings/n8n', [\App\Http\Controllers\Api\TenantSettingsController::class, 'updateN8N']);
+    Route::delete('/settings/n8n', [\App\Http\Controllers\Api\TenantSettingsController::class, 'deleteN8N']);
+    
+    // Firebase Configuration
+    Route::post('/settings/firebase', [\App\Http\Controllers\Api\TenantSettingsController::class, 'updateFirebase']);
+    Route::delete('/settings/firebase', [\App\Http\Controllers\Api\TenantSettingsController::class, 'deleteFirebase']);
+});
+
+// ========================================
 // AUTHENTICATION ENDPOINTS
 // ========================================
-Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
-Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::middleware('tenant')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    })->middleware('auth:sanctum');
+});
 
 // ========================================
 // PUBLIC ENDPOINTS
@@ -31,9 +73,9 @@ Route::post('order/create-qris', [OrderController::class, 'createQrisOrder']);
 Route::get('order/{orderCode}/status', [OrderController::class, 'checkOrderStatus']);
 
 // ========================================
-// AUTHENTICATED ENDPOINTS
+// AUTHENTICATED ENDPOINTS (with tenant middleware)
 // ========================================
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     
     // CATEGORIES
     Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
@@ -116,10 +158,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/order-sales', [\App\Http\Controllers\Api\OrderController::class, 'orderSales']);
     Route::get('/summary', [\App\Http\Controllers\Api\OrderController::class, 'summary']);
 
-    // REPORTS
+    // REPORTS (Enhanced)
     Route::get('/reports/summary', [\App\Http\Controllers\Api\ReportController::class, 'summary']);
     Route::get('/reports/product-sales', [\App\Http\Controllers\Api\ReportController::class, 'productSales']);
+    
+    // NEW REPORTING ENDPOINTS
+    Route::get('/reports/daily-summary', [\App\Http\Controllers\Api\ReportController::class, 'dailySummary']);
+    Route::get('/reports/period-summary', [\App\Http\Controllers\Api\ReportController::class, 'periodSummary']);
+    Route::get('/reports/top-products', [\App\Http\Controllers\Api\ReportController::class, 'topProducts']);
+    Route::post('/reports/generate-daily-summary', [\App\Http\Controllers\Api\ReportController::class, 'generateDailySummary']);
+    
+    // VISUALIZATION ENDPOINTS (Phase 2)
+    Route::get('/reports/sales-trend', [\App\Http\Controllers\Api\ReportController::class, 'salesTrend']);
+    Route::get('/reports/category-performance', [\App\Http\Controllers\Api\ReportController::class, 'categoryPerformance']);
+    Route::get('/reports/hourly-breakdown', [\App\Http\Controllers\Api\ReportController::class, 'hourlyBreakdown']);
+    Route::get('/reports/payment-trends', [\App\Http\Controllers\Api\ReportController::class, 'paymentTrends']);
+    
+    // EXPORT ENDPOINTS (Phase 3)
+    Route::get('/reports/export/daily-pdf', [\App\Http\Controllers\Api\ReportController::class, 'exportDailyPDF']);
+    Route::get('/reports/export/daily-excel', [\App\Http\Controllers\Api\ReportController::class, 'exportDailyExcel']);
+    Route::get('/reports/export/period-pdf', [\App\Http\Controllers\Api\ReportController::class, 'exportPeriodPDF']);
+    Route::get('/reports/export/period-excel', [\App\Http\Controllers\Api\ReportController::class, 'exportPeriodExcel']);
 
     // FCM TOKEN UPDATE
     Route::post('/fcm-token', [\App\Http\Controllers\Api\AuthController::class, 'updateFcmToken']);
+    
+    // SETTINGS API (For Flutter App)
+    Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);
+    Route::get('/settings/{key}', [\App\Http\Controllers\API\SettingsController::class, 'show']);
 });

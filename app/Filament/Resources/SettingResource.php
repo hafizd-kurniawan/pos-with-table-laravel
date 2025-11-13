@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SettingResource\Pages;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Setting;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SettingResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Setting::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
@@ -23,7 +26,30 @@ class SettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Settings';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Configuration';
+    
+    protected static ?int $navigationSort = 99;
+
+    // Authorization: Check permissions
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_settings');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
 
     public static function form(Form $form): Form
     {
@@ -39,7 +65,8 @@ class SettingResource extends Resource
                         
                         Forms\Components\TextInput::make('label')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) ($state ?? '')),
                         
                         Forms\Components\Select::make('type')
                             ->required()
@@ -68,7 +95,9 @@ class SettingResource extends Resource
                         
                         Forms\Components\Textarea::make('description')
                             ->maxLength(500)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) ($state ?? ''))
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : $state),
                     ])
                     ->columns(2),
                 
@@ -78,15 +107,21 @@ class SettingResource extends Resource
                             ->label('Setting Value')
                             ->required()
                             ->columnSpanFull()
-                            ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number'])),
+                            ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number']))
+                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state)
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state),
                         
                         Forms\Components\Toggle::make('value')
                             ->label('Setting Value')
-                            ->visible(fn ($get) => $get('type') === 'boolean'),
+                            ->visible(fn ($get) => $get('type') === 'boolean')
+                            ->formatStateUsing(fn ($state) => is_array($state) ? false : (bool) $state)
+                            ->dehydrateStateUsing(fn ($state) => $state ? '1' : '0'),
                         
                         Forms\Components\ColorPicker::make('value')
                             ->label('Setting Value')
-                            ->visible(fn ($get) => $get('type') === 'color'),
+                            ->visible(fn ($get) => $get('type') === 'color')
+                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state)
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state),
                         
                         Forms\Components\FileUpload::make('value')
                             ->label('Setting Value')
@@ -99,14 +134,17 @@ class SettingResource extends Resource
                             ])
                             ->directory('settings')
                             ->visibility('public')
-                            ->visible(fn ($get) => $get('type') === 'file'),
+                            ->visible(fn ($get) => $get('type') === 'file')
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? (isset($state[0]) ? $state[0] : json_encode($state)) : $state),
                         
                         Forms\Components\KeyValue::make('options')
                             ->label('Select Options')
                             ->keyLabel('Option Value')
                             ->valueLabel('Option Label')
                             ->visible(fn ($get) => $get('type') === 'select')
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->formatStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state)
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? $state : null),
                     ]),
             ]);
     }
@@ -127,8 +165,18 @@ class SettingResource extends Resource
                 
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
+                    ->formatStateUsing(function ($state, $record) {
+                        if (is_array($state)) {
+                            return json_encode($state);
+                        }
+                        return $state;
+                    })
                     ->tooltip(function ($record) {
-                        return $record->value;
+                        $value = $record->value;
+                        if (is_array($value)) {
+                            return json_encode($value, JSON_PRETTY_PRINT);
+                        }
+                        return $value;
                     }),
                 
                 Tables\Columns\TextColumn::make('group')

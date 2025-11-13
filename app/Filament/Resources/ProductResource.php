@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,9 +18,36 @@ use Filament\Tables\Columns\ImageColumn;
 
 class ProductResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    
+    protected static ?string $navigationGroup = 'Menu';
+    
+    protected static ?int $navigationSort = 2;
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_products');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('create_products');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('edit_products');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('delete_products');
+    }
 
     public static function form(Form $form): Form
     {

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CategoryResource\Pages;
 use App\Filament\Resources\CategoryResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,9 +16,36 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CategoryResource extends Resource
 {
+    use BelongsToTenantResource;
+    
     protected static ?string $model = Category::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-folder';
+    
+    protected static ?string $navigationGroup = 'Menu';
+    
+    protected static ?int $navigationSort = 1;
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('manage_categories');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('manage_categories');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('manage_categories');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('manage_categories');
+    }
 
     public static function form(Form $form): Form
     {

@@ -10,3 +10,16 @@ Artisan::command('inspire', function () {
 
 // Schedule untuk release expired orders setiap 30 detik
 Schedule::command('orders:release-expired')->everyThirtySeconds();
+
+// Schedule untuk generate daily summary setiap hari jam 00:00 (midnight)
+// Akan generate untuk hari kemarin secara otomatis
+Schedule::command('reports:generate-daily')
+    ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onSuccess(function () {
+        info('✅ Daily summaries generated successfully');
+    })
+    ->onFailure(function () {
+        error('❌ Daily summaries generation failed');
+    });

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DiscountResource\Pages;
 use App\Filament\Resources\DiscountResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Discount;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,11 +16,34 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DiscountResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Discount::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Marketing';
+    protected static ?string $navigationGroup = 'Finance';
     protected static ?int $navigationSort = 1;
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
 
     public static function form(Form $form): Form
     {
