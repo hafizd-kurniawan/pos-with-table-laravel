@@ -16,7 +16,7 @@ class DefaultTenantSettingsSeeder extends Seeder
     public function run(): void
     {
         $tenantId = $this->command->option('tenant');
-        
+
         if ($tenantId) {
             $this->createDefaultSettings($tenantId);
             $this->command->info("✅ Default settings created for tenant ID: {$tenantId}");
@@ -29,7 +29,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             $this->command->info("✅ Default settings created for {$tenants->count()} tenants");
         }
     }
-    
+
     /**
      * Get default settings configuration
      */
@@ -77,7 +77,7 @@ class DefaultTenantSettingsSeeder extends Seeder
                 'label' => 'Website Restoran',
                 'description' => 'Website restoran yang akan ditampilkan di struk'
             ],
-            
+
             // Appearance Settings
             [
                 'key' => 'logo_url',
@@ -89,7 +89,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
             [
                 'key' => 'primary_color',
-                'value' => '#F59E0B',
+                'value' => '#000000',
                 'type' => 'color',
                 'group' => 'appearance',
                 'label' => 'Warna Utama',
@@ -103,7 +103,7 @@ class DefaultTenantSettingsSeeder extends Seeder
                 'label' => 'Banner Self-Order',
                 'description' => 'Banner yang ditampilkan di halaman self-order'
             ],
-            
+
             // Payment Gateway Settings
             [
                 'key' => 'midtrans_server_key',
@@ -129,7 +129,7 @@ class DefaultTenantSettingsSeeder extends Seeder
                 'label' => 'Midtrans Production Mode',
                 'description' => 'Aktifkan untuk production (pembayaran riil). Nonaktifkan untuk sandbox (testing)'
             ],
-            
+
             // Order Settings
             [
                 'key' => 'receipt_footer_text',
@@ -155,7 +155,7 @@ class DefaultTenantSettingsSeeder extends Seeder
                 'label' => 'Wajib Isi Data Customer',
                 'description' => 'Customer harus mengisi nama/email/telepon saat checkout'
             ],
-            
+
             // Notification Settings
             [
                 'key' => 'n8n_webhook_url',
@@ -175,14 +175,14 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
         ];
     }
-    
+
     /**
      * Create default settings for a tenant
      */
     private function createDefaultSettings(int $tenantId): void
     {
         $settings = self::getDefaultSettings();
-        
+
         foreach ($settings as $setting) {
             Setting::firstOrCreate(
                 [

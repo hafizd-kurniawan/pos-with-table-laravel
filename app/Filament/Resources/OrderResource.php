@@ -102,8 +102,10 @@ class OrderResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
-                    ->money('idr')
-                    ->sortable(),
+                    ->label('Total Amount')
+                    ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
+                    ->sortable()
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('placed_at')
                     ->dateTime('d M Y H:i')

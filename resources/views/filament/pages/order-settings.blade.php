@@ -1,119 +1,58 @@
 <x-filament-panels::page>
     <form wire:submit="save">
         {{ $this->form }}
-        
-<div class="mt-6 flex justify-end gap-3">
-    <x-filament::button 
-        type="submit" 
-        size="lg"
-        color="primary"
-        class="px-10 text-center justify-center">
-        Save Settings
-    </x-filament::button>
-</div>2
+
+        <x-filament::button 
+            type="submit" 
+            class="mt-6"
+            icon="heroicon-o-check"
+        >
+            Save Settings
+        </x-filament::button>
     </form>
 
     <x-filament::section class="mt-6">
         <x-slot name="heading">
-            Current Active Settings
+            Quick Guide
         </x-slot>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Discount Status -->
-            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div class="text-center text-3xl mb-2">
-                    @if(is_discount_enabled())
-                        ✅
-                    @else
-                        ❌
-                    @endif
-                </div>
-                <div class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Available Discounts</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                    @php $selectedDiscounts = get_selected_discounts(); @endphp
-                    @if($selectedDiscounts->isNotEmpty())
-                        <ul class="space-y-1">
-                            @foreach($selectedDiscounts as $discount)
-                                <li class="flex items-center">
-                                    <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                    <strong>{{ $discount->name }}</strong>
-                                    <span class="ml-auto">
-                                        {{ $discount->type === 'percentage' ? $discount->value . '%' : 'Rp' . number_format($discount->value) }}
-                                    </span>
-                                </li>
-                            @endforeach
-                        </ul>
-                        <div class="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 text-center">
-                            <strong>{{ $selectedDiscounts->count() }}</strong> discount(s) available
-                        </div>
-                    @else
-                        <div class="text-center">No discounts</div>
-                    @endif
+        <x-slot name="description">
+            How these settings affect your system
+        </x-slot>
+
+        <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-3">
+                <div class="text-primary-500 font-semibold">Discount:</div>
+                <div class="flex-1 text-gray-600 dark:text-gray-400">
+                    Manage individual discounts in <strong>Discounts</strong> menu. Only active and non-expired discounts will appear.
                 </div>
             </div>
 
-            <!-- Tax Status -->
-            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div class="text-center text-3xl mb-2">
-                    @if(is_tax_enabled())
-                        ✅
-                    @else
-                        ❌
-                    @endif
-                </div>
-                <div class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tax Rates</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                    @php $selectedTaxes = get_selected_taxes(); @endphp
-                    @if($selectedTaxes->isNotEmpty())
-                        <ul class="space-y-1">
-                            @foreach($selectedTaxes as $tax)
-                                <li class="flex items-center">
-                                    <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    <strong>{{ $tax->name }}</strong>
-                                    <span class="ml-auto">{{ $tax->value }}%</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                        <div class="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 text-center">
-                            <strong>Total: {{ tax_percentage() }}%</strong>
-                        </div>
-                    @else
-                        <div class="text-center">No tax</div>
-                    @endif
+            <div class="flex items-start gap-3">
+                <div class="text-primary-500 font-semibold">Tax:</div>
+                <div class="flex-1 text-gray-600 dark:text-gray-400">
+                    Configure tax rates in <strong>Taxes</strong> menu (type: Pajak). Multiple tax rates can be available for selection.
                 </div>
             </div>
 
-            <!-- Service Charge Status -->
-            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div class="text-center text-3xl mb-2">
-                    @if(is_service_charge_enabled())
-                        ✅
-                    @else
-                        ❌
-                    @endif
+            <div class="flex items-start gap-3">
+                <div class="text-primary-500 font-semibold">Service Charge:</div>
+                <div class="flex-1 text-gray-600 dark:text-gray-400">
+                    Manage service rates in <strong>Taxes</strong> menu (type: Layanan). Service charge is applied after discount and tax.
                 </div>
-                <div class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Charges</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                    @php $selectedServices = get_selected_services(); @endphp
-                    @if($selectedServices->isNotEmpty())
-                        <ul class="space-y-1">
-                            @foreach($selectedServices as $service)
-                                <li class="flex items-center">
-                                    <span class="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                                    <strong>{{ $service->name }}</strong>
-                                    <span class="ml-auto">{{ $service->value }}%</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                        <div class="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600 text-center">
-                            <strong>Total: {{ get_active_service_charge() }}%</strong>
-                        </div>
-                    @else
-                        <div class="text-center">No service charge</div>
-                    @endif
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-950 rounded-lg border border-warning-200 dark:border-warning-800">
+                <svg class="w-5 h-5 text-warning-600 dark:text-warning-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div class="flex-1">
+                    <div class="font-semibold text-warning-800 dark:text-warning-200">Important</div>
+                    <div class="text-warning-700 dark:text-warning-300 mt-1">
+                        Changes apply immediately to POS and Self-Order systems. Existing orders are not affected.
+                    </div>
                 </div>
             </div>
         </div>
     </x-filament::section>
-
 </x-filament-panels::page>

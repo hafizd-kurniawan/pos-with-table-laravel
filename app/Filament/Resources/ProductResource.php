@@ -93,8 +93,10 @@ class ProductResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->money('idr')
-                    ->sortable(),
+                    ->label('Price')
+                    ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
+                    ->sortable()
+                    ->alignEnd(),
                 ImageColumn::make('image')
                     ->square()
                     ->size(60),

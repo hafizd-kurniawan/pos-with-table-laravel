@@ -109,12 +109,38 @@ class TenantController extends Controller
     public function extendTrial(Request $request, Tenant $tenant)
     {
         $validated = $request->validate([
-            'days' => 'required|integer|min:1|max:365',
+            'days' => 'required|integer|min:-365|max:365',
         ]);
         
-        $tenant->extendTrial((int) $validated['days']);
+        $days = (int) $validated['days'];
         
-        return redirect()->back()->with('success', "Trial extended by {$validated['days']} days");
+        if ($days > 0) {
+            $tenant->extendTrial($days);
+            return redirect()->back()->with('success', "Trial extended by {$days} days");
+        } else {
+            // Reduce trial (negative days)
+            $reduceDays = abs($days);
+            
+            if ($tenant->trial_ends_at) {
+                $newTrialEnd = $tenant->trial_ends_at->subDays($reduceDays);
+                
+                // Prevent setting trial end before trial start
+                if ($newTrialEnd < $tenant->trial_starts_at) {
+                    $newTrialEnd = $tenant->trial_starts_at;
+                }
+                
+                $tenant->update([
+                    'trial_ends_at' => $newTrialEnd,
+                ]);
+                
+                // Check if trial already expired
+                if ($newTrialEnd < now()) {
+                    $tenant->update(['status' => 'expired']);
+                }
+            }
+            
+            return redirect()->back()->with('success', "Trial reduced by {$reduceDays} days");
+        }
     }
     
     public function activateSubscription(Request $request, Tenant $tenant)

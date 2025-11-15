@@ -78,15 +78,47 @@ class FilamentTenantMiddleware
                     ->with('error', 'Your tenant account was not found. Please contact support.');
             }
             
-            // Check tenant status - warn but allow access (read-only mode)
+            // CRITICAL: Check tenant status - BLOCK ACCESS if suspended/expired
             if ($tenant->status === 'suspended') {
-                // Just flash warning, don't redirect
-                session()->flash('warning', 'Your account is suspended. Some features are disabled.');
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return redirect()->route('filament.admin.auth.login')
+                    ->with('error', '🚫 Your account is SUSPENDED. Please contact support at support@possaas.com');
+            }
+            
+            // Check trial expiry
+            if ($tenant->status === 'trial' && $tenant->trial_ends_at && $tenant->trial_ends_at < now()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                $tenant->update(['status' => 'expired']);
+                
+                return redirect()->route('filament.admin.auth.login')
+                    ->with('error', '⏰ Your trial has EXPIRED. Please contact admin to subscribe.');
+            }
+            
+            // Check subscription expiry
+            if ($tenant->status === 'active' && $tenant->subscription_ends_at && $tenant->subscription_ends_at < now()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                $tenant->update(['status' => 'expired']);
+                
+                return redirect()->route('filament.admin.auth.login')
+                    ->with('error', '⏰ Your subscription has EXPIRED. Please contact admin to renew.');
             }
             
             if ($tenant->status === 'expired') {
-                // Just flash warning, don't redirect or logout
-                session()->flash('warning', 'Your subscription has expired. Please renew to access all features.');
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return redirect()->route('filament.admin.auth.login')
+                    ->with('error', '⏰ Your subscription has EXPIRED. Please contact admin to renew.');
             }
             
             // Set tenant context for automatic query scoping

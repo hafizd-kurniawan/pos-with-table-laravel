@@ -99,15 +99,27 @@
                 // Get cart data
                 $cart = session('cart_' . $table->name, []);
                 $itemsSubtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
+                
+                // Get selected items from settings (ONLY if enabled!)
+                $selectedDiscounts = get_selected_discounts();
+                $selectedTaxes = get_selected_taxes();
+                $selectedServices = get_selected_services();
+                
+                // Auto-select first available items (for auto-apply) ONLY if items exist
+                $autoTax = $selectedTaxes->first();
+                $autoService = $selectedServices->first();
+                
+                // Debug: Check what we got
+                // dd([
+                //     'discounts' => $selectedDiscounts->pluck('name'),
+                //     'taxes' => $selectedTaxes->pluck('name'),
+                //     'services' => $selectedServices->pluck('name'),
+                // ]);
             @endphp
 
             </div>
 
-            <!-- Discount Section (if enabled) -->
-            @if(is_discount_enabled())
-            @php
-                $selectedDiscounts = get_selected_discounts();
-            @endphp
+            <!-- Discount Section (ONLY if items selected in Order Settings) -->
             @if($selectedDiscounts->isNotEmpty())
             <div class="px-4 py-3 bg-white border-t border-gray-200">
                 <div class="font-semibold mb-2 text-sm">Apply Discount (Optional)</div>
@@ -125,6 +137,14 @@
                 </select>
             </div>
             @endif
+
+            {{-- Hidden inputs for auto-applied tax/service (ONLY if selected) --}}
+            @if($autoTax)
+                <input type="hidden" name="tax_id" value="{{ $autoTax->id }}" form="checkoutForm">
+            @endif
+
+            @if($autoService)
+                <input type="hidden" name="service_id" value="{{ $autoService->id }}" form="checkoutForm">
             @endif
 
             <!-- Payment Method Section -->
@@ -157,8 +177,8 @@
                     <div class="text-xs font-medium" id="subtotalDisplay">Rp{{ number_format($itemsSubtotal) }}</div>
                 </div>
 
-                <!-- Discount (if enabled and selected) -->
-                @if(is_discount_enabled())
+                <!-- Discount -->
+                @if($selectedDiscounts->isNotEmpty())
                 <div class="flex justify-between items-center py-2 bg-green-50" id="discountRow" style="display: none;">
                     <div class="text-xs text-green-600 font-medium">Discount Applied</div>
                     <div class="text-xs text-green-600 font-bold" id="discountDisplay">- Rp0</div>
@@ -171,28 +191,20 @@
                     <div class="text-xs font-semibold text-gray-800" id="subtotalAfterDiscountDisplay">Rp{{ number_format($itemsSubtotal) }}</div>
                 </div>
 
-                <!-- Tax (if enabled) -->
-                @if(is_tax_enabled())
-                @php
-                    $taxPercentage = tax_percentage();
-                @endphp
+                <!-- Tax (Auto-applied) -->
+                @if($autoTax)
                 <div class="flex justify-between items-center py-2">
-                    <div class="text-xs text-gray-600">Tax ({{ number_format($taxPercentage, 0) }}%)</div>
+                    <div class="text-xs text-gray-600">{{ $autoTax->name }} ({{ $autoTax->value }}%)</div>
                     <div class="text-xs font-medium" id="taxDisplay">Rp0</div>
                 </div>
                 @endif
 
-                <!-- Service Charge (if enabled) -->
-                @if(is_service_charge_enabled())
-                @php
-                    $serviceChargePercentage = get_active_service_charge();
-                @endphp
-                @if($serviceChargePercentage > 0)
+                <!-- Service Charge (Auto-applied) -->
+                @if($autoService)
                 <div class="flex justify-between items-center py-2">
-                    <div class="text-xs text-gray-600">Service Charge ({{ number_format($serviceChargePercentage, 0) }}%)</div>
+                    <div class="text-xs text-gray-600">{{ $autoService->name }} ({{ $autoService->value }}%)</div>
                     <div class="text-xs font-medium" id="serviceDisplay">Rp0</div>
                 </div>
-                @endif
                 @endif
             </div>
 
@@ -212,17 +224,17 @@
     <script>
         // Initial calculation variables
         const itemsSubtotal = {{ $itemsSubtotal }};
-        const taxPercentage = {{ is_tax_enabled() ? tax_percentage() : 0 }};
-        const servicePercentage = {{ is_service_charge_enabled() ? get_active_service_charge() : 0 }};
-        const isDiscountEnabled = {{ is_discount_enabled() ? 'true' : 'false' }};
+        const hasDiscounts = {{ $selectedDiscounts->isNotEmpty() ? 'true' : 'false' }};
+        const taxPercentage = {{ $autoTax ? $autoTax->value : 0 }};
+        const servicePercentage = {{ $autoService ? $autoService->value : 0 }};
 
         // Calculate and update display
         function calculateTotal() {
             let subtotal = itemsSubtotal;
             let discountAmount = 0;
             
-            // Get selected discount
-            if (isDiscountEnabled) {
+            // Get selected discount (optional - customer choice)
+            if (hasDiscounts) {
                 const discountSelect = document.getElementById('discountSelect');
                 if (discountSelect && discountSelect.value) {
                     const selectedOption = discountSelect.options[discountSelect.selectedIndex];
@@ -250,17 +262,17 @@
             
             // Subtotal after discount
             const subtotalAfterDiscount = subtotal - discountAmount;
-            if (isDiscountEnabled) {
+            if (hasDiscounts) {
                 document.getElementById('subtotalAfterDiscountDisplay').textContent = 'Rp' + Math.round(subtotalAfterDiscount).toLocaleString('id-ID');
             }
             
-            // Calculate tax
+            // Calculate tax (auto-applied if available)
             const taxAmount = subtotalAfterDiscount * (taxPercentage / 100);
             if (document.getElementById('taxDisplay')) {
                 document.getElementById('taxDisplay').textContent = 'Rp' + Math.round(taxAmount).toLocaleString('id-ID');
             }
             
-            // Calculate service charge
+            // Calculate service charge (auto-applied if available)
             const serviceAmount = subtotalAfterDiscount * (servicePercentage / 100);
             if (document.getElementById('serviceDisplay')) {
                 document.getElementById('serviceDisplay').textContent = 'Rp' + Math.round(serviceAmount).toLocaleString('id-ID');
@@ -271,8 +283,8 @@
             document.getElementById('totalDisplay').textContent = 'Rp' + Math.round(total).toLocaleString('id-ID');
         }
         
-        // Listen for discount changes
-        if (isDiscountEnabled) {
+        // Listen for discount changes only (tax & service are auto-applied)
+        if (hasDiscounts) {
             document.getElementById('discountSelect').addEventListener('change', calculateTotal);
         }
         

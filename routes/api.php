@@ -53,12 +53,15 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('tenant')->group(function 
 // ========================================
 // AUTHENTICATION ENDPOINTS
 // ========================================
-Route::middleware('tenant')->group(function () {
-    Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
-    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
+// Login: NO tenant middleware (user belum auth, tenant detected from user)
+Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+
+// Logout & User Info: Require auth only
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {
-        return $request->user();
-    })->middleware('auth:sanctum');
+        return $request->user()->load('tenant', 'role');
+    });
 });
 
 // ========================================
@@ -98,6 +101,44 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 
     // TAXES & SERVICE CHARGES
     Route::apiResource('/taxes', \App\Http\Controllers\Api\TaxController::class);
+    
+    // POS SETTINGS (Unified endpoint for Discount, Tax, Service)
+    Route::get('/pos-settings', [\App\Http\Controllers\Api\PosSettingsController::class, 'index']);
+
+    // ========================================
+    // INVENTORY MANAGEMENT
+    // ========================================
+    
+    // Suppliers
+    Route::apiResource('/suppliers', \App\Http\Controllers\Api\SupplierController::class);
+    
+    // Ingredients
+    Route::get('/ingredients', [\App\Http\Controllers\Api\IngredientController::class, 'index']);
+    Route::post('/ingredients', [\App\Http\Controllers\Api\IngredientController::class, 'store']);
+    Route::get('/ingredients/{id}', [\App\Http\Controllers\Api\IngredientController::class, 'show']);
+    Route::put('/ingredients/{id}', [\App\Http\Controllers\Api\IngredientController::class, 'update']);
+    Route::delete('/ingredients/{id}', [\App\Http\Controllers\Api\IngredientController::class, 'destroy']);
+    Route::post('/ingredients/{id}/adjust-stock', [\App\Http\Controllers\Api\IngredientController::class, 'adjustStock']);
+    Route::get('/ingredients/{id}/stock-history', [\App\Http\Controllers\Api\IngredientController::class, 'stockHistory']);
+    Route::get('/ingredients-low-stock', [\App\Http\Controllers\Api\IngredientController::class, 'lowStock']);
+    Route::get('/ingredients-categories', [\App\Http\Controllers\Api\IngredientController::class, 'categories']);
+    
+    // Purchase Orders
+    Route::get('/purchase-orders', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'index']);
+    Route::post('/purchase-orders', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'store']);
+    Route::get('/purchase-orders/{id}', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'show']);
+    Route::put('/purchase-orders/{id}', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'update']);
+    Route::delete('/purchase-orders/{id}', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'destroy']);
+    Route::post('/purchase-orders/{id}/send', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'markAsSent']);
+    Route::post('/purchase-orders/{id}/receive', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'receive']);
+    Route::post('/purchase-orders/{id}/cancel', [\App\Http\Controllers\Api\PurchaseOrderController::class, 'cancel']);
+    
+    // Recipes (Product-Ingredient Mapping)
+    Route::get('/products/{productId}/recipes', [\App\Http\Controllers\Api\RecipeController::class, 'index']);
+    Route::post('/products/{productId}/recipes', [\App\Http\Controllers\Api\RecipeController::class, 'store']);
+    Route::put('/products/{productId}/recipes/{recipeId}', [\App\Http\Controllers\Api\RecipeController::class, 'update']);
+    Route::delete('/products/{productId}/recipes/{recipeId}', [\App\Http\Controllers\Api\RecipeController::class, 'destroy']);
+    Route::get('/products/{productId}/check-availability', [\App\Http\Controllers\Api\RecipeController::class, 'checkAvailability']);
     Route::get('/taxes-active', [\App\Http\Controllers\Api\TaxController::class, 'active']);
     Route::get('/taxes-by-type', [\App\Http\Controllers\Api\TaxController::class, 'byType']);
     Route::post('/taxes-calculate', [\App\Http\Controllers\Api\TaxController::class, 'calculate']);

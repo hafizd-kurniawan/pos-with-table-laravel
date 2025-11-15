@@ -11,9 +11,22 @@ class Setting extends Model
     use BelongsToTenant;
     
     protected $fillable = [
-        'key', 'value', 'type', 'group', 'label', 'description', 'options',
-        'selected_discount_ids', 'selected_tax_ids', 'selected_service_ids'
+        'key',  // Only fillable when creating, protected in update
+        'value', 
+        'type', 
+        'group', 
+        'label', 
+        'description', 
+        'options',
+        'selected_discount_ids', 
+        'selected_tax_ids', 
+        'selected_service_ids'
     ];
+    
+    /**
+     * CRITICAL: Key should NEVER change after creation
+     */
+    protected $guarded = ['id', 'tenant_id'];
 
     protected $casts = [
         'options' => 'array',
@@ -35,42 +48,26 @@ class Setting extends Model
     }
     
     /**
-     * Get value attribute - keep as string, don't decode JSON
-     * Only decode for display purposes, not for forms
+     * Get value attribute - SIMPLE & SAFE
+     * Just return the value as-is (string)
      */
     public function getValueAttribute($value)
     {
-        // Don't process if already an array (Filament form state)
-        if (is_array($value)) {
-            return $value;
-        }
+        // CRITICAL: Use $value parameter, NOT $this->attributes['value']!
+        // Eloquent already processes $value from database
         
-        // Ensure value is never null for form fields
+        // Handle null
         if (is_null($value)) {
             return '';
         }
         
-        // For color type, always return string
-        if (isset($this->attributes['type']) && $this->attributes['type'] === 'color') {
-            return (string) $value;
+        // If already array (shouldn't happen, but safe)
+        if (is_array($value)) {
+            return json_encode($value);
         }
         
-        // For file upload, always return string
-        if (isset($this->attributes['type']) && $this->attributes['type'] === 'file') {
-            return (string) $value;
-        }
-        
-        // For text-based types, ensure string
-        if (isset($this->attributes['type']) && in_array($this->attributes['type'], ['text', 'textarea', 'email', 'url', 'number'])) {
-            return (string) $value;
-        }
-        
-        // Check if it's a JSON string and if type requires array
-        if (isset($this->attributes['type']) && $this->attributes['type'] === 'select' && is_string($value) && $this->isJson($value)) {
-            return json_decode($value, true);
-        }
-        
-        return $value;
+        // Return as string
+        return (string) $value;
     }
     
     /**
@@ -103,7 +100,12 @@ class Setting extends Model
     {
         $setting = static::updateOrCreate(
             ['key' => $key],
-            ['value' => $value]
+            [
+                'value' => $value,
+                'label' => ucfirst(str_replace('_', ' ', $key)),
+                'type' => 'boolean',
+                'group' => 'order',
+            ]
         );
         
         // Clear specific cache and general cache

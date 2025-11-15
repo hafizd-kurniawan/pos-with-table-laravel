@@ -1,0 +1,81 @@
+/* Dashboard Custom Styling - Stat Cards Spacing Fix */
+
+/* Increase padding for stat cards */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat {
+    padding: 1.5rem !important;
+    min-height: 140px !important;
+}
+
+/* Larger value text */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-value {
+    font-size: 1.875rem !important;
+    line-height: 2.25rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Larger label text */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-label {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* Better description spacing */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-description {
+    font-size: 0.875rem !important;
+    margin-top: 0.75rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Chart spacing */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-chart {
+    margin-top: 0.75rem !important;
+    height: 40px !important;
+}
+
+/* Icon sizing */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-icon {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+/* Prevent text overflow */
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-value,
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-label,
+.fi-wi-stats-overview .fi-wi-stats-overview-stat-description {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+}
+
+/* Extra spacing class */
+.stat-card-spacing {
+    padding: 2rem !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fi-wi-stats-overview .fi-wi-stats-overview-stat {
+        padding: 1.25rem !important;
+        min-height: 120px !important;
+    }
+    
+    .fi-wi-stats-overview .fi-wi-stats-overview-stat-value {
+        font-size: 1.5rem !important;
+        line-height: 2rem !important;
+    }
+}
+
+@media (min-width: 1280px) {
+    .fi-wi-stats-overview .fi-wi-stats-overview-stat {
+        padding: 2rem !important;
+        min-height: 160px !important;
+    }
+    
+    .fi-wi-stats-overview .fi-wi-stats-overview-stat-value {
+        font-size: 2rem !important;
+        line-height: 2.5rem !important;
+    }
+}

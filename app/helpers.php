@@ -64,9 +64,16 @@ if (!function_exists('get_selected_discounts')) {
      */
     function get_selected_discounts()
     {
-        $setting = \App\Models\Setting::where('key', 'order_calculation')->first();
-        if ($setting && $setting->selected_discount_ids) {
-            return \App\Models\Discount::active()->whereIn('id', $setting->selected_discount_ids)->get();
+        $selectedIds = json_decode(\App\Models\Setting::get('selected_discount_ids', '[]'), true) ?? [];
+        if (!empty($selectedIds)) {
+            return \App\Models\Discount::where('status', 'active')
+                ->where(function($query) {
+                    $query->whereNull('expired_date')
+                          ->orWhere('expired_date', '>', now());
+                })
+                ->whereIn('id', $selectedIds)
+                ->orderBy('name')
+                ->get();
         }
         return collect();
     }
@@ -88,9 +95,13 @@ if (!function_exists('get_selected_taxes')) {
      */
     function get_selected_taxes()
     {
-        $setting = \App\Models\Setting::where('key', 'order_calculation')->first();
-        if ($setting && $setting->selected_tax_ids) {
-            return \App\Models\Tax::active()->pajak()->whereIn('id', $setting->selected_tax_ids)->get();
+        $selectedIds = json_decode(\App\Models\Setting::get('selected_tax_ids', '[]'), true) ?? [];
+        if (!empty($selectedIds)) {
+            return \App\Models\Tax::where('status', 'active')
+                ->where('type', 'pajak')
+                ->whereIn('id', $selectedIds)
+                ->orderBy('name')
+                ->get();
         }
         return collect();
     }
@@ -123,9 +134,13 @@ if (!function_exists('get_selected_services')) {
      */
     function get_selected_services()
     {
-        $setting = \App\Models\Setting::where('key', 'order_calculation')->first();
-        if ($setting && $setting->selected_service_ids) {
-            return \App\Models\Tax::active()->layanan()->whereIn('id', $setting->selected_service_ids)->get();
+        $selectedIds = json_decode(\App\Models\Setting::get('selected_service_ids', '[]'), true) ?? [];
+        if (!empty($selectedIds)) {
+            return \App\Models\Tax::where('status', 'active')
+                ->where('type', 'layanan')
+                ->whereIn('id', $selectedIds)
+                ->orderBy('name')
+                ->get();
         }
         return collect();
     }

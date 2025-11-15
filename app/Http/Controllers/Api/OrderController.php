@@ -211,11 +211,11 @@ class OrderController extends Controller
         ]);
     }
 
-    // get order status completed
+    // get order status complete
     public function completedOrders(Request $request)
     {
         $orders = \App\Models\Order::with('orderItems.product')
-            ->where('status', 'completed')
+            ->where('status', 'complete')
             ->get();
         return response()->json([
             'data' => $orders,
@@ -251,21 +251,21 @@ class OrderController extends Controller
         $previousStatus = $order->status;
 
         $validatedData = $request->validate([
-            'status' => 'required|in:completed,cooking,paid,pending,failed',
+            'status' => 'required|in:complete,cooking,paid,pending,cancelled,expired',
         ]);
 
         $order->status = $validatedData['status'];
-        if ($order->status === 'completed') {
+        if ($order->status === 'complete') {
             $order->completed_at = now();
         }
 
         // Handle stock management berdasarkan perubahan status
         if ($previousStatus !== $order->status) {
-            if ($order->status === 'paid' && !in_array($previousStatus, ['paid', 'cooking', 'completed'])) {
+            if ($order->status === 'paid' && !in_array($previousStatus, ['paid', 'cooking', 'complete'])) {
                 // Jika status berubah menjadi paid dari status lain (selain yang sudah paid), kurangi stock
                 $this->decreaseProductStock($order);
                 Log::info('Stock decreased due to manual status change to paid', ['order_id' => $order->id]);
-            } elseif (in_array($previousStatus, ['paid', 'cooking', 'completed']) && $order->status === 'failed') {
+            } elseif (in_array($previousStatus, ['paid', 'cooking', 'complete']) && $order->status === 'cancelled') {
                 // Jika order yang sudah paid dibatalkan, kembalikan stock
                 $this->restoreProductStock($order);
                 Log::info('Stock restored due to order cancellation', ['order_id' => $order->id]);

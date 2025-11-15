@@ -478,7 +478,12 @@ class OrderController extends Controller
                 $paymentMethod = $request->input('payment_method', 'qris');
 
                 // Calculate totals with discount, tax, and service charge
-                $totals = $this->calculateOrderTotals($cart, $request->input('discount_id'));
+                $totals = $this->calculateOrderTotals(
+                    $cart, 
+                    $request->input('discount_id'),
+                    $request->input('tax_id'),
+                    $request->input('service_id')
+                );
                 
                 Log::info('CHECKOUT: Calculated totals', $totals);
                 
@@ -1001,15 +1006,15 @@ class OrderController extends Controller
     /**
      * Calculate order totals with discount, tax, and service charge
      */
-    private function calculateOrderTotals($cart, $discountId = null)
+    private function calculateOrderTotals($cart, $discountId = null, $taxId = null, $serviceId = null)
     {
         // 1. Calculate items subtotal
         $itemsSubtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
         
-        // 2. Apply discount (if enabled and provided)
+        // 2. Apply discount (if provided)
         $discountAmount = 0;
         $discount = null;
-        if (is_discount_enabled() && $discountId) {
+        if ($discountId) {
             $discount = \App\Models\Discount::active()->find($discountId);
             if ($discount) {
                 $discountAmount = $discount->calculateDiscount($itemsSubtotal);
@@ -1019,20 +1024,26 @@ class OrderController extends Controller
         // 3. Subtotal after discount
         $subtotal = $itemsSubtotal - $discountAmount;
         
-        // 4. Calculate tax (if enabled)
+        // 4. Calculate tax (if provided)
         $taxPercentage = 0;
         $taxAmount = 0;
-        if (is_tax_enabled()) {
-            $taxPercentage = tax_percentage();
-            $taxAmount = round($subtotal * ($taxPercentage / 100), 2);
+        if ($taxId) {
+            $tax = \App\Models\Tax::active()->where('type', 'pajak')->find($taxId);
+            if ($tax) {
+                $taxPercentage = $tax->value;
+                $taxAmount = round($subtotal * ($taxPercentage / 100), 2);
+            }
         }
         
-        // 5. Calculate service charge (if enabled)
+        // 5. Calculate service charge (if provided)
         $serviceChargePercentage = 0;
         $serviceChargeAmount = 0;
-        if (is_service_charge_enabled()) {
-            $serviceChargePercentage = get_active_service_charge();
-            $serviceChargeAmount = round($subtotal * ($serviceChargePercentage / 100), 2);
+        if ($serviceId) {
+            $service = \App\Models\Tax::active()->where('type', 'layanan')->find($serviceId);
+            if ($service) {
+                $serviceChargePercentage = $service->value;
+                $serviceChargeAmount = round($subtotal * ($serviceChargePercentage / 100), 2);
+            }
         }
         
         // 6. Total amount

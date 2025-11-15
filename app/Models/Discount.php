@@ -21,7 +21,7 @@ class Discount extends Model
     ];
 
     protected $casts = [
-        'value' => 'decimal:2',
+        'value' => 'float',
         'expired_date' => 'date',
     ];
 

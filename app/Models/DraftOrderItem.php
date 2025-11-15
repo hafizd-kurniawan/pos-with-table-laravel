@@ -21,8 +21,8 @@ class DraftOrderItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'price' => 'decimal:2',
-        'total' => 'decimal:2',
+        'price' => 'integer',
+        'total' => 'integer',
     ];
 
     // Relationships

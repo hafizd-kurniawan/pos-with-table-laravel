@@ -266,16 +266,32 @@ class Tenant extends Model
     }
     
     /**
-     * Extend trial by X days
+     * Extend trial by X days (positive = extend, negative = reduce)
      */
     public function extendTrial(int $days): void
     {
-        $this->increment('trial_extension_days', $days);
+        if ($days > 0) {
+            $this->increment('trial_extension_days', $days);
+        } else {
+            $this->decrement('trial_extension_days', abs($days));
+        }
         
         if ($this->trial_ends_at) {
+            $newTrialEnd = $this->trial_ends_at->addDays($days);
+            
+            // Prevent setting trial end before trial start
+            if ($newTrialEnd < $this->trial_starts_at) {
+                $newTrialEnd = $this->trial_starts_at;
+            }
+            
             $this->update([
-                'trial_ends_at' => $this->trial_ends_at->addDays($days),
+                'trial_ends_at' => $newTrialEnd,
             ]);
+            
+            // Auto-expire if new date is in the past
+            if ($newTrialEnd < now() && $this->status === 'trial') {
+                $this->update(['status' => 'expired']);
+            }
         }
     }
     

@@ -59,14 +59,12 @@ class SettingResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('key')
                             ->required()
-                            ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->disabled(fn ($record) => $record !== null),
+                            ->helperText('Key can be edited. Be careful as it is used throughout the system!'),
                         
                         Forms\Components\TextInput::make('label')
                             ->required()
-                            ->maxLength(255)
-                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) ($state ?? '')),
+                            ->maxLength(255),
                         
                         Forms\Components\Select::make('type')
                             ->required()
@@ -95,9 +93,7 @@ class SettingResource extends Resource
                         
                         Forms\Components\Textarea::make('description')
                             ->maxLength(500)
-                            ->columnSpanFull()
-                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) ($state ?? ''))
-                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : $state),
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
                 
@@ -107,21 +103,17 @@ class SettingResource extends Resource
                             ->label('Setting Value')
                             ->required()
                             ->columnSpanFull()
-                            ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number']))
-                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state)
-                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state),
+                            ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number'])),
                         
                         Forms\Components\Toggle::make('value')
                             ->label('Setting Value')
                             ->visible(fn ($get) => $get('type') === 'boolean')
-                            ->formatStateUsing(fn ($state) => is_array($state) ? false : (bool) $state)
+                            ->formatStateUsing(fn ($state) => filter_var($state, FILTER_VALIDATE_BOOLEAN))
                             ->dehydrateStateUsing(fn ($state) => $state ? '1' : '0'),
                         
                         Forms\Components\ColorPicker::make('value')
                             ->label('Setting Value')
-                            ->visible(fn ($get) => $get('type') === 'color')
-                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state)
-                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? json_encode($state) : (string) $state),
+                            ->visible(fn ($get) => $get('type') === 'color'),
                         
                         Forms\Components\FileUpload::make('value')
                             ->label('Setting Value')
@@ -134,8 +126,7 @@ class SettingResource extends Resource
                             ])
                             ->directory('settings')
                             ->visibility('public')
-                            ->visible(fn ($get) => $get('type') === 'file')
-                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? (isset($state[0]) ? $state[0] : json_encode($state)) : $state),
+                            ->visible(fn ($get) => $get('type') === 'file'),
                         
                         Forms\Components\KeyValue::make('options')
                             ->label('Select Options')
@@ -231,7 +222,8 @@ class SettingResource extends Resource
         return [
             'index' => Pages\ListSettings::route('/'),
             'create' => Pages\CreateSetting::route('/create'),
-            'edit' => Pages\EditSetting::route('/{record}/edit'),
+            'view' => Pages\ViewSetting::route('/{record}'),
+            'edit' => Pages\EditSettingSimple::route('/{record}/edit'),
         ];
     }
 }

@@ -19,7 +19,7 @@ class Tax extends Model
     ];
 
     protected $casts = [
-        'value' => 'decimal:2',
+        'value' => 'float',
     ];
 
     // Scopes

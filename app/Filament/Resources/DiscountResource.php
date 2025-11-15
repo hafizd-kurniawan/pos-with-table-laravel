@@ -79,10 +79,11 @@ class DiscountResource extends Resource
                             ->numeric()
                             ->minValue(0)
                             ->label('Discount Value')
-                            ->suffix(fn ($get) => $get('type') === 'percentage' ? '%' : 'IDR')
+                            ->suffix(fn ($get) => $get('type') === 'percentage' ? '%' : '')
+                            ->prefix(fn ($get) => $get('type') === 'fixed' ? 'Rp' : '')
                             ->helperText(fn ($get) => $get('type') === 'percentage' 
                                 ? 'Enter percentage (0-100)'
-                                : 'Enter fixed amount in IDR'),
+                                : 'Enter fixed amount in Rupiah'),
 
                         Forms\Components\Select::make('status')
                             ->required()

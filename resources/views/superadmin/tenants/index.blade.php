@@ -26,6 +26,73 @@
             </div>
         @endif
 
+        {{-- QUICK STATS ALERTS --}}
+        @php
+            $suspendedCount = $tenants->where('status', 'suspended')->count();
+            $expiredCount = $tenants->where('status', 'expired')->count();
+            $expiringTrialCount = $tenants->where('status', 'trial')->filter(function($t) {
+                return $t->getDaysUntilExpiry() <= 3 && $t->getDaysUntilExpiry() > 0;
+            })->count();
+        @endphp
+
+        @if($suspendedCount > 0 || $expiredCount > 0 || $expiringTrialCount > 0)
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                @if($suspendedCount > 0)
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-red-800">
+                                    🚫 <strong class="text-2xl">{{ $suspendedCount }}</strong> Suspended
+                                </p>
+                                <p class="text-xs text-red-600">Cannot login</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($expiredCount > 0)
+                    <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-orange-800">
+                                    ⏰ <strong class="text-2xl">{{ $expiredCount }}</strong> Expired
+                                </p>
+                                <p class="text-xs text-orange-600">Cannot login</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($expiringTrialCount > 0)
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-yellow-800">
+                                    ⚠️ <strong class="text-2xl">{{ $expiringTrialCount }}</strong> Expiring Soon
+                                </p>
+                                <p class="text-xs text-yellow-600">≤3 days left</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">All Tenants</h2>
             <button onclick="document.getElementById('createModal').classList.remove('hidden')"
@@ -48,24 +115,36 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($tenants as $tenant)
-                    <tr>
+                    <tr class="@if($tenant->status === 'suspended') bg-red-50 @elseif($tenant->status === 'expired') bg-orange-50 @endif">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="font-mono text-sm">{{ $tenant->subdomain }}</span>
                         </td>
-                        <td class="px-6 py-4">{{ $tenant->business_name }}</td>
+                        <td class="px-6 py-4">
+                            {{ $tenant->business_name }}
+                            @if($tenant->status === 'suspended' || $tenant->status === 'expired')
+                                <span class="ml-2 text-xs font-bold text-red-600">🚫 BLOCKED</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4">{{ $tenant->email }}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 @if($tenant->status == 'active') bg-green-100 text-green-800
                                 @elseif($tenant->status == 'trial') bg-blue-100 text-blue-800
                                 @elseif($tenant->status == 'expired') bg-red-100 text-red-800
+                                @elseif($tenant->status == 'suspended') bg-gray-800 text-white
                                 @else bg-gray-100 text-gray-800
                                 @endif">
                                 {{ $tenant->status_label }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-sm">
-                            {{ $tenant->getDaysUntilExpiry() }} days
+                            @if($tenant->status === 'suspended' || $tenant->status === 'expired')
+                                <span class="font-bold text-red-600">N/A</span>
+                            @else
+                                <span class="@if($tenant->getDaysUntilExpiry() <= 3) font-bold text-red-600 @endif">
+                                    {{ $tenant->getDaysUntilExpiry() }} days
+                                </span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-sm">
                             <a href="{{ route('superadmin.tenants.show', $tenant) }}" 
