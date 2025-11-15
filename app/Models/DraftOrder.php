@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToTenant;
 
 class DraftOrder extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'table_id',
@@ -25,12 +26,12 @@ class DraftOrder extends Model
 
     protected $casts = [
         'total_item' => 'integer',
-        'subtotal' => 'decimal:2',
-        'tax' => 'decimal:2',
-        'discount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'service_charge' => 'decimal:2',
-        'total' => 'decimal:2',
+        'subtotal' => 'integer',
+        'tax' => 'integer',
+        'discount' => 'integer',
+        'discount_amount' => 'integer',
+        'service_charge' => 'integer',
+        'total' => 'integer',
         'table_number' => 'integer',
         'transaction_time' => 'datetime',
     ];

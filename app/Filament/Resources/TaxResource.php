@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TaxResource\Pages;
 use App\Filament\Resources\TaxResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Tax;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -12,71 +13,87 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BadgeColumn;
-use Filament\Tables\Filters\SelectFilter;
 
 class TaxResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Tax::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
-
-    protected static ?string $navigationGroup = 'Marketing';
-
+    
+    protected static ?string $navigationGroup = 'Finance';
+    
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'Tax & Service';
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('manage_taxes');
+    }
 
-    protected static ?string $pluralModelLabel = 'Taxes & Services';
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('manage_taxes');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('manage_taxes');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('manage_taxes');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                TextInput::make('name')
-                    ->label('Name')
+                Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
-                    ->placeholder('Enter tax/service name'),
-
-                Select::make('type')
-                    ->label('Type')
-                    ->options([
-                        'pajak' => 'Pajak (Tax)',
-                        'layanan' => 'Layanan (Service Charge)',
-                    ])
+                    ->label('Nama Pajak/Biaya')
+                    ->placeholder('Contoh: PPN 11%, Biaya Layanan')
+                    ->helperText('Nama yang akan muncul di struk'),
+                
+                Forms\Components\Select::make('type')
                     ->required()
-                    ->native(false),
-
-                TextInput::make('value')
-                    ->label('Value (%)')
+                    ->options([
+                        'pajak' => 'Pajak (Tax) - Contoh: PPN',
+                        'layanan' => 'Biaya Layanan (Service Charge)',
+                    ])
+                    ->default('pajak')
+                    ->label('Jenis')
+                    ->helperText('Pajak = PPN/PPh, Layanan = Service Charge'),
+                
+                Forms\Components\TextInput::make('value')
                     ->required()
                     ->numeric()
+                    ->suffix('%')
                     ->minValue(0)
                     ->maxValue(100)
-                    ->step(0.01)
-                    ->suffix('%')
-                    ->placeholder('Enter percentage value'),
-
-                Select::make('status')
-                    ->label('Status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                    ])
+                    ->default(11)
+                    ->label('Persentase')
+                    ->placeholder('11')
+                    ->helperText('Nilai dalam persen (%). Contoh: 11 untuk 11%'),
+                
+                Forms\Components\Select::make('status')
                     ->required()
+                    ->options([
+                        'active' => '✅ Aktif (Diterapkan di transaksi)',
+                        'inactive' => '❌ Tidak Aktif (Tidak diterapkan)',
+                    ])
                     ->default('active')
-                    ->native(false),
-
-                Textarea::make('description')
-                    ->label('Description')
-                    ->maxLength(500)
-                    ->placeholder('Optional description')
-                    ->columnSpanFull(),
+                    ->label('Status')
+                    ->helperText('Hanya pajak/biaya aktif yang diterapkan'),
+                
+                Forms\Components\Textarea::make('description')
+                    ->columnSpanFull()
+                    ->label('Keterangan (Opsional)')
+                    ->placeholder('Contoh: PPN 11% sesuai peraturan pemerintah')
+                    ->rows(3),
             ]);
     }
 
@@ -84,84 +101,63 @@ class TaxResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->label('Name')
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
                     ->searchable()
                     ->sortable(),
-
-                BadgeColumn::make('type')
-                    ->label('Type')
-                    ->colors([
-                        'success' => 'pajak',
-                        'primary' => 'layanan',
-                    ])
+                
+                Tables\Columns\BadgeColumn::make('type')
+                    ->label('Jenis')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'pajak' => 'Pajak',
-                        'layanan' => 'Layanan',
+                        'layanan' => 'Biaya Layanan',
                         default => $state,
-                    }),
-
-                TextColumn::make('value')
-                    ->label('Value')
-                    ->suffix('%')
+                    })
+                    ->colors([
+                        'primary' => 'pajak',
+                        'success' => 'layanan',
+                    ]),
+                
+                Tables\Columns\TextColumn::make('value')
+                    ->label('Persentase')
+                    ->formatStateUsing(fn ($state) => $state . '%')
                     ->sortable()
-                    ->alignRight(),
-
-                BadgeColumn::make('status')
+                    ->alignCenter(),
+                
+                Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => 'Aktif',
+                        'inactive' => 'Tidak Aktif',
+                        default => $state,
+                    })
                     ->colors([
                         'success' => 'active',
                         'danger' => 'inactive',
-                    ])
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                        default => $state,
-                    }),
-
-                TextColumn::make('description')
-                    ->label('Description')
+                    ]),
+                
+                Tables\Columns\TextColumn::make('description')
+                    ->label('Keterangan')
                     ->limit(50)
-                    ->tooltip(function (TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 50) {
-                            return null;
-                        }
-                        return $state;
-                    }),
-
-                TextColumn::make('created_at')
-                    ->label('Created')
-                    ->dateTime('d M Y, H:i')
+                    ->toggleable(),
+                
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('type')
-                    ->label('Type')
-                    ->options([
-                        'pajak' => 'Pajak',
-                        'layanan' => 'Layanan',
-                    ]),
-
-                SelectFilter::make('status')
-                    ->label('Status')
-                    ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                    ]),
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('type')
-            ->striped();
+            ]);
     }
 
     public static function getRelations(): array

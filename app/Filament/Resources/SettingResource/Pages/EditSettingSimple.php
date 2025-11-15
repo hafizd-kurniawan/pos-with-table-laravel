@@ -8,8 +8,13 @@ use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Cache;
+use Filament\Forms;
+use Illuminate\Database\Eloquent\Model;
 
-class EditSetting extends EditRecord
+/**
+ * ULTRA SIMPLE EDIT - JUST USE RESOURCE FORM, NO TRICKS!
+ */
+class EditSettingSimple extends EditRecord
 {
     protected static string $resource = SettingResource::class;
 
@@ -27,20 +32,14 @@ class EditSetting extends EditRecord
     
     protected function getSavedNotification(): ?Notification
     {
-        // Clear all cache when setting is updated
         Setting::clearCache();
-        Cache::flush();
+        Cache::forget('settings.all');
         
         return Notification::make()
             ->success()
-            ->title('Setting Updated Successfully! ✅')
-            ->body("Setting **{$this->record->label}** berhasil diupdate!\n\nPerubahan akan terlihat setelah refresh halaman.")
-            ->duration(5000)
-            ->actions([
-                \Filament\Notifications\Actions\Action::make('refresh')
-                    ->label('🔄 Refresh Page')
-                    ->action('$wire.emit("refresh-page")')
-                    ->close(),
-            ]);
+            ->title('Setting Updated! ✅')
+            ->body("Setting berhasil diupdate!")
+            ->duration(3000);
     }
 }
+

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DiscountResource\Pages;
 use App\Filament\Resources\DiscountResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Discount;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,11 +16,34 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DiscountResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Discount::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Marketing';
+    protected static ?string $navigationGroup = 'Finance';
     protected static ?int $navigationSort = 1;
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('manage_discounts');
+    }
 
     public static function form(Form $form): Form
     {
@@ -55,10 +79,11 @@ class DiscountResource extends Resource
                             ->numeric()
                             ->minValue(0)
                             ->label('Discount Value')
-                            ->suffix(fn ($get) => $get('type') === 'percentage' ? '%' : 'IDR')
+                            ->suffix(fn ($get) => $get('type') === 'percentage' ? '%' : '')
+                            ->prefix(fn ($get) => $get('type') === 'fixed' ? 'Rp' : '')
                             ->helperText(fn ($get) => $get('type') === 'percentage' 
                                 ? 'Enter percentage (0-100)'
-                                : 'Enter fixed amount in IDR'),
+                                : 'Enter fixed amount in Rupiah'),
 
                         Forms\Components\Select::make('status')
                             ->required()

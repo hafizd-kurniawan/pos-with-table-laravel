@@ -19,7 +19,9 @@ class OrderManagementController extends Controller
     {
         try {
             // Cari orders yang pending lebih dari 2 menit
-            $expiredOrders = Order::where('status', 'pending')
+            // Use withoutGlobalScope('tenant') untuk admin access
+            $expiredOrders = Order::withoutGlobalScope('tenant')
+                ->where('status', 'pending')
                 ->where('created_at', '<', Carbon::now()->subMinutes(2))
                 ->with('orderItems.product')
                 ->get();
@@ -76,7 +78,10 @@ class OrderManagementController extends Controller
     public function checkOrderStatus(Request $request, $code)
     {
         try {
-            $order = Order::where('code', $code)->first();
+            // Bypass tenant scope for public status check
+            $order = Order::withoutGlobalScope('tenant')
+                ->where('code', $code)
+                ->first();
             
             if (!$order) {
                 return response()->json([

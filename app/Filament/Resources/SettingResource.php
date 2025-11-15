@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SettingResource\Pages;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Setting;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SettingResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Setting::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
@@ -23,7 +26,30 @@ class SettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Settings';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Configuration';
+    
+    protected static ?int $navigationSort = 99;
+
+    // Authorization: Check permissions
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_settings');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('edit_settings');
+    }
 
     public static function form(Form $form): Form
     {
@@ -33,9 +59,8 @@ class SettingResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('key')
                             ->required()
-                            ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->disabled(fn ($record) => $record !== null),
+                            ->helperText('Key can be edited. Be careful as it is used throughout the system!'),
                         
                         Forms\Components\TextInput::make('label')
                             ->required()
@@ -82,7 +107,9 @@ class SettingResource extends Resource
                         
                         Forms\Components\Toggle::make('value')
                             ->label('Setting Value')
-                            ->visible(fn ($get) => $get('type') === 'boolean'),
+                            ->visible(fn ($get) => $get('type') === 'boolean')
+                            ->formatStateUsing(fn ($state) => filter_var($state, FILTER_VALIDATE_BOOLEAN))
+                            ->dehydrateStateUsing(fn ($state) => $state ? '1' : '0'),
                         
                         Forms\Components\ColorPicker::make('value')
                             ->label('Setting Value')
@@ -106,7 +133,9 @@ class SettingResource extends Resource
                             ->keyLabel('Option Value')
                             ->valueLabel('Option Label')
                             ->visible(fn ($get) => $get('type') === 'select')
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->formatStateUsing(fn ($state) => is_string($state) ? json_decode($state, true) : $state)
+                            ->dehydrateStateUsing(fn ($state) => is_array($state) ? $state : null),
                     ]),
             ]);
     }
@@ -127,8 +156,18 @@ class SettingResource extends Resource
                 
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
+                    ->formatStateUsing(function ($state, $record) {
+                        if (is_array($state)) {
+                            return json_encode($state);
+                        }
+                        return $state;
+                    })
                     ->tooltip(function ($record) {
-                        return $record->value;
+                        $value = $record->value;
+                        if (is_array($value)) {
+                            return json_encode($value, JSON_PRETTY_PRINT);
+                        }
+                        return $value;
                     }),
                 
                 Tables\Columns\TextColumn::make('group')
@@ -183,7 +222,8 @@ class SettingResource extends Resource
         return [
             'index' => Pages\ListSettings::route('/'),
             'create' => Pages\CreateSetting::route('/create'),
-            'edit' => Pages\EditSetting::route('/{record}/edit'),
+            'view' => Pages\ViewSetting::route('/{record}'),
+            'edit' => Pages\EditSettingSimple::route('/{record}/edit'),
         ];
     }
 }

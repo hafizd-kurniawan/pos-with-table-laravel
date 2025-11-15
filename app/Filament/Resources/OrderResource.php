@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Order;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,9 +16,36 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrderResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+    
+    protected static ?string $navigationGroup = 'Orders';
+    
+    protected static ?int $navigationSort = 1;
+
+    // Authorization
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasPermission('view_orders');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission('create_orders');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission('edit_orders');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->hasPermission('delete_orders');
+    }
 
     public static function form(Form $form): Form
     {
@@ -74,8 +102,10 @@ class OrderResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
-                    ->money('idr')
-                    ->sortable(),
+                    ->label('Total Amount')
+                    ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
+                    ->sortable()
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('placed_at')
                     ->dateTime('d M Y H:i')

@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use App\Traits\BelongsToTenant;
 
 class Product extends Model
 {
+    use BelongsToTenant;
+    
     //
     protected $fillable = [
         'name', 
@@ -23,7 +26,7 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'integer',
         'stock' => 'integer',
         'is_featured' => 'boolean',
         'is_favorite' => 'boolean',
@@ -122,5 +125,33 @@ class Product extends Model
         return config('app.url') . '/storage/' . $this->image;
     }
 
+    // Relationship dengan Recipe (Inventory)
+    public function recipes()
+    {
+        return $this->hasMany(Recipe::class);
+    }
 
+    /**
+     * Calculate COGS based on recipes
+     */
+    public function calculateCOGS(): float
+    {
+        return \App\Models\Recipe::calculateProductCOGS($this->id);
+    }
+
+    /**
+     * Check if can be produced with current stock
+     */
+    public function canBeProduced(int $quantity = 1): array
+    {
+        return \App\Models\Recipe::canProduceProduct($this->id, $quantity);
+    }
+
+    /**
+     * Get maximum quantity that can be produced
+     */
+    public function getMaxProducibleQuantity(): int
+    {
+        return \App\Models\Recipe::getMaxProducibleQuantity($this->id);
+    }
 }

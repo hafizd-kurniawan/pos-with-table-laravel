@@ -4,9 +4,72 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\QRCodeController;
 
+// Include debug routes
+require __DIR__.'/debug.php';
+
+// ========================================
+// SUPER ADMIN ROUTES
+// ========================================
+Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    // Login routes (no auth required)
+    Route::get('/login', [\App\Http\Controllers\SuperAdmin\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\SuperAdmin\AuthController::class, 'login']);
+    
+    // Protected routes (require superadmin middleware)
+    Route::middleware('superadmin')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [\App\Http\Controllers\SuperAdmin\AuthController::class, 'logout'])->name('logout');
+        
+        // Tenant Management
+        Route::get('/tenants', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'index'])->name('tenants.index');
+        Route::post('/tenants', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'store'])->name('tenants.store');
+        Route::get('/tenants/{tenant}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'show'])->name('tenants.show');
+        Route::put('/tenants/{tenant}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'update'])->name('tenants.update');
+        Route::delete('/tenants/{tenant}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'destroy'])->name('tenants.destroy');
+        
+        // Tenant Actions
+        Route::post('/tenants/{tenant}/extend-trial', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'extendTrial'])->name('tenants.extend-trial');
+        Route::post('/tenants/{tenant}/activate-subscription', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'activateSubscription'])->name('tenants.activate-subscription');
+        Route::post('/tenants/{tenant}/suspend', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'suspend'])->name('tenants.suspend');
+        Route::post('/tenants/{tenant}/reactivate', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'reactivate'])->name('tenants.reactivate');
+        Route::post('/tenants/{tenant}/reset-password', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'resetPassword'])->name('tenants.reset-password');
+        
+        // Subscription Plans Management
+        Route::get('/plans', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'index'])->name('plans.index');
+        Route::post('/plans', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'store'])->name('plans.store');
+        Route::put('/plans/{plan}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'update'])->name('plans.update');
+        Route::delete('/plans/{plan}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'destroy'])->name('plans.destroy');
+    });
+});
+
+// ========================================
+// TENANT ADMIN ROUTES
+// ========================================
+Route::prefix('tenant/admin')->name('tenantadmin.')->group(function () {
+    // Login routes (no auth required)
+    Route::get('/login', [\App\Http\Controllers\TenantAdmin\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\TenantAdmin\AuthController::class, 'login']);
+    
+    // Protected routes (require tenantadmin middleware)
+    Route::middleware('tenantadmin')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\TenantAdmin\DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [\App\Http\Controllers\TenantAdmin\AuthController::class, 'logout'])->name('logout');
+        
+        // Settings
+        Route::get('/settings', [\App\Http\Controllers\TenantAdmin\SettingsController::class, 'index'])->name('settings');
+        Route::post('/settings/midtrans', [\App\Http\Controllers\TenantAdmin\SettingsController::class, 'updateMidtrans'])->name('settings.midtrans');
+        Route::post('/settings/n8n', [\App\Http\Controllers\TenantAdmin\SettingsController::class, 'updateN8n'])->name('settings.n8n');
+        Route::post('/settings/firebase', [\App\Http\Controllers\TenantAdmin\SettingsController::class, 'updateFirebase'])->name('settings.firebase');
+        Route::get('/settings/delete/{type}', [\App\Http\Controllers\TenantAdmin\SettingsController::class, 'deleteConfig'])->name('settings.delete');
+        
+        // Expired Page
+        Route::get('/expired', [\App\Http\Controllers\TenantAdmin\DashboardController::class, 'expired'])->name('expired');
+    });
+});
+
 Route::get('/', function () {
-    // Redirect to the order page with a default table number
-    return redirect()->route('order.menu', ['tablenumber' => 1]);
+    // Show navigation page
+    return view('navigation');
 })->name('home');
 
 Route::get('/order/{tablenumber}', [OrderController::class, 'index'])->name('order.menu');
@@ -62,4 +125,10 @@ Route::prefix('table-categories')->name('table-categories.')->group(function () 
     Route::get('/{tableCategory}/edit', [App\Http\Controllers\Web\TableCategoryController::class, 'edit'])->name('edit');
     Route::put('/{tableCategory}', [App\Http\Controllers\Web\TableCategoryController::class, 'update'])->name('update');
     Route::delete('/{tableCategory}', [App\Http\Controllers\Web\TableCategoryController::class, 'destroy'])->name('destroy');
+});
+
+// Order Settings Management (Discount, Tax, Service Charge)
+Route::prefix('order-settings')->name('order-settings.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Web\OrderSettingController::class, 'index'])->name('index');
+    Route::put('/update', [App\Http\Controllers\Web\OrderSettingController::class, 'update'])->name('update');
 });

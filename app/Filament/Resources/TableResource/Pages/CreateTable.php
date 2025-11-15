@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\TableResource\Pages;
 
 use App\Filament\Resources\TableResource;
+use App\Filament\Traits\HasTenantScope;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Notifications\Notification;
 
 class CreateTable extends CreateRecord
 {
+    use HasTenantScope;
+
     protected static string $resource = TableResource::class;
     
     protected function getRedirectUrl(): string

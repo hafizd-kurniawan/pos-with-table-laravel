@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToTenant;
 
 class DraftOrderItem extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'draft_order_id',
@@ -20,8 +21,8 @@ class DraftOrderItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'price' => 'decimal:2',
-        'total' => 'decimal:2',
+        'price' => 'integer',
+        'total' => 'integer',
     ];
 
     // Relationships
