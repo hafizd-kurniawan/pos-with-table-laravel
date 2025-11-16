@@ -11,7 +11,7 @@
     <div class="max-w-md mx-auto bg-white shadow-lg min-h-screen flex flex-col pb-8">
         <!-- Header -->
         <div class="py-3 px-4 border-b font-semibold text-center sticky top-0 bg-white z-10 flex items-center">
-            <a href="{{ route('order.menu', $table->name) }}" class="mr-2">&larr;</a>
+            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="mr-2">&larr;</a>
             <span class="flex-1">
                 {{ strtoupper($order->payment_method) }} Payment
             </span>
@@ -96,7 +96,7 @@
         </div>
 
         <!-- Cek Status -->
-        <form method="POST" action="{{ route('order.qris.confirm', [$table->name, $order->code]) }}"
+        <form method="POST" action="{{ route('order.qris.confirm', [$table->tenantIdentifier, $table->name, $order->code]) }}"
             class="text-center px-4 mt-1 mb-1">
             @csrf
             <button type="submit"
@@ -152,7 +152,7 @@
                 clearInterval(window.countdownInterval);
                 clearInterval(window.statusCheckInterval);
 
-                window.location.href = '{{ route("order.menu", $table->name) }}';
+                window.location.href = '{{ route("order.menu", [$table->tenantIdentifier, $table->name]) }}';
                 return;
             }
 
@@ -181,7 +181,7 @@
             
             const statusDiv = document.getElementById('payment-status');
             
-            fetch('{{ route("order.qris.check-status", [$table->name, $order->code]) }}')
+            fetch('{{ route("order.qris.check-status", [$table->tenantIdentifier, $table->name, $order->code]) }}')
                 .then(response => response.json())
                 .then(data => {
                     console.log('📡 Status response:', data);
@@ -271,7 +271,7 @@
         function forcePaymentSuccess() {
             console.log('🚀 Manually forcing payment success...');
             
-            fetch('{{ route("debug.order.force-success", [$table->name, $order->code]) }}', {
+            fetch('{{ route("debug.order.force-success", [$table->tenantIdentifier, $table->name, $order->code]) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -11,6 +11,13 @@ Route::get('/health', [\App\Http\Controllers\Api\HealthController::class, 'check
 Route::get('/ping', [\App\Http\Controllers\Api\HealthController::class, 'ping']);
 
 // ========================================
+// PUBLIC CART ENDPOINTS (for Self-Order)
+// ========================================
+Route::post('/cart/validate', [\App\Http\Controllers\Api\CartController::class, 'validateCart']);
+Route::post('/cart/stock', [\App\Http\Controllers\Api\CartController::class, 'getCartStock']);
+Route::post('/cart/pre-checkout', [\App\Http\Controllers\Api\CartController::class, 'preCheckout']);
+
+// ========================================
 // TENANT ENDPOINTS (with auth + tenant middleware)
 // ========================================
 Route::middleware(['auth:sanctum', 'tenant'])->prefix('tenant')->group(function () {
@@ -179,11 +186,6 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::put('/reservations/{reservation}/cancel', [\App\Http\Controllers\Api\ReservationController::class, 'cancel']);
     Route::get('/reservations-today', [\App\Http\Controllers\Api\ReservationController::class, 'today']);
     Route::post('/reservations/check-availability', [\App\Http\Controllers\Api\ReservationController::class, 'checkAvailability']);
-
-    // CART MANAGEMENT
-    Route::post('/cart/validate', [\App\Http\Controllers\Api\CartController::class, 'validateCart']);
-    Route::post('/cart/stock', [\App\Http\Controllers\Api\CartController::class, 'getCartStock']);
-    Route::post('/cart/pre-checkout', [\App\Http\Controllers\Api\CartController::class, 'preCheckout']);
 
     // ORDERS
     Route::get('/orders', [\App\Http\Controllers\Api\OrderController::class, 'index']);

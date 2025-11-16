@@ -20,33 +20,60 @@ use Illuminate\Support\Facades\Http;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 use App\Models\User;
+use App\Models\Tenant;
 use App\Traits\ManagesStock;
 
 class OrderController extends Controller
 {
     use ManagesStock;
     // Tampil menu berdasarkan nomor meja
-    public function index($tablenumber)
+    // UUID-based tenant identification for security
+    public function index($tenantIdentifier, $tablenumber)
     {
-        $allProducts = \App\Models\Product::where('status', 'available')->orderBy('name')->get();
+        // Parse tenant identifier (format: slug-shortUuid)
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+        
+        // Get table for this specific tenant
+        $table = Table::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('name', $tablenumber)
+            ->firstOrFail();
+        
+        // Add tenant identifier to table for views
+        $table->tenantIdentifier = "{$tenant->slug}-{$tenant->short_uuid}";
+        
+        // Get products & categories for THIS tenant only
+        $allProducts = \App\Models\Product::withoutGlobalScope('tenant')
+            ->where('tenant_id', $table->tenant_id)
+            ->where('status', 'available')
+            ->orderBy('name')
+            ->get();
+        
         $allCategory = (object)[
             'id' => 0,
             'name' => 'All',
             'products' => $allProducts
         ];
-        $table = Table::where('name', $tablenumber)->firstOrFail();
-        $categories = Category::with(['products' => function ($q) {
-            $q->where('status', 'available')
-                ->orderBy('name');
-        }])->get();
+        
+        $categories = Category::withoutGlobalScope('tenant')
+            ->where('tenant_id', $table->tenant_id)
+            ->with(['products' => function ($q) use ($table) {
+                $q->withoutGlobalScope('tenant')
+                    ->where('tenant_id', $table->tenant_id)
+                    ->where('status', 'available')
+                    ->orderBy('name');
+            }])
+            ->get();
+        
         $categories = collect([$allCategory])->concat($categories);
         return view('order.menu', compact('table', 'categories'));
     }
 
 
     // Tambah ke keranjang (session) dari menu page
-    public function addToCart(Request $request, $tablenumber)
+    public function addToCart(Request $request, $tenantIdentifier, $tablenumber)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
         try {
             $product = Product::findOrFail($request->input('product_id'));
             $qtyChange = (int) $request->input('qty', 1);
@@ -253,10 +280,16 @@ class OrderController extends Controller
     }
 
     // Lihat keranjang
-    public function cart($tablenumber)
+    public function cart($tenantIdentifier, $tablenumber)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
         $cart = session('cart_' . $tablenumber, []);
-        $table = Table::where('name', $tablenumber)->firstOrFail();
+        $table = Table::where('tenant_id', $tenant->id)
+            ->where('name', $tablenumber)
+            ->firstOrFail();
+        
+        // Add tenant identifier to table for views
+        $table->tenantIdentifier = $tenantIdentifier;
         
         // Validasi stock untuk semua items di cart
         $stockValidation = $this->validateCartStock($cart);
@@ -265,10 +298,16 @@ class OrderController extends Controller
     }
 
     // Form checkout (isi nama/phone opsional)
-    public function checkoutForm($tablenumber)
+    public function checkoutForm($tenantIdentifier, $tablenumber)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
         $cart = session('cart_' . $tablenumber, []);
-        $table = Table::where('name', $tablenumber)->firstOrFail();
+        $table = Table::where('tenant_id', $tenant->id)
+            ->where('name', $tablenumber)
+            ->firstOrFail();
+        
+        // Add tenant identifier to table for views
+        $table->tenantIdentifier = $tenantIdentifier;
         
         // Pre-validate cart sebelum tampilkan form checkout
         $stockValidation = $this->validateCartStock($cart);
@@ -283,30 +322,33 @@ class OrderController extends Controller
 
     /**
      * Configure Midtrans API credentials from tenant settings
+     * PUBLIC ACCESS: Works for self-order (no auth required)
      */
-    private function configureMidtrans()
+    private function configureMidtrans($tenantId = null)
     {
-        // Get current user's tenant settings
-        $userId = auth()->id();
-        if (!$userId) {
-            throw new \Exception('User not authenticated');
+        // Get tenant_id from parameter, auth user, or throw error
+        if (!$tenantId) {
+            $userId = auth()->id();
+            if ($userId) {
+                $user = \DB::table('users')->where('id', $userId)->first();
+                $tenantId = $user->tenant_id ?? null;
+            }
         }
         
-        $user = \DB::table('users')->where('id', $userId)->first();
-        if (!$user || !$user->tenant_id) {
-            throw new \Exception('User tenant not found');
+        if (!$tenantId) {
+            throw new \Exception('Tenant not identified. Cannot configure payment gateway.');
         }
         
         // Get Midtrans settings from key-value table
-        $serverKey = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+        $serverKey = \App\Models\Setting::where('tenant_id', $tenantId)
             ->where('key', 'midtrans_server_key')
             ->value('value');
             
-        $clientKey = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+        $clientKey = \App\Models\Setting::where('tenant_id', $tenantId)
             ->where('key', 'midtrans_client_key')
             ->value('value');
             
-        $isProduction = \App\Models\Setting::where('tenant_id', $user->tenant_id)
+        $isProduction = \App\Models\Setting::where('tenant_id', $tenantId)
             ->where('key', 'midtrans_is_production')
             ->value('value');
         
@@ -322,7 +364,7 @@ class OrderController extends Controller
         \Midtrans\Config::$is3ds = true;
         
         Log::info('MIDTRANS: Configuration set', [
-            'tenant_id' => $user->tenant_id,
+            'tenant_id' => $tenantId,
             'is_production' => \Midtrans\Config::$isProduction,
             'server_key_prefix' => substr($serverKey, 0, 10) . '...',
         ]);
@@ -428,9 +470,12 @@ class OrderController extends Controller
     //     }
     // }
 
-    public function checkout(Request $request, $tablenumber)
+    public function checkout(Request $request, $tenantIdentifier, $tablenumber)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+        
         Log::info('CHECKOUT: masuk ke method checkout', [
+            'tenant' => $tenant->business_name,
             'table' => $tablenumber,
             'request' => $request->all()
         ]);
@@ -449,7 +494,7 @@ class OrderController extends Controller
 
         // Gunakan database transaction dengan pessimistic locking
         try {
-            return DB::transaction(function () use ($request, $tablenumber, $cart) {
+            return DB::transaction(function () use ($request, $tenantIdentifier, $tablenumber, $cart, $tenant) {
                 // Lock semua products yang ada di cart untuk mencegah race condition
                 $productIds = collect($cart)->pluck('product_id')->unique();
                 $products = Product::whereIn('id', $productIds)
@@ -474,7 +519,10 @@ class OrderController extends Controller
                     }
                 }
 
-                $table = Table::where('name', $tablenumber)->firstOrFail();
+                $table = Table::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenant->id)
+                    ->where('name', $tablenumber)
+                    ->firstOrFail();
                 $paymentMethod = $request->input('payment_method', 'qris');
 
                 // Calculate totals with discount, tax, and service charge
@@ -490,6 +538,7 @@ class OrderController extends Controller
                 // Create order with all calculations
                 $order = Order::create([
                     'table_id' => $table->id,
+                    'tenant_id' => $table->tenant_id, // ← EXPLICIT tenant isolation!
                     'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::withoutGlobalScope('tenant')->whereDate('created_at', now())->count() + 1, 4, '0'),
                     'subtotal' => $totals['subtotal'],
                     'discount_id' => $totals['discount_id'],
@@ -547,7 +596,7 @@ class OrderController extends Controller
                 session()->forget('cart_' . $tablenumber);
 
                 // Handle payment methods
-                return $this->processPayment($order, $cart, $paymentMethod, $tablenumber, $totals);
+                return $this->processPayment($order, $cart, $paymentMethod, $tablenumber, $totals, $tenantIdentifier);
 
             }, 5); // Retry 5 kali jika deadlock
             
@@ -565,8 +614,13 @@ class OrderController extends Controller
     /**
      * Process payment berdasarkan payment method
      */
-    private function processPayment($order, $cart, $paymentMethod, $tablenumber, $totals)
+    private function processPayment($order, $cart, $paymentMethod, $tablenumber, $totals, $tenantIdentifier = null)
     {
+        // Generate tenant identifier from order if not provided
+        if (!$tenantIdentifier) {
+            $tenant = $order->table->tenant;
+            $tenantIdentifier = "{$tenant->slug}-{$tenant->short_uuid}";
+        }
         // Build item details untuk Midtrans
         $itemDetails = collect($cart)->map(function ($i) {
             return [
@@ -622,28 +676,37 @@ class OrderController extends Controller
 
         switch ($paymentMethod) {
             case 'qris':
-                return $this->processQrisPayment($order, $params, $tablenumber);
+                return $this->processQrisPayment($order, $params, $tablenumber, $tenantIdentifier);
             
             case 'gopay':
-                return $this->processGopayPayment($order, $params, $tablenumber);
+                return $this->processGopayPayment($order, $params, $tablenumber, $tenantIdentifier);
             
             case 'cash':
                 // For cash, order is immediately completed
                 $order->status = 'completed';
                 $order->completed_at = now();
                 $order->save();
-                return redirect()->route('order.success', [$tablenumber, $order->code]);
+                return redirect()->route('order.success', [$tenantIdentifier, $tablenumber, $order->code]);
             
             default:
-                return redirect()->route('order.success', [$tablenumber, $order->code]);
+                return redirect()->route('order.success', [$tenantIdentifier, $tablenumber, $order->code]);
         }
     }
 
-    private function processQrisPayment($order, $params, $tablenumber)
+    private function processQrisPayment($order, $params, $tablenumber, $tenantIdentifier = null)
     {
         try {
             // CRITICAL: Set Midtrans configuration from tenant settings
-            $this->configureMidtrans();
+            // Get tenant_id from order's table
+            $table = $order->table;
+            $tenant = $table->tenant;
+            
+            // Generate tenant identifier if not provided
+            if (!$tenantIdentifier) {
+                $tenantIdentifier = "{$tenant->slug}-{$tenant->short_uuid}";
+            }
+            
+            $this->configureMidtrans($table->tenant_id);
             
             $params["payment_type"] = "qris";
             Log::info('CHECKOUT: memanggil CoreApi::charge', $params);
@@ -663,7 +726,7 @@ class OrderController extends Controller
             // Send webhook notification
             $this->sendWebhookNotification($order);
 
-            return redirect()->route('order.qris', [$tablenumber, $order->code]);
+            return redirect()->route('order.qris', [$tenantIdentifier, $tablenumber, $order->code]);
             
         } catch (\Exception $e) {
             // Cancel order if payment fails
@@ -671,16 +734,25 @@ class OrderController extends Controller
             $order->save();
             
             // CRITICAL: Restore stock that was reserved
-            foreach ($order->items as $item) {
-                $product = Product::find($item->product_id);
-                if ($product) {
-                    $product->increment('stock', $item->quantity);
-                    Log::info('QRIS: Stock restored after payment failure', [
-                        'product_id' => $product->id,
-                        'quantity_restored' => $item->quantity,
-                        'new_stock' => $product->fresh()->stock
-                    ]);
+            // Load items relationship first (in case not loaded)
+            $order->load('items');
+            
+            if ($order->items && $order->items->count() > 0) {
+                foreach ($order->items as $item) {
+                    $product = Product::find($item->product_id);
+                    if ($product) {
+                        $product->increment('stock', $item->quantity);
+                        Log::info('QRIS: Stock restored after payment failure', [
+                            'product_id' => $product->id,
+                            'quantity_restored' => $item->quantity,
+                            'new_stock' => $product->fresh()->stock
+                        ]);
+                    }
                 }
+            } else {
+                Log::warning('QRIS: No order items found to restore stock', [
+                    'order_id' => $order->id
+                ]);
             }
             
             Log::error('QRIS Payment failed', [
@@ -753,11 +825,20 @@ class OrderController extends Controller
         }
     }
     // Halaman QRIS (dummy)
-    public function qris($tablenumber, $code)
+    public function qris($tenantIdentifier, $tablenumber, $code)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+        
         // Public route - bypass tenant scope
         $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
-        $table = Table::withoutGlobalScope('tenant')->where('name', $tablenumber)->firstOrFail();
+        $table = Table::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('name', $tablenumber)
+            ->firstOrFail();
+        
+        // Add tenant identifier for views
+        $table->tenantIdentifier = $tenantIdentifier;
+        
         return view('order.qris', compact('order', 'table'));
     }
 
@@ -792,8 +873,10 @@ class OrderController extends Controller
     //     return redirect()->route('order.success', [$tablenumber, $code]);
     // }
 
-    public function qrisConfirm(Request $request, $tablenumber, $code)
+    public function qrisConfirm(Request $request, $tenantIdentifier, $tablenumber, $code)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+        
         // Public route - bypass tenant scope
         $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
 
@@ -824,7 +907,7 @@ class OrderController extends Controller
                 // Kirim notifikasi ke user
                 $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name);
                 
-                return redirect()->route('order.success', [$tablenumber, $code]);
+                return redirect()->route('order.success', [$tenantIdentifier, $tablenumber, $code]);
             }
 
             // Jika transaksi masih pending
@@ -868,11 +951,20 @@ class OrderController extends Controller
 
 
     // Sukses
-    public function success($tablenumber, $code)
+    public function success($tenantIdentifier, $tablenumber, $code)
     {
+        $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+        
         // Public route - bypass tenant scope
         $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
-        $table = Table::withoutGlobalScope('tenant')->where('name', $tablenumber)->firstOrFail();
+        $table = Table::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('name', $tablenumber)
+            ->firstOrFail();
+        
+        // Add tenant identifier for views
+        $table->tenantIdentifier = $tenantIdentifier;
+        
         return view('order.success', compact('order', 'table'));
     }
 
@@ -1126,9 +1218,11 @@ class OrderController extends Controller
     /**
      * AJAX endpoint untuk check payment status
      */
-    public function checkPaymentStatus(Request $request, $tablenumber, $code)
+    public function checkPaymentStatus(Request $request, $tenantIdentifier, $tablenumber, $code)
     {
         try {
+            $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+            
             // Public route - bypass tenant scope
             $order = Order::withoutGlobalScope('tenant')->where('code', $code)->firstOrFail();
             
@@ -1137,7 +1231,7 @@ class OrderController extends Controller
                 return response()->json([
                     'status' => 'paid',
                     'message' => 'Payment completed successfully',
-                    'redirect_url' => route('order.success', [$tablenumber, $code])
+                    'redirect_url' => route('order.success', [$tenantIdentifier, $tablenumber, $code])
                 ]);
             }
             
@@ -1165,7 +1259,7 @@ class OrderController extends Controller
                         return response()->json([
                             'status' => 'paid',
                             'message' => 'Payment completed successfully',
-                            'redirect_url' => route('order.success', [$tablenumber, $code])
+                            'redirect_url' => route('order.success', [$tenantIdentifier, $tablenumber, $code])
                         ]);
                     }
                     
@@ -1212,7 +1306,7 @@ class OrderController extends Controller
     /**
      * DEBUG: Force payment success (manual trigger)
      */
-    public function forcePaymentSuccess(Request $request, $tablenumber, $code)
+    public function forcePaymentSuccess(Request $request, $tenantIdentifier, $tablenumber, $code)
     {
         if (!app()->environment(['local', 'development'])) {
             abort(404);
@@ -1245,8 +1339,45 @@ class OrderController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to force payment success'
+                'message' => 'Failed to force payment success',
+                'error' => $e->getMessage()
             ], 500);
         }
+    }
+    
+    /**
+     * Get tenant from identifier (slug-shortUuid format)
+     * Security: Requires BOTH slug AND UUID to match
+     */
+    private function getTenantFromIdentifier($identifier)
+    {
+        // Check if identifier contains dash (slug-uuid format)
+        if (strpos($identifier, '-') !== false) {
+            // Split by last dash to get short_uuid
+            $parts = explode('-', $identifier);
+            $shortUuid = array_pop($parts); // Last part is UUID
+            $slug = implode('-', $parts); // Rest is slug
+            
+            // Find tenant by BOTH slug AND short_uuid (double security)
+            $tenant = Tenant::where('slug', $slug)
+                ->where('short_uuid', $shortUuid)
+                ->first();
+            
+            if ($tenant) {
+                return $tenant;
+            }
+        }
+        
+        // Fallback: Try full UUID or short UUID only
+        $tenant = Tenant::where('uuid', $identifier)
+            ->orWhere('short_uuid', $identifier)
+            ->first();
+        
+        if ($tenant) {
+            return $tenant;
+        }
+        
+        // Not found
+        abort(404, 'Tenant not found. Please check your QR code or URL.');
     }
 }

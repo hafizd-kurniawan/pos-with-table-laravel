@@ -21,10 +21,13 @@ class CreateTable extends CreateRecord
     
     protected function getCreatedNotification(): ?Notification
     {
+        $tenant = $this->record->tenant;
+        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->record->name}");
+        
         return Notification::make()
             ->success()
             ->title('Table Created Successfully! 🎉')
-            ->body("Table **{$this->record->name}** berhasil dibuat!\n\n📱 QR Code akan otomatis di-generate dalam beberapa detik.\n🔗 URL Order: " . url("/order/{$this->record->name}"))
+            ->body("Table **{$this->record->name}** berhasil dibuat!\n\n📱 QR Code akan otomatis di-generate dalam beberapa detik.\n🔗 URL Order: {$url}")
             ->duration(5000)
             ->actions([
                 \Filament\Notifications\Actions\Action::make('viewPrint')

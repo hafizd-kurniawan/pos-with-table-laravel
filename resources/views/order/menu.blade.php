@@ -297,7 +297,7 @@
                 <span class="font-medium">Total</span> &nbsp;
                 <span class="ml-1 text-lg font-bold cart-total">Rp{{ number_format($total) }}</span>
             </div>
-            <a href="{{ route('order.cart', $table->name) }}"
+            <a href="{{ route('order.cart', [$table->tenantIdentifier, $table->name]) }}"
                 class="ml-3 bg-white font-bold px-4 py-2 rounded shadow text-sm text-primary">CHECK OUT</a>
         </div>
     </div>

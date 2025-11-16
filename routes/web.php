@@ -72,19 +72,19 @@ Route::get('/', function () {
     return view('navigation');
 })->name('home');
 
-Route::get('/order/{tablenumber}', [OrderController::class, 'index'])->name('order.menu');
-Route::post('/order/{tablenumber}/add', [OrderController::class, 'addToCart'])->name('order.addToCart');
-Route::get('/order/{tablenumber}/cart', [OrderController::class, 'cart'])->name('order.cart');
-// Route::post('/order/{tablenumber}/remove/{index}', [OrderController::class, 'removeCart'])->name('order.removeCart');
-Route::delete('order/{tablenumber}/cart/remove/{productId}', [OrderController::class, 'removeCart'])->name('order.removeCart');
-Route::get('/order/{tablenumber}/checkout', [OrderController::class, 'checkoutForm'])->name('order.checkoutForm');
-Route::post('/order/{tablenumber}/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
-Route::get('/order/{tablenumber}/qris/{code}', [OrderController::class, 'qris'])->name('order.qris');
-Route::post('/order/{tablenumber}/qris/{code}/confirm', [OrderController::class, 'qrisConfirm'])->name('order.qris.confirm');
-Route::get('/order/{tablenumber}/qris/{code}/check-status', [OrderController::class, 'checkPaymentStatus'])->name('order.qris.check-status');
+// Self-Order Routes (Public - with UUID for security)
+Route::get('/order/{tenantIdentifier}/{tablenumber}', [OrderController::class, 'index'])->name('order.menu');
+Route::post('/order/{tenantIdentifier}/{tablenumber}/add', [OrderController::class, 'addToCart'])->name('order.addToCart');
+Route::get('/order/{tenantIdentifier}/{tablenumber}/cart', [OrderController::class, 'cart'])->name('order.cart');
+Route::delete('order/{tenantIdentifier}/{tablenumber}/cart/remove/{productId}', [OrderController::class, 'removeCart'])->name('order.removeCart');
+Route::get('/order/{tenantIdentifier}/{tablenumber}/checkout', [OrderController::class, 'checkoutForm'])->name('order.checkoutForm');
+Route::middleware('throttle:10,1')->post('/order/{tenantIdentifier}/{tablenumber}/checkout', [OrderController::class, 'checkout'])->name('order.checkout'); // 10 requests per minute
+Route::get('/order/{tenantIdentifier}/{tablenumber}/qris/{code}', [OrderController::class, 'qris'])->name('order.qris');
+Route::post('/order/{tenantIdentifier}/{tablenumber}/qris/{code}/confirm', [OrderController::class, 'qrisConfirm'])->name('order.qris.confirm');
+Route::get('/order/{tenantIdentifier}/{tablenumber}/qris/{code}/check-status', [OrderController::class, 'checkPaymentStatus'])->name('order.qris.check-status');
 
 // DEBUG route untuk testing (development only)
-Route::post('/debug/order/{tablenumber}/qris/{code}/force-success', [OrderController::class, 'forcePaymentSuccess'])->name('debug.order.force-success');
+Route::post('/debug/order/{tenantIdentifier}/{tablenumber}/qris/{code}/force-success', [OrderController::class, 'forcePaymentSuccess'])->name('debug.order.force-success');
 
 // Manual release expired orders (untuk testing)
 Route::get('/admin/orders/release-expired', [\App\Http\Controllers\OrderManagementController::class, 'releaseExpiredOrders'])->name('admin.orders.release-expired');
@@ -92,7 +92,7 @@ Route::get('/admin/orders/release-expired', [\App\Http\Controllers\OrderManageme
 // API untuk check order status
 Route::get('/api/order/{code}/status', [\App\Http\Controllers\OrderManagementController::class, 'checkOrderStatus'])->name('api.order.status');
 
-Route::get('/order/{tablenumber}/success/{code}', [OrderController::class, 'success'])->name('order.success');
+Route::get('/order/{tenantIdentifier}/{tablenumber}/success/{code}', [OrderController::class, 'success'])->name('order.success');
 Route::post('/midtrans/callback', [OrderController::class, 'midtransCallback']);
 Route::get('/table/{table}/product/{product}', [OrderController::class, 'detail'])
     ->name('order.detail');

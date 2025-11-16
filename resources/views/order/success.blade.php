@@ -35,7 +35,7 @@
         </div>
 
         <!-- Button Back to Menu/Home -->
-        <a href="{{ route('order.menu', $table->name) }}"
+        <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}"
             class="inline-block bg-black text-white font-bold px-6 py-3 rounded shadow mb-16">
             Back to Menu
         </a>

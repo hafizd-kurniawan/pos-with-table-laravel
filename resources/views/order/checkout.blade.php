@@ -27,7 +27,7 @@
     <div class="max-w-md mx-auto bg-white shadow-lg min-h-screen flex flex-col relative">
         <!-- Header -->
         <div class="py-3 px-4 border-b font-semibold text-center sticky top-0 bg-white z-20 flex items-center">
-            <a href="{{ route('order.cart', $table->name) }}" class="mr-2">&larr;</a>
+            <a href="{{ route('order.cart', [$table->tenantIdentifier, $table->name]) }}" class="mr-2">&larr;</a>
             <span class="flex-1">Payment</span>
         </div>
 
@@ -42,7 +42,7 @@
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto pb-[200px]">
             <!-- Customer Information Form -->
-            <form action="{{ route('order.checkout', $table->name) }}" method="post" id="checkoutForm">
+            <form action="{{ route('order.checkout', [$table->tenantIdentifier, $table->name]) }}" method="post" id="checkoutForm">
                 @csrf
                 <div class="px-4 pt-4">
                 <div class="text-sm font-semibold mb-3">Customer Information</div>
