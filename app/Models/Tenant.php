@@ -25,6 +25,9 @@ class Tenant extends Model
     use SoftDeletes;
     
     protected $fillable = [
+        'uuid',
+        'short_uuid',
+        'slug',
         'subdomain',
         'business_name',
         'email',
@@ -62,6 +65,26 @@ class Tenant extends Model
         'midtrans_is_production' => 'boolean',
         'amount_paid' => 'decimal:2',
     ];
+    
+    /**
+     * Boot method - auto-generate UUID and slug for new tenants
+     */
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($tenant) {
+            if (!$tenant->uuid) {
+                $uuid = \Illuminate\Support\Str::uuid()->toString();
+                $tenant->uuid = $uuid;
+                $tenant->short_uuid = substr($uuid, 0, 8);
+            }
+            
+            if (!$tenant->slug && $tenant->business_name) {
+                $tenant->slug = \Illuminate\Support\Str::slug($tenant->business_name);
+            }
+        });
+    }
     
     protected $hidden = [
         'midtrans_server_key',

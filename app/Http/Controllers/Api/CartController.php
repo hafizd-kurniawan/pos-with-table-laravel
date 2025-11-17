@@ -147,4 +147,57 @@ class CartController extends Controller
             ], 500);
         }
     }
+    
+    /**
+     * Get real-time stock - PUBLIC ACCESS (no auth required)
+     */
+    protected function getRealtimeStock(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+        
+        $cacheKey = "cart_stock_" . md5(json_encode(sort($productIds)));
+        
+        return \Cache::remember($cacheKey, 5, function () use ($productIds) {
+            $products = \App\Models\Product::withoutGlobalScope('tenant')
+                ->whereIn('id', $productIds)
+                ->select('id', 'name', 'stock', 'price')
+                ->get();
+            
+            return $products->map(function ($product) {
+                return [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'available_stock' => $product->stock,
+                    'is_available' => $product->stock > 0,
+                    'status' => $product->stock > 0 ? 'available' : 'out_of_stock',
+                ];
+            })->toArray();
+        });
+    }
+    
+    /**
+     * Validate stock availability
+     */
+    protected function validateStockAvailability(array $items): array
+    {
+        $errors = [];
+        
+        foreach ($items as $item) {
+            $product = \App\Models\Product::withoutGlobalScope('tenant')
+                ->find($item['product_id']);
+            
+            if (!$product) {
+                $errors[] = "Product ID {$item['product_id']} not found";
+                continue;
+            }
+            
+            if ($product->stock < $item['quantity']) {
+                $errors[] = "{$product->name}: Stock tidak cukup (Available: {$product->stock}, Requested: {$item['quantity']})";
+            }
+        }
+        
+        return $errors;
+    }
 }

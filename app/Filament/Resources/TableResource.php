@@ -185,7 +185,8 @@ class TableResource extends Resource
                     ->square()
                     ->size(60)
                     ->getStateUsing(function (TableModel $record) {
-                        $url = url("/order/{$record->name}");
+                        $tenant = $record->tenant;
+                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
                         return QRCodeService::generateDataUrl($url, 'svg', 200);
                     })
                     ->tooltip('Preview QR Code')
@@ -332,14 +333,15 @@ class TableResource extends Resource
                     ->color('info')
                     ->tooltip('Generate atau update QR Code')
                     ->action(function (TableModel $record) {
-                        $url = url("/order/{$record->name}");
+                        $tenant = $record->tenant;
+                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
                         $record->update(['qr_code' => $url]);
                         
                         Notification::make()
                             ->title('QR Code Generated! ✅')
                             ->body(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
                                 "QR code untuk Table <strong>{$record->name}</strong> berhasil di-generate!"
-                                . "<br><br>URL: " . url("/order/{$record->name}")
+                                . "<br><br>URL: {$url}"
                             ))                            
                             ->success()
                             ->duration(5000)
@@ -356,7 +358,7 @@ class TableResource extends Resource
                     ->modalDescription(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
                         nl2br(
                             "Generate QR code untuk Table: {$record->name}?\n\n" .
-                            "URL yang akan di-generate:\n" . url("/order/{$record->name}") . "\n\n" .
+                            "URL yang akan di-generate:\n" . url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}") . "\n\n" .
                             "Customer dapat scan QR code ini untuk langsung order ke table tersebut."
                         )
                     ))
@@ -384,7 +386,8 @@ class TableResource extends Resource
                             $urls = [];
                             
                             foreach ($records as $record) {
-                                $url = url("/order/{$record->name}");
+                                $tenant = $record->tenant;
+                                $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
                                 $record->update(['qr_code' => $url]);
                                 $urls[] = "Table {$record->name}: {$url}";
                                 $successCount++;

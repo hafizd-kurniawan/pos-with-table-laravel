@@ -25,10 +25,13 @@ class EditTable extends EditRecord
     
     protected function getSavedNotification(): ?Notification
     {
+        $tenant = $this->record->tenant;
+        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->record->name}");
+        
         return Notification::make()
             ->success()
             ->title('Table Updated Successfully! ✅')
-            ->body("Table **{$this->record->name}** berhasil diupdate!\n\n📱 QR Code URL: " . url("/order/{$this->record->name}"))
+            ->body("Table **{$this->record->name}** berhasil diupdate!\n\n📱 QR Code URL: {$url}")
             ->duration(3000);
     }
 }

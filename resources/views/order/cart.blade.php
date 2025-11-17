@@ -32,13 +32,13 @@
     <div class="max-w-md mx-auto bg-white shadow-lg min-h-screen flex flex-col relative pb-28">
         <!-- Header -->
         <div class="py-3 px-4 border-b font-medium text-center sticky top-0 bg-white z-10 flex items-center">
-            <a href="{{ route('order.menu', $table->name) }}" class="mr-2">&larr;</a>
+            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="mr-2">&larr;</a>
             <span class="flex-1">Order</span>
         </div>
         <!-- Ordered Items -->
         <div class="px-4 py-2 border-b flex items-center justify-between">
             <div class="font-semibold">Ordered Items ({{ count($cart) }})</div>
-            <a href="{{ route('order.menu', $table->name) }}" class="text-xs text-blue-600 rounded py-1 px-2 border">+
+            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="text-xs text-blue-600 rounded py-1 px-2 border">+
                 Add Item</a>
         </div>
 
@@ -52,7 +52,7 @@
                                 <div class="font-medium">{{ $item['name'] }}</div>
                             </div>
                             <!-- Tombol Hapus -->
-                            <form action="{{ route('order.removeCart', [$table->name, $item['product_id']]) }}" method="post">
+                            <form action="{{ route('order.removeCart', [$table->tenantIdentifier, $table->name, $item['product_id']]) }}" method="post">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-500 text-sm">Remove</button>
@@ -62,7 +62,7 @@
                         <div class="flex items-center mt-2">
                             <div class="font-bold text-lg flex-1">Rp{{ number_format($item['price']) }}</div>
                             <!-- Tombol Minus -->
-                            <form action="{{ route('order.addToCart', $table->name) }}" method="post" class="inline">
+                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
                                 <input type="hidden" name="qty" value="-1">
@@ -70,7 +70,7 @@
                             </form>
                             <span class="mx-2">{{ $item['qty'] }}</span>
                             <!-- Tombol Plus -->
-                            <form action="{{ route('order.addToCart', $table->name) }}" method="post" class="inline">
+                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
                                 <input type="hidden" name="qty" value="1">
@@ -110,14 +110,14 @@
                         <div class="flex items-center mt-2">
                             <div class="font-bold text-lg flex-1">Rp{{ number_format($item['price']) }}</div>
                             <!-- Qty controls -->
-                            <form action="{{ route('order.addToCart', $table->name) }}" method="post" class="inline">
+                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
                                 <input type="hidden" name="qty" value="-1">
                                 <button type="submit" class="px-2 text-lg">-</button>
                             </form>
                             <span class="mx-2">{{ $item['qty'] }}</span>
-                            <form action="{{ route('order.addToCart', $table->name) }}" method="post" class="inline">
+                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
                                 <input type="hidden" name="qty" value="1">
@@ -167,7 +167,7 @@
                 Total Payment
                 <div class="font-bold text-xl mt-1">Rp{{ number_format($total) }}</div>
             </div>
-            <a href="{{ route('order.checkoutForm', $table->name) }}"
+            <a href="{{ route('order.checkoutForm', [$table->tenantIdentifier, $table->name]) }}"
                 class="ml-3 bg-black text-white font-bold px-4 py-2 rounded shadow text-sm"
                 id="checkout-btn">
                 Continue to Payment
