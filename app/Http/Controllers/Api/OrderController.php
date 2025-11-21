@@ -214,8 +214,9 @@ class OrderController extends Controller
     // get order status complete
     public function completedOrders(Request $request)
     {
-        $orders = \App\Models\Order::with('orderItems.product')
+        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
             ->where('status', 'complete')
+            ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([
             'data' => $orders,
@@ -225,8 +226,9 @@ class OrderController extends Controller
     // get order status paid
     public function paidOrders(Request $request)
     {
-        $orders = \App\Models\Order::with('orderItems.product')
+        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
             ->where('status', 'paid')
+            ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([
             'data' => $orders,
@@ -236,8 +238,9 @@ class OrderController extends Controller
     // get order status cooking process
     public function cookingOrders(Request $request)
     {
-        $orders = \App\Models\Order::with('orderItems.product')
+        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
             ->where('status', 'cooking')
+            ->orderBy('created_at', 'desc')
             ->get();
         return response()->json([
             'data' => $orders,
@@ -247,7 +250,7 @@ class OrderController extends Controller
     // update order status
     public function updateStatus(Request $request, $id)
     {
-        $order = \App\Models\Order::with('orderItems.product')->findOrFail($id);
+        $order = \App\Models\Order::with(['orderItems.product', 'table'])->findOrFail($id);
         $previousStatus = $order->status;
 
         $validatedData = $request->validate([
@@ -269,6 +272,23 @@ class OrderController extends Controller
                 // Jika order yang sudah paid dibatalkan, kembalikan stock
                 $this->restoreProductStock($order);
                 Log::info('Stock restored due to order cancellation', ['order_id' => $order->id]);
+            }
+            
+            // 🔥 UPDATE TABLE STATUS based on order status
+            if ($order->table) {
+                if ($order->status === 'complete' || $order->status === 'cancelled') {
+                    // Order selesai atau dibatalkan → Table available and clear customer info
+                    $order->table->status = 'available';
+                    $order->table->customer_name = null;
+                    $order->table->customer_phone = null;
+                    $order->table->occupied_at = null;
+                    $order->table->save();
+                    Log::info('Table status updated to available and customer info cleared', [
+                        'order_id' => $order->id,
+                        'table_id' => $order->table->id,
+                        'table_name' => $order->table->name
+                    ]);
+                }
             }
         }
 
@@ -573,6 +593,124 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Save order from Flutter POS
+     * Compatible dengan data structure dari Flutter
+     */
+    public function saveOrder(Request $request)
+    {
+        try {
+            Log::info('📱 Flutter POS - Save Order Request', [
+                'data' => $request->all()
+            ]);
+
+            // Validate request
+            $validatedData = $request->validate([
+                'payment_amount' => 'required|numeric',
+                'sub_total' => 'required|numeric',
+                'tax' => 'required|numeric',
+                'discount' => 'required|numeric',
+                'service_charge' => 'required|numeric',
+                'total' => 'required|numeric',
+                'payment_method' => 'required|string',
+                'total_item' => 'required|integer',
+                'transaction_time' => 'required|string',
+                'order_items' => 'required|array',
+                'order_items.*.product_id' => 'required|integer',
+                'order_items.*.quantity' => 'required|integer|min:1',
+                'order_items.*.price' => 'required|numeric',
+            ]);
+
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $validatedData) {
+                // Get table_number and handle 0 or null
+                $tableNumber = $request->input('table_number', 0);
+                $tableId = ($tableNumber && $tableNumber > 0) ? $tableNumber : 1; // Default to table 1 if 0 or null
+                
+                // Create order
+                $order = Order::create([
+                    'code' => 'POS-' . strtoupper(uniqid()),
+                    'status' => $request->input('status', 'paid'),
+                    'placed_at' => $request->input('transaction_time', now()),
+                    'completed_at' => $request->input('status') === 'paid' ? now() : null,
+                    'customer_name' => $request->input('customer_name') ?: 'Walk-in Customer',
+                    'customer_phone' => $request->input('customer_phone', ''),
+                    'customer_email' => $request->input('customer_email', ''),
+                    'notes' => $request->input('notes', ''),
+                    'table_id' => $tableId,
+                    'order_type' => $request->input('order_type', 'dine_in'), // NEW: Save order type
+                    'total_amount' => $validatedData['total'],
+                    'payment_method' => $validatedData['payment_method'],
+                    'payment_status' => $request->input('payment_status', 'paid'),
+                    'tax_amount' => $validatedData['tax'], // FIX: Save to tax_amount
+                    'tax_percentage' => $request->input('tax_percentage', 0), // NEW: Save percentage
+                    'discount_amount' => $request->input('discount_amount', 0), // FIX: Save discount_amount
+                    'service_charge_amount' => $validatedData['service_charge'], // FIX: Save to service_charge_amount
+                    'service_charge_percentage' => $request->input('service_charge_percentage', 0), // NEW: Save percentage
+                    'subtotal' => $validatedData['sub_total'],
+                ]);
+
+                Log::info('✅ Order created', [
+                    'order_id' => $order->id,
+                    'order_code' => $order->code,
+                    'total' => $order->total_amount,
+                ]);
+
+                // Create order items
+                foreach ($validatedData['order_items'] as $item) {
+                    $order->orderItems()->create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'total' => $item['price'] * $item['quantity'],
+                        'notes' => $item['notes'] ?? '',
+                    ]);
+
+                    // Decrease stock if payment is completed
+                    if ($request->input('payment_status') === 'paid') {
+                        $product = \App\Models\Product::find($item['product_id']);
+                        if ($product) {
+                            $product->decrement('stock', $item['quantity']);
+                            Log::info('📦 Stock decreased', [
+                                'product' => $product->name,
+                                'quantity' => $item['quantity'],
+                                'remaining' => $product->stock,
+                            ]);
+                        }
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order saved successfully',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->code,
+                        'total_amount' => $order->total_amount,
+                    ]
+                ], 201);
+            });
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ Validation Error', [
+                'errors' => $e->errors()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('❌ Save Order Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save order: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

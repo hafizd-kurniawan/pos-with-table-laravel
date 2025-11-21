@@ -313,7 +313,7 @@ class OrderController extends Controller
         $stockValidation = $this->validateCartStock($cart);
         
         if (!$stockValidation['is_valid']) {
-            return redirect()->route('order.cart', $tablenumber)
+            return redirect()->route('order.cart', [$tenantIdentifier, $tablenumber])
                 ->with('error', 'Some items in your cart have stock issues: ' . implode(', ', $stockValidation['errors']));
         }
         
@@ -409,7 +409,7 @@ class OrderController extends Controller
         }
     }
 
-    public function removeCart($tablenumber, $productId)
+    public function removeCart($tenantIdentifier, $tablenumber, $productId)
     {
         $cart = session('cart_' . $tablenumber, []);
         foreach ($cart as $i => $item) {
@@ -422,7 +422,7 @@ class OrderController extends Controller
         $cart = array_values($cart);
         session(['cart_' . $tablenumber => $cart]);
 
-        return redirect()->route('order.cart', $tablenumber);
+        return redirect()->route('order.cart', [$tenantIdentifier, $tablenumber]);
     }
 
 
@@ -548,7 +548,7 @@ class OrderController extends Controller
                     'service_charge_percentage' => $totals['service_charge_percentage'],
                     'service_charge_amount' => $totals['service_charge_amount'],
                     'total_amount' => $totals['total_amount'],
-                    'status' => 'pending',
+                    'status' => 'paid', // Changed: was 'pending', now 'paid' for order tracking (self-order)
                     'placed_at' => now(),
                     'payment_method' => $paymentMethod,
                     'notes' => $request->input('notes', ''),
@@ -560,6 +560,19 @@ class OrderController extends Controller
                 Log::info('CHECKOUT: order berhasil dibuat', [
                     'order_id' => $order->id,
                     'order_code' => $order->code
+                ]);
+                
+                // 🔥 UPDATE TABLE STATUS to occupied and set customer info
+                $table->status = 'occupied';
+                $table->customer_name = $request->input('customer_name', null);
+                $table->customer_phone = $request->input('customer_phone', null);
+                $table->occupied_at = now();
+                $table->save();
+                Log::info('CHECKOUT: Table status and customer info updated', [
+                    'table_id' => $table->id,
+                    'table_name' => $table->name,
+                    'customer_name' => $table->customer_name,
+                    'customer_phone' => $table->customer_phone
                 ]);
 
                 // Reserve stock untuk semua payment methods (kecuali cash langsung complete)
@@ -583,6 +596,7 @@ class OrderController extends Controller
 
                     // Create order item
                     OrderItem::create([
+                        'tenant_id' => $table->tenant_id, // CRITICAL: For tenant isolation
                         'order_id' => $order->id,
                         'product_id' => $item['product_id'],
                         'quantity' => $item['qty'],
@@ -682,8 +696,8 @@ class OrderController extends Controller
                 return $this->processGopayPayment($order, $params, $tablenumber, $tenantIdentifier);
             
             case 'cash':
-                // For cash, order is immediately completed
-                $order->status = 'completed';
+                // For cash, order is immediately paid (will be tracked: paid → cooking → complete)
+                $order->status = 'paid'; // Changed: was 'completed', now 'paid' for order tracking
                 $order->completed_at = now();
                 $order->save();
                 return redirect()->route('order.success', [$tenantIdentifier, $tablenumber, $order->code]);
@@ -772,12 +786,12 @@ class OrderController extends Controller
                 $errorMessage .= 'Technical error. Please try cash payment or contact staff.';
             }
             
-            return redirect()->route('order.cart', $tablenumber)
+            return redirect()->route('order.cart', [$tenantIdentifier, $tablenumber])
                 ->withErrors($errorMessage);
         }
     }
 
-    private function processGopayPayment($order, $params, $tablenumber)
+    private function processGopayPayment($order, $params, $tablenumber, $tenantIdentifier = null)
     {
         // CRITICAL: Set Midtrans configuration from tenant settings
         $this->configureMidtrans();

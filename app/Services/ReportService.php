@@ -56,11 +56,11 @@ class ReportService
         $startOfDay = $date->copy()->startOfDay();
         $endOfDay = $date->copy()->endOfDay();
         
-        // Get all orders for the day
+        // Get all orders for the day (include paid, cooking, complete)
         $orders = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startOfDay, $endOfDay])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->get();
         
         // Calculate totals
@@ -82,7 +82,7 @@ class ReportService
         $totalItems = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.tenant_id', $tenantId)
             ->whereBetween('orders.created_at', [$startOfDay, $endOfDay])
-            ->whereIn('orders.status', ['paid', 'complete'])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->sum('order_items.quantity');
         
         // Payment method breakdown
@@ -146,7 +146,7 @@ class ReportService
         $orders = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->get();
         
         // Calculate aggregates
@@ -162,7 +162,7 @@ class ReportService
         $totalItems = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.tenant_id', $tenantId)
             ->whereBetween('orders.created_at', [$start, $end])
-            ->whereIn('orders.status', ['paid', 'complete'])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->sum('order_items.quantity');
         
         // Payment breakdown
@@ -176,7 +176,7 @@ class ReportService
         $previousNetSales = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->sum('total_amount');
         
         $growthAmount = $netSales - $previousNetSales;
@@ -259,7 +259,7 @@ class ReportService
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->where('orders.tenant_id', $tenantId)
             ->whereBetween('orders.created_at', [$start, $end])
-            ->whereIn('orders.status', ['paid', 'complete'])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->groupBy('products.id', 'products.name', 'products.category_id', 'categories.name')
             ->orderByDesc('total_quantity')
             ->limit($limit)
@@ -430,7 +430,7 @@ class ReportService
         $orders = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->select(
                 DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"),
                 DB::raw('COUNT(*) as total_orders'),
@@ -488,7 +488,7 @@ class ReportService
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->where('orders.tenant_id', $tenantId)
             ->whereBetween('orders.created_at', [$start, $end])
-            ->whereIn('orders.status', ['paid', 'complete'])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('total_sales')
             ->get();
@@ -518,7 +518,7 @@ class ReportService
         $hourly = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->select(
                 DB::raw('HOUR(created_at) as hour'),
                 DB::raw('COUNT(*) as total_orders'),
@@ -564,7 +564,7 @@ class ReportService
         $trends = Order::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'complete'])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
             ->select(
                 DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"),
                 'payment_method',

@@ -27,9 +27,10 @@ class DashboardService
     public function getTodaySales(): array
     {
         return Cache::remember("dashboard.sales.today.{$this->tenantId}", $this->cacheTime, function () {
+            // Include all paid orders (paid, cooking, complete) - exclude only pending/cancelled
             $today = Order::where('tenant_id', $this->tenantId)
                 ->whereDate('created_at', today())
-                ->where('status', 'completed')
+                ->whereIn('status', ['paid', 'cooking', 'complete'])
                 ->selectRaw('
                     COALESCE(SUM(total_amount), 0) as total_sales,
                     COUNT(*) as total_orders,
@@ -39,7 +40,7 @@ class DashboardService
 
             $yesterday = Order::where('tenant_id', $this->tenantId)
                 ->whereDate('created_at', today()->subDay())
-                ->where('status', 'completed')
+                ->whereIn('status', ['paid', 'cooking', 'complete'])
                 ->sum('total_amount');
 
             $change = $yesterday > 0 ? (($today->total_sales - $yesterday) / $yesterday) * 100 : 0;
@@ -60,8 +61,9 @@ class DashboardService
     public function getSalesTrend(): array
     {
         return Cache::remember("dashboard.sales.trend.{$this->tenantId}", $this->cacheTime, function () {
+            // Include all paid orders (paid, cooking, complete)
             $data = Order::where('tenant_id', $this->tenantId)
-                ->where('status', 'completed')
+                ->whereIn('status', ['paid', 'cooking', 'complete'])
                 ->whereDate('created_at', '>=', today()->subDays(6))
                 ->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy(DB::raw('DATE(created_at)'))
@@ -190,7 +192,7 @@ class DashboardService
                 ->join('orders as o', 'oi.order_id', '=', 'o.id')
                 ->where('products.tenant_id', $this->tenantId)
                 ->where('o.tenant_id', $this->tenantId)
-                ->where('o.status', 'completed')
+                ->whereIn('o.status', ['paid', 'cooking', 'complete'])
                 ->whereDate('o.created_at', '>=', $currentPeriod)
                 ->groupBy('products.id', 'products.name')
                 ->orderBy('total_qty', 'desc')
@@ -202,7 +204,7 @@ class DashboardService
                 $prevQty = DB::table('order_items as oi')
                     ->join('orders as o', 'oi.order_id', '=', 'o.id')
                     ->where('oi.product_id', $product->id)
-                    ->where('o.status', 'completed')
+                    ->whereIn('o.status', ['paid', 'cooking', 'complete'])
                     ->where('o.tenant_id', $this->tenantId)
                     ->whereDate('o.created_at', '>=', $previousPeriod)
                     ->whereDate('o.created_at', '<', $previousPeriod->copy()->addDays($days))

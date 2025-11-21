@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Services\DashboardService;
+use App\Filament\Resources\OrderResource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -77,7 +78,7 @@ class RecentOrdersWidget extends BaseWidget
                 Tables\Actions\Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => route('filament.admin.resources.orders.view', $record)),
+                    ->url(fn ($record) => OrderResource::getUrl('edit', ['record' => $record])),
             ])
             ->paginated(false);
     }
