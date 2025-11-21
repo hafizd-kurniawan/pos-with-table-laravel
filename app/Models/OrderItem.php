@@ -11,6 +11,7 @@ class OrderItem extends Model
     
     //
     protected $fillable = [
+        'tenant_id', // CRITICAL: Must be fillable
         'order_id',
         'product_id',
         'quantity',

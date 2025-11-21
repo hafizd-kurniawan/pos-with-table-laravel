@@ -11,6 +11,7 @@ class Order extends Model
     
     //
     protected $fillable = [
+        'tenant_id', // CRITICAL: Must be fillable for self-order (no auth user)
         'table_id',
         'code',
         'status',
@@ -23,12 +24,15 @@ class Order extends Model
         'service_charge_amount',
         'service_charge_percentage',
         'placed_at',
+        'completed_at', // NEW: Must be fillable
         'payment_method',
+        'payment_status', // NEW: Must be fillable
         'notes',
         'customer_name',
         'customer_phone',
         'customer_email',
         'expired_at',
+        'order_type', // NEW: dine_in or takeaway
     ];
 
     protected $casts = [

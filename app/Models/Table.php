@@ -74,15 +74,56 @@ class Table extends Model
             }
         });
         
-        // Auto-generate QR code after table is saved (not in same transaction)
-        static::saved(function ($table) {
-            // Only generate if qr_code is empty
+        // Auto-update QR code when name changes (before save)
+        static::updating(function ($table) {
+            // Check if name is being changed
+            if ($table->isDirty('name')) {
+                // Get tenant from table
+                $tenant = $table->tenant;
+                if ($tenant) {
+                    // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
+                    $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}");
+                } else {
+                    // Fallback to old format if tenant not found
+                    $url = url("/order/{$table->name}");
+                }
+                
+                // Update QR code immediately (in same transaction)
+                $table->qr_code = $url;
+                
+                \Log::info('QR Code auto-updated on name change', [
+                    'table_id' => $table->id,
+                    'old_name' => $table->getOriginal('name'),
+                    'new_name' => $table->name,
+                    'new_qr_code' => $url
+                ]);
+            }
+        });
+        
+        // Auto-generate QR code for new tables (after save)
+        static::created(function ($table) {
+            // Only generate if qr_code is still empty after creation
             if (empty($table->qr_code)) {
                 // Use dispatch to avoid blocking
                 dispatch(function () use ($table) {
-                    $url = url("/order/{$table->name}");
+                    // Get tenant from table
+                    $tenant = $table->tenant;
+                    if ($tenant) {
+                        // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
+                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}");
+                    } else {
+                        // Fallback to old format if tenant not found
+                        $url = url("/order/{$table->name}");
+                    }
+                    
                     // Use updateQuietly to avoid triggering events again
                     $table->updateQuietly(['qr_code' => $url]);
+                    
+                    \Log::info('QR Code auto-generated for new table', [
+                        'table_id' => $table->id,
+                        'table_name' => $table->name,
+                        'qr_code' => $url
+                    ]);
                 })->afterResponse();
             }
         });
@@ -139,6 +180,14 @@ class Table extends Model
      */
     public function getQrUrlAttribute()
     {
+        // Get tenant from table
+        $tenant = $this->tenant;
+        if ($tenant) {
+            // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
+            return url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}");
+        }
+        
+        // Fallback to old format if tenant not found
         return url("/order/{$this->name}");
     }
     
@@ -186,7 +235,16 @@ class Table extends Model
      */
     public function generateQrCode()
     {
-        $url = url("/order/{$this->name}");
+        // Get tenant from table
+        $tenant = $this->tenant;
+        if ($tenant) {
+            // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
+            $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}");
+        } else {
+            // Fallback to old format if tenant not found
+            $url = url("/order/{$this->name}");
+        }
+        
         $this->update(['qr_code' => $url]);
         return $url;
     }
