@@ -21,11 +21,13 @@ class Reports extends Page implements HasForms
     
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     
-    protected static ?string $navigationLabel = 'Laporan';
+    protected static ?string $navigationLabel = 'Sales Reports';
     
-    protected static ?string $title = 'Laporan Penjualan';
+    protected static ?string $navigationGroup = 'Reports';
     
-    protected static ?int $navigationSort = 6;
+    protected static ?string $title = 'Sales Reports';
+    
+    protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.reports';
 
@@ -239,7 +241,10 @@ class Reports extends Page implements HasForms
                 return;
             }
             
-            $pdf = Pdf::loadView('reports.daily-pdf', [
+            // Use different template based on report type
+            $template = $this->reportType === 'daily' ? 'reports.daily-pdf' : 'reports.period-pdf';
+            
+            $pdf = Pdf::loadView($template, [
                 'type' => $this->reportType,
                 'data' => $data,
                 'products' => $this->topProducts,

@@ -184,29 +184,10 @@ class ReportService
             ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->sum('order_items.quantity');
         
-        // Payment breakdown - DYNAMIC based on actual payment methods
-        $paymentMethods = $orders->whereNotNull('payment_method')
-            ->pluck('payment_method')
-            ->unique()
-            ->values();
-        
-        $paymentBreakdown = [];
-        foreach ($paymentMethods as $method) {
-            $methodOrders = $orders->where('payment_method', $method);
-            $methodAmount = $methodOrders->sum('total_amount');
-            
-            $paymentBreakdown[] = [
-                'method' => $method,
-                'amount' => (float) $methodAmount,
-                'count' => $methodOrders->count(),
-                'percentage' => $netSales > 0 ? round(($methodAmount / $netSales) * 100, 2) : 0,
-            ];
-        }
-        
-        // Sort by amount descending
-        usort($paymentBreakdown, function($a, $b) {
-            return $b['amount'] <=> $a['amount'];
-        });
+        // Payment breakdown
+        $cashOrders = $orders->where('payment_method', 'cash');
+        $qrisOrders = $orders->where('payment_method', 'qris');
+        $gopayOrders = $orders->where('payment_method', 'gopay');
         
         // Calculate comparison with previous period
         $previousStart = $start->copy()->subDays($days);
@@ -253,13 +234,26 @@ class ReportService
                     'status' => $this->getGrowthStatus($growthPercentage),
                 ],
             ],
-            'payment_breakdown' => $paymentBreakdown,
-            
-            // Enhanced sections for period report
-            'daily_trend' => $this->getPeriodDailyTrend($tenantId, $start, $end),
-            'profit_analysis' => $this->getPeriodProfitAnalysis($tenantId, $start, $end),
-            'staff_performance' => $this->getPeriodStaffPerformance($tenantId, $start, $end),
-            'customer_insights' => $this->getPeriodCustomerInsights($tenantId, $start, $end, $orders),
+            'payment_breakdown' => [
+                [
+                    'method' => 'cash',
+                    'amount' => (float) $cashOrders->sum('total_amount'),
+                    'count' => $cashOrders->count(),
+                    'percentage' => $netSales > 0 ? round(($cashOrders->sum('total_amount') / $netSales) * 100, 2) : 0,
+                ],
+                [
+                    'method' => 'qris',
+                    'amount' => (float) $qrisOrders->sum('total_amount'),
+                    'count' => $qrisOrders->count(),
+                    'percentage' => $netSales > 0 ? round(($qrisOrders->sum('total_amount') / $netSales) * 100, 2) : 0,
+                ],
+                [
+                    'method' => 'gopay',
+                    'amount' => (float) $gopayOrders->sum('total_amount'),
+                    'count' => $gopayOrders->count(),
+                    'percentage' => $netSales > 0 ? round(($gopayOrders->sum('total_amount') / $netSales) * 100, 2) : 0,
+                ],
+            ],
         ];
     }
     
@@ -1129,230 +1123,6 @@ class ReportService
             ],
             'products' => $productProfits,
             'recommendations' => $recommendations,
-        ];
-    }
-    
-    /**
-     * Get daily trend for period
-     */
-    protected function getPeriodDailyTrend(int $tenantId, Carbon $start, Carbon $end): array
-    {
-        $dailyData = Order::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'cooking', 'complete'])
-            ->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_amount) as sales'),
-                DB::raw('COUNT(*) as orders')
-            )
-            ->groupBy(DB::raw('DATE(created_at)'))
-            ->orderBy('date')
-            ->get()
-            ->keyBy('date');
-        
-        $labels = [];
-        $salesData = [];
-        $ordersData = [];
-        
-        // Fill all dates in range
-        $current = $start->copy();
-        while ($current <= $end) {
-            $dateStr = $current->format('Y-m-d');
-            $data = $dailyData->get($dateStr);
-            
-            $labels[] = $current->format('d M');
-            $salesData[] = $data ? (float) $data->sales : 0;
-            $ordersData[] = $data ? (int) $data->orders : 0;
-            
-            $current->addDay();
-        }
-        
-        $bestDayIndex = $salesData ? array_search(max($salesData), $salesData) : 0;
-        $worstDayIndex = $salesData ? array_search(min(array_filter($salesData)), $salesData) : 0;
-        
-        return [
-            'labels' => $labels,
-            'sales' => $salesData,
-            'orders' => $ordersData,
-            'average' => count($salesData) > 0 ? array_sum($salesData) / count($salesData) : 0,
-            'best_day' => [
-                'date' => $labels[$bestDayIndex] ?? null,
-                'amount' => $salesData[$bestDayIndex] ?? 0,
-            ],
-            'worst_day' => [
-                'date' => $labels[$worstDayIndex] ?? null,
-                'amount' => $salesData[$worstDayIndex] ?? 0,
-            ],
-        ];
-    }
-    
-    /**
-     * Get profit analysis for period
-     */
-    protected function getPeriodProfitAnalysis(int $tenantId, Carbon $start, Carbon $end): array
-    {
-        $orders = Order::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$start, $end])
-            ->whereIn('status', ['paid', 'cooking', 'complete'])
-            ->with('orderItems.product')
-            ->get();
-        
-        $totalRevenue = 0;
-        $totalCogs = 0;
-        $productProfits = [];
-        
-        foreach ($orders as $order) {
-            foreach ($order->orderItems as $item) {
-                $product = $item->product;
-                if (!$product) continue;
-                
-                $productCost = ($product->cost ?? 0) * $item->quantity;
-                $productRevenue = $item->price * $item->quantity;
-                $productProfit = $productRevenue - $productCost;
-                
-                $totalCogs += $productCost;
-                $totalRevenue += $productRevenue;
-                
-                if (!isset($productProfits[$product->id])) {
-                    $productProfits[$product->id] = [
-                        'product_id' => $product->id,
-                        'product_name' => $product->name,
-                        'quantity_sold' => 0,
-                        'revenue' => 0,
-                        'cogs' => 0,
-                        'profit' => 0,
-                    ];
-                }
-                
-                $productProfits[$product->id]['quantity_sold'] += $item->quantity;
-                $productProfits[$product->id]['revenue'] += $productRevenue;
-                $productProfits[$product->id]['cogs'] += $productCost;
-                $productProfits[$product->id]['profit'] += $productProfit;
-            }
-        }
-        
-        // Calculate margins and sort by profit
-        $products = collect($productProfits)->map(function($item) {
-            $margin = $item['revenue'] > 0 ? ($item['profit'] / $item['revenue']) * 100 : 0;
-            $item['margin'] = round($margin, 1);
-            return $item;
-        })->sortByDesc('profit')->values()->take(10)->toArray();
-        
-        $netProfit = $totalRevenue - $totalCogs;
-        $overallMargin = $totalRevenue > 0 ? ($netProfit / $totalRevenue) * 100 : 0;
-        
-        // Smart recommendations
-        $recommendations = [];
-        
-        $highMargin = collect($products)->where('margin', '>=', 50)->take(3);
-        if ($highMargin->count() > 0) {
-            $names = $highMargin->pluck('product_name')->implode(', ');
-            $recommendations[] = [
-                'type' => 'success',
-                'icon' => '🎯',
-                'message' => "High margin products: {$names}",
-                'action' => 'Promote these items more!',
-            ];
-        }
-        
-        $lowMargin = collect($products)->where('margin', '<', 20)->take(3);
-        if ($lowMargin->count() > 0) {
-            $names = $lowMargin->pluck('product_name')->implode(', ');
-            $recommendations[] = [
-                'type' => 'warning',
-                'icon' => '📉',
-                'message' => "Low margin products: {$names}",
-                'action' => 'Review pricing or reduce costs',
-            ];
-        }
-        
-        return [
-            'total_revenue' => (float) $totalRevenue,
-            'total_cogs' => (float) $totalCogs,
-            'net_profit' => (float) $netProfit,
-            'margin_percentage' => round($overallMargin, 2),
-            'products' => $products,
-            'recommendations' => $recommendations,
-        ];
-    }
-    
-    /**
-     * Get staff performance for period
-     * Note: Orders table doesn't track staff, returning empty for now
-     */
-    protected function getPeriodStaffPerformance(int $tenantId, Carbon $start, Carbon $end): array
-    {
-        // TODO: Add user_id or staff_id column to orders table to track staff performance
-        // For now, return empty data
-        
-        return [
-            'staff' => [],
-            'total_staff' => 0,
-            'total_sales' => 0,
-        ];
-    }
-    
-    /**
-     * Get customer insights for period
-     */
-    protected function getPeriodCustomerInsights(int $tenantId, Carbon $start, Carbon $end, $orders): array
-    {
-        $uniqueCustomers = $orders->whereNotNull('customer_name')->unique('customer_name')->count();
-        
-        if ($uniqueCustomers == 0) {
-            $uniqueCustomers = $orders->count(); // Assume each order = 1 customer
-        }
-        
-        $totalSpent = $orders->sum('total_amount');
-        $avgSpend = $uniqueCustomers > 0 ? $totalSpent / $uniqueCustomers : 0;
-        
-        // Top customers
-        $topCustomers = $orders->whereNotNull('customer_name')
-            ->groupBy('customer_name')
-            ->map(function($customerOrders) {
-                return [
-                    'name' => $customerOrders->first()->customer_name,
-                    'total_orders' => $customerOrders->count(),
-                    'total_spent' => $customerOrders->sum('total_amount'),
-                ];
-            })
-            ->sortByDesc('total_spent')
-            ->take(5)
-            ->values()
-            ->toArray();
-        
-        // Previous period comparison
-        $days = (int) ($start->diffInDays($end) + 1);
-        $previousStart = $start->copy()->subDays($days);
-        $previousEnd = $start->copy()->subDay();
-        
-        $previousOrders = Order::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->whereIn('status', ['paid', 'cooking', 'complete'])
-            ->get();
-        
-        $previousCustomers = $previousOrders->whereNotNull('customer_name')->unique('customer_name')->count();
-        if ($previousCustomers == 0) {
-            $previousCustomers = $previousOrders->count();
-        }
-        
-        $customerGrowth = $previousCustomers > 0 
-            ? (($uniqueCustomers - $previousCustomers) / $previousCustomers) * 100 
-            : 0;
-        
-        return [
-            'total_customers' => $uniqueCustomers,
-            'average_spend' => (float) $avgSpend,
-            'top_customers' => $topCustomers,
-            'growth' => [
-                'previous_period_customers' => $previousCustomers,
-                'current_period_customers' => $uniqueCustomers,
-                'percentage' => round($customerGrowth, 2),
-                'trend' => $customerGrowth >= 0 ? 'up' : 'down',
-            ],
         ];
     }
 }

@@ -24,11 +24,11 @@ class InventoryReports extends Page implements HasForms
     
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     
-    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?string $navigationGroup = 'Reports';
     
-    protected static ?string $navigationLabel = 'Laporan Inventory';
+    protected static ?string $navigationLabel = 'Inventory Reports';
     
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 2;
 
     protected static string $view = 'filament.pages.inventory-reports';
     

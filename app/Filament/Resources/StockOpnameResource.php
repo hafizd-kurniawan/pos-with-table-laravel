@@ -20,7 +20,7 @@ class StockOpnameResource extends Resource
     
     protected static ?string $navigationGroup = 'Inventory';
     
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {

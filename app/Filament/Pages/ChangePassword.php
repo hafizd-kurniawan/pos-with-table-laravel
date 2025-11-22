@@ -24,7 +24,7 @@ class ChangePassword extends Page implements HasForms
     
     protected static ?string $navigationGroup = 'Settings';
     
-    protected static ?int $navigationSort = 99;
+    protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.pages.change-password';
     

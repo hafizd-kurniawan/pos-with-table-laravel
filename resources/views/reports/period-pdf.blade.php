@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Periode - {{ $startDate }} s/d {{ $endDate }}</title>
+    <title>Laporan Periode - {{ $data['period']['start'] ?? $startDate }} s/d {{ $data['period']['end'] ?? $endDate }}</title>
     <style>
         body {
             font-family: 'DejaVu Sans', sans-serif;
@@ -231,7 +231,7 @@
     </div>
 
     {{-- TOP PRODUCTS --}}
-    @if(isset($data['top_products']) && count($data['top_products']) > 0)
+    @if(isset($products) && count($products) > 0)
     <div class="section">
         <div class="section-title">PRODUK TERLARIS</div>
         <table>
@@ -246,7 +246,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach(array_slice($data['top_products'], 0, 10) as $index => $product)
+                @foreach(array_slice($products, 0, 10) as $index => $product)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $product['name'] }}</td>
@@ -261,8 +261,200 @@
     </div>
     @endif
 
+    {{-- NEW: DAILY TREND ANALYSIS --}}
+    @if(isset($data['daily_trend']))
+    <div class="section">
+        <div class="section-title">📈 TREND PENJUALAN HARIAN</div>
+        <table class="summary-table">
+            <tr>
+                <td>Rata-rata Penjualan/Hari</td>
+                <td class="text-right">Rp {{ number_format($data['daily_trend']['average'], 0, ',', '.') }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>🏆 Hari Terbaik ({{ $data['daily_trend']['best_day']['date'] }})</td>
+                <td class="text-right growth-up">Rp {{ number_format($data['daily_trend']['best_day']['amount'], 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>⚠️ Hari Terburuk ({{ $data['daily_trend']['worst_day']['date'] }})</td>
+                <td class="text-right growth-down">Rp {{ number_format($data['daily_trend']['worst_day']['amount'], 0, ',', '.') }}</td>
+            </tr>
+        </table>
+        
+        <div class="section-title" style="margin-top: 15px; background: #E7E6E6; color: #333;">Detail Per Hari</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th class="text-center">Orders</th>
+                    <th class="text-right">Penjualan</th>
+                    <th class="text-center">Performa</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['daily_trend']['labels'] as $index => $label)
+                <tr>
+                    <td><strong>{{ $label }}</strong></td>
+                    <td class="text-center">{{ $data['daily_trend']['orders'][$index] }}</td>
+                    <td class="text-right">Rp {{ number_format($data['daily_trend']['sales'][$index], 0, ',', '.') }}</td>
+                    <td class="text-center">
+                        @if($data['daily_trend']['sales'][$index] >= $data['daily_trend']['average'])
+                            <span class="badge badge-success">✓ Above Avg</span>
+                        @else
+                            <span class="badge badge-warning">Below Avg</span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    {{-- NEW: PROFIT ANALYSIS --}}
+    @if(isset($data['profit_analysis']))
+    <div class="section" style="page-break-before: always;">
+        <div class="section-title">💰 ANALISIS PROFIT & MARGIN</div>
+        <table class="summary-table">
+            <tr>
+                <td>Total Revenue (Penjualan)</td>
+                <td class="text-right">Rp {{ number_format($data['profit_analysis']['total_revenue'], 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>Total COGS (Harga Pokok)</td>
+                <td class="text-right">Rp {{ number_format($data['profit_analysis']['total_cogs'], 0, ',', '.') }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>NET PROFIT (Keuntungan Bersih)</td>
+                <td class="text-right {{ $data['profit_analysis']['net_profit'] >= 0 ? 'growth-up' : 'growth-down' }}">
+                    Rp {{ number_format($data['profit_analysis']['net_profit'], 0, ',', '.') }}
+                </td>
+            </tr>
+            <tr>
+                <td>Margin Keuntungan</td>
+                <td class="text-right">
+                    <span class="badge badge-{{ $data['profit_analysis']['margin_percentage'] >= 35 ? 'success' : 'warning' }}">
+                        {{ number_format($data['profit_analysis']['margin_percentage'], 1) }}%
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        {{-- Profitable Products --}}
+        @if(isset($data['profit_analysis']['products']) && count($data['profit_analysis']['products']) > 0)
+        <div class="section-title" style="margin-top: 15px; background: #28A745; color: white;">Top 10 Produk Paling Menguntungkan</div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 5%;">#</th>
+                    <th>Produk</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-right">Revenue</th>
+                    <th class="text-right">COGS</th>
+                    <th class="text-right">Profit</th>
+                    <th class="text-center">Margin</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(array_slice($data['profit_analysis']['products'], 0, 10) as $index => $product)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $product['product_name'] }}</td>
+                    <td class="text-center">{{ $product['quantity_sold'] }}</td>
+                    <td class="text-right">Rp {{ number_format($product['revenue'], 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($product['cogs'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ $product['profit'] >= 0 ? 'growth-up' : 'growth-down' }}">
+                        Rp {{ number_format($product['profit'], 0, ',', '.') }}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-{{ $product['margin'] >= 50 ? 'success' : ($product['margin'] >= 30 ? 'warning' : 'danger') }}">
+                            {{ $product['margin'] }}%
+                        </span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+
+        {{-- Recommendations --}}
+        @if(isset($data['profit_analysis']['recommendations']) && count($data['profit_analysis']['recommendations']) > 0)
+        <div class="section-title" style="margin-top: 15px; background: #FFC107; color: #000;">💡 Rekomendasi</div>
+        <table>
+            @foreach($data['profit_analysis']['recommendations'] as $rec)
+            <tr>
+                <td style="padding: 8px;">
+                    <strong>{{ $rec['icon'] }} {{ $rec['message'] }}</strong><br>
+                    <small style="color: #666;">→ {{ $rec['action'] }}</small>
+                </td>
+            </tr>
+            @endforeach
+        </table>
+        @endif
+    </div>
+    @endif
+
+    {{-- NEW: CUSTOMER INSIGHTS --}}
+    @if(isset($data['customer_insights']))
+    <div class="section">
+        <div class="section-title">👥 CUSTOMER INSIGHTS</div>
+        <table class="summary-table">
+            <tr>
+                <td>Total Customers (Unique)</td>
+                <td class="text-right">{{ number_format($data['customer_insights']['total_customers'], 0) }} customers</td>
+            </tr>
+            <tr>
+                <td>Rata-rata Spending/Customer</td>
+                <td class="text-right">Rp {{ number_format($data['customer_insights']['average_spend'], 0, ',', '.') }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>Customer Growth vs Periode Sebelumnya</td>
+                <td class="text-right {{ $data['customer_insights']['growth']['trend'] === 'up' ? 'growth-up' : 'growth-down' }}">
+                    {{ $data['customer_insights']['growth']['trend'] === 'up' ? '↑' : '↓' }}
+                    {{ abs($data['customer_insights']['growth']['percentage']) }}%
+                    ({{ $data['customer_insights']['growth']['previous_period_customers'] }} → {{ $data['customer_insights']['growth']['current_period_customers'] }})
+                </td>
+            </tr>
+        </table>
+
+        {{-- Top Customers --}}
+        @if(isset($data['customer_insights']['top_customers']) && count($data['customer_insights']['top_customers']) > 0)
+        <div class="section-title" style="margin-top: 15px; background: #4472C4;">Top 5 Customers (By Spending)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 5%;">#</th>
+                    <th>Customer Name</th>
+                    <th class="text-center">Total Orders</th>
+                    <th class="text-right">Total Spent</th>
+                    <th class="text-center">Loyalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['customer_insights']['top_customers'] as $index => $customer)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td><strong>{{ $customer['name'] }}</strong></td>
+                    <td class="text-center">{{ $customer['total_orders'] }}</td>
+                    <td class="text-right">Rp {{ number_format($customer['total_spent'], 0, ',', '.') }}</td>
+                    <td class="text-center">
+                        @if($customer['total_orders'] >= 10)
+                            <span class="badge badge-success">⭐ VIP</span>
+                        @elseif($customer['total_orders'] >= 5)
+                            <span class="badge badge-warning">Regular</span>
+                        @else
+                            <span class="badge" style="background: #E7E6E6; color: #333;">New</span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+    </div>
+    @endif
+
     <div class="footer">
-        <p>Generated: {{ now()->format('d/m/Y H:i:s') }} | Laporan Penjualan Periode</p>
+        <p>Generated: {{ now()->format('d/m/Y H:i:s') }} | Laporan Penjualan Periode (Comprehensive Report)</p>
     </div>
 </body>
 </html>

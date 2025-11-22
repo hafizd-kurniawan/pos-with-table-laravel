@@ -8,7 +8,7 @@ class Dashboard extends BaseDashboard
 {
     protected static ?string $navigationIcon = 'heroicon-o-home';
     protected static ?string $navigationLabel = 'Dashboard';
-    protected static ?int $navigationSort = -2;
+    protected static ?int $navigationSort = -10;
     protected static string $view = 'filament.pages.dashboard-styles';
 
     public function getWidgets(): array
