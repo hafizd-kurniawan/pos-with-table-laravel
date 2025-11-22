@@ -10,7 +10,7 @@ class TopProductsWidget extends Widget
     protected static ?int $sort = 8;
     
     protected int | string | array $columnSpan = [
-        'md' => 4,
+        'md' => 12,
         'xl' => 6,
     ];
 

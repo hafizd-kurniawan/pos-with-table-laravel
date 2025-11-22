@@ -61,7 +61,17 @@ class ProductResource extends Resource
                 Forms\Components\TextInput::make('price')
                     ->required()
                     ->numeric()
-                    ->prefix('$'),
+                    ->prefix('Rp')
+                    ->helperText('Harga jual ke customer'),
+                Forms\Components\TextInput::make('cost')
+                    ->label('Cost (COGS)')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->default(0)
+                    ->step(1)
+                    ->inputMode('decimal')
+                    ->helperText('Harga pokok/biaya bahan (untuk profit tracking)')
+                    ->hint('💡 Isi sesuai actual cost untuk profit analysis yang akurat'),
                 Forms\Components\FileUpload::make('image')
                     ->image(),
                 Select::make('status')
@@ -97,6 +107,34 @@ class ProductResource extends Resource
                     ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable()
                     ->alignEnd(),
+                Tables\Columns\TextColumn::make('cost')
+                    ->label('COGS')
+                    ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
+                    ->sortable()
+                    ->alignEnd()
+                    ->toggleable()
+                    ->color(fn ($record) => $record->cost == 0 ? 'danger' : 'success')
+                    ->tooltip(fn ($record) => $record->cost == 0 ? 'Update COGS untuk profit tracking' : 'COGS sudah diset'),
+                Tables\Columns\TextColumn::make('profit_margin')
+                    ->label('Margin')
+                    ->getStateUsing(function ($record) {
+                        if ($record->price <= 0) return '0';
+                        $margin = (($record->price - $record->cost) / $record->price) * 100;
+                        // Format: hapus .00 di belakang jika integer, keep 1 decimal jika ada
+                        return $margin == floor($margin) ? number_format($margin, 0) : number_format($margin, 1);
+                    })
+                    ->suffix('%')
+                    ->sortable(query: function ($query, $direction) {
+                        return $query->orderByRaw("((price - cost) / price * 100) {$direction}");
+                    })
+                    ->alignEnd()
+                    ->toggleable()
+                    ->color(function ($record) {
+                        if ($record->price <= 0) return 'gray';
+                        $margin = (($record->price - $record->cost) / $record->price) * 100;
+                        return $margin >= 50 ? 'success' : ($margin >= 30 ? 'info' : ($margin >= 20 ? 'warning' : 'danger'));
+                    })
+                    ->badge(),
                 ImageColumn::make('image')
                     ->square()
                     ->size(60),

@@ -26,7 +26,7 @@ class ReportService
         // Check if already exists
         $existing = DailySummary::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('date', $dateObj->format('Y-m-d'))
+            ->where('summary_date', $dateObj->format('Y-m-d'))
             ->first();
         
         if ($existing && !$force) {
@@ -43,7 +43,7 @@ class ReportService
         }
         
         $summary['tenant_id'] = $tenantId;
-        $summary['date'] = $dateObj->format('Y-m-d');
+        $summary['summary_date'] = $dateObj->format('Y-m-d');
         
         return DailySummary::create($summary);
     }
@@ -85,10 +85,9 @@ class ReportService
             ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
             ->sum('order_items.quantity');
         
-        // Payment method breakdown
-        $cashOrders = $orders->where('payment_method', 'cash');
-        $qrisOrders = $orders->where('payment_method', 'qris');
-        $gopayOrders = $orders->where('payment_method', 'gopay');
+        // Payment method breakdown (case-insensitive)
+        $cashOrders = $orders->filter(fn($o) => strtolower($o->payment_method) === 'cash');
+        $qrisOrders = $orders->filter(fn($o) => strtolower($o->payment_method) === 'qris');
         
         return [
             'total_orders' => $totalOrders,
@@ -104,8 +103,6 @@ class ReportService
             'cash_count' => $cashOrders->count(),
             'qris_amount' => $qrisOrders->sum('total_amount'),
             'qris_count' => $qrisOrders->count(),
-            'gopay_amount' => $gopayOrders->sum('total_amount'),
-            'gopay_count' => $gopayOrders->count(),
         ];
     }
     
@@ -119,18 +116,40 @@ class ReportService
         // Try to get from cache
         $cached = DailySummary::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('date', $dateObj->format('Y-m-d'))
+            ->where('summary_date', $dateObj->format('Y-m-d'))
             ->first();
         
         if ($cached) {
-            return $this->formatDailySummary($cached);
+            $formatted = $this->formatDailySummary($cached);
+            
+            // Add enhancements (calculated on-the-fly)
+            $formatted['comparison'] = $this->getYesterdayComparison($tenantId, $dateObj);
+            $formatted['peak_hours'] = $this->getPeakHours($tenantId, $dateObj);
+            $formatted['customer_insights'] = $this->getCustomerInsights($tenantId, $dateObj);
+            $formatted['weekly_trend'] = $this->getWeeklyTrend($tenantId, $dateObj);
+            $formatted['stock_alerts'] = $this->getStockAlerts($tenantId, $dateObj);
+            $formatted['staff_performance'] = $this->getStaffPerformance($tenantId, $dateObj);
+            $formatted['profit_analysis'] = $this->getProfitAnalysis($tenantId, $dateObj);
+            
+            return $formatted;
         }
         
         // Calculate on-the-fly
         $summary = $this->calculateDailySummary($tenantId, $dateObj);
-        $summary['date'] = $dateObj->format('Y-m-d');
+        $summary['summary_date'] = $dateObj->format('Y-m-d');
         
-        return $this->formatSummaryArray($summary, $dateObj);
+        $formatted = $this->formatSummaryArray($summary, $dateObj);
+        
+        // Add enhancements
+        $formatted['comparison'] = $this->getYesterdayComparison($tenantId, $dateObj);
+        $formatted['peak_hours'] = $this->getPeakHours($tenantId, $dateObj);
+        $formatted['customer_insights'] = $this->getCustomerInsights($tenantId, $dateObj);
+        $formatted['weekly_trend'] = $this->getWeeklyTrend($tenantId, $dateObj);
+        $formatted['stock_alerts'] = $this->getStockAlerts($tenantId, $dateObj);
+        $formatted['staff_performance'] = $this->getStaffPerformance($tenantId, $dateObj);
+        $formatted['profit_analysis'] = $this->getProfitAnalysis($tenantId, $dateObj);
+        
+        return $formatted;
     }
     
     /**
@@ -285,7 +304,7 @@ class ReportService
     protected function formatDailySummary(DailySummary $summary): array
     {
         return [
-            'date' => $summary->date->format('Y-m-d'),
+            'date' => $summary->summary_date->format('Y-m-d'),
             'summary' => [
                 'total_orders' => $summary->total_orders,
                 'total_items' => $summary->total_items,
@@ -315,14 +334,6 @@ class ReportService
                     'count' => $summary->qris_count,
                     'percentage' => $summary->net_sales > 0 
                         ? round(($summary->qris_amount / $summary->net_sales) * 100, 2) 
-                        : 0,
-                ],
-                [
-                    'method' => 'gopay',
-                    'amount' => (float) $summary->gopay_amount,
-                    'count' => $summary->gopay_count,
-                    'percentage' => $summary->net_sales > 0 
-                        ? round(($summary->gopay_amount / $summary->net_sales) * 100, 2) 
                         : 0,
                 ],
             ],
@@ -359,26 +370,18 @@ class ReportService
             'payment_breakdown' => [
                 [
                     'method' => 'cash',
-                    'amount' => (float) $summary['cash_amount'],
-                    'count' => $summary['cash_count'],
+                    'amount' => (float) ($summary['cash_amount'] ?? 0),
+                    'count' => $summary['cash_count'] ?? 0,
                     'percentage' => $netSales > 0 
-                        ? round(($summary['cash_amount'] / $netSales) * 100, 2) 
+                        ? round((($summary['cash_amount'] ?? 0) / $netSales) * 100, 2) 
                         : 0,
                 ],
                 [
                     'method' => 'qris',
-                    'amount' => (float) $summary['qris_amount'],
-                    'count' => $summary['qris_count'],
+                    'amount' => (float) ($summary['qris_amount'] ?? 0),
+                    'count' => $summary['qris_count'] ?? 0,
                     'percentage' => $netSales > 0 
-                        ? round(($summary['qris_amount'] / $netSales) * 100, 2) 
-                        : 0,
-                ],
-                [
-                    'method' => 'gopay',
-                    'amount' => (float) $summary['gopay_amount'],
-                    'count' => $summary['gopay_count'],
-                    'percentage' => $netSales > 0 
-                        ? round(($summary['gopay_amount'] / $netSales) * 100, 2) 
+                        ? round((($summary['qris_amount'] ?? 0) / $netSales) * 100, 2) 
                         : 0,
                 ],
             ],
@@ -597,5 +600,529 @@ class ReportService
         }
         
         return array_values($organized);
+    }
+    
+    /**
+     * Get yesterday comparison
+     */
+    public function getYesterdayComparison(int $tenantId, Carbon $date): array
+    {
+        $yesterday = $date->copy()->subDay();
+        
+        // Get today's summary
+        $todaySummary = $this->calculateDailySummary($tenantId, $date);
+        
+        // Get yesterday's summary
+        $yesterdaySummary = $this->calculateDailySummary($tenantId, $yesterday);
+        
+        // Calculate changes
+        $revenueChange = $yesterdaySummary['net_sales'] > 0 
+            ? (($todaySummary['net_sales'] - $yesterdaySummary['net_sales']) / $yesterdaySummary['net_sales']) * 100 
+            : 0;
+            
+        $ordersChange = $yesterdaySummary['total_orders'] > 0 
+            ? (($todaySummary['total_orders'] - $yesterdaySummary['total_orders']) / $yesterdaySummary['total_orders']) * 100 
+            : 0;
+            
+        $avgChange = $yesterdaySummary['total_orders'] > 0 && $todaySummary['total_orders'] > 0
+            ? ((($todaySummary['net_sales'] / $todaySummary['total_orders']) - ($yesterdaySummary['net_sales'] / $yesterdaySummary['total_orders'])) / ($yesterdaySummary['net_sales'] / $yesterdaySummary['total_orders'])) * 100
+            : 0;
+        
+        return [
+            'yesterday' => [
+                'date' => $yesterday->format('Y-m-d'),
+                'total_orders' => $yesterdaySummary['total_orders'],
+                'net_sales' => $yesterdaySummary['net_sales'],
+                'average_transaction' => $yesterdaySummary['total_orders'] > 0 
+                    ? $yesterdaySummary['net_sales'] / $yesterdaySummary['total_orders'] 
+                    : 0,
+            ],
+            'changes' => [
+                'revenue' => [
+                    'amount' => $todaySummary['net_sales'] - $yesterdaySummary['net_sales'],
+                    'percentage' => round($revenueChange, 1),
+                    'trend' => $revenueChange >= 0 ? 'up' : 'down',
+                ],
+                'orders' => [
+                    'amount' => $todaySummary['total_orders'] - $yesterdaySummary['total_orders'],
+                    'percentage' => round($ordersChange, 1),
+                    'trend' => $ordersChange >= 0 ? 'up' : 'down',
+                ],
+                'average' => [
+                    'percentage' => round($avgChange, 1),
+                    'trend' => $avgChange >= 0 ? 'up' : 'down',
+                ],
+            ],
+        ];
+    }
+    
+    /**
+     * Get peak hours analysis
+     */
+    public function getPeakHours(int $tenantId, Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Get hourly breakdown
+        $hourly = DB::table('orders')
+            ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count, SUM(total_amount) as revenue')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->groupBy('hour')
+            ->orderBy('count', 'desc')
+            ->get();
+        
+        if ($hourly->isEmpty()) {
+            return [
+                'busiest' => null,
+                'slowest' => null,
+                'breakdown' => [],
+            ];
+        }
+        
+        $sorted = $hourly->sortByDesc('count')->values();
+        
+        return [
+            'busiest' => [
+                'hour' => sprintf('%02d:00', $sorted->first()->hour),
+                'orders' => $sorted->first()->count,
+                'revenue' => (float) $sorted->first()->revenue,
+            ],
+            'slowest' => [
+                'hour' => sprintf('%02d:00', $sorted->last()->hour),
+                'orders' => $sorted->last()->count,
+                'revenue' => (float) $sorted->last()->revenue,
+            ],
+            'breakdown' => $hourly->map(function($item) {
+                return [
+                    'hour' => sprintf('%02d:00', $item->hour),
+                    'orders' => (int) $item->count,
+                    'revenue' => (float) $item->revenue,
+                ];
+            })->toArray(),
+        ];
+    }
+    
+    /**
+     * Get customer insights
+     */
+    public function getCustomerInsights(int $tenantId, Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Get all orders for the day
+        $orders = Order::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->get();
+        
+        $totalOrders = $orders->count();
+        
+        // Unique customers
+        $uniqueCustomers = $orders->whereNotNull('customer_name')->unique('customer_name')->count();
+        if ($uniqueCustomers == 0) {
+            $uniqueCustomers = $totalOrders; // Assume each order is unique customer if no names
+        }
+        
+        // Get previous week data for repeat calculation (simplified)
+        $weekAgo = $date->copy()->subDays(7);
+        $previousCustomers = Order::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$weekAgo, $startOfDay])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->whereNotNull('customer_name')
+            ->pluck('customer_name')
+            ->unique();
+        
+        $todayCustomers = $orders->whereNotNull('customer_name')->pluck('customer_name')->unique();
+        $repeatCustomers = $todayCustomers->intersect($previousCustomers)->count();
+        $newCustomers = $uniqueCustomers - $repeatCustomers;
+        
+        // Calculate average items per order
+        $totalItems = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.tenant_id', $tenantId)
+            ->whereBetween('orders.created_at', [$startOfDay, $endOfDay])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
+            ->sum('order_items.quantity');
+        
+        $avgItemsPerOrder = $totalOrders > 0 ? $totalItems / $totalOrders : 0;
+        
+        return [
+            'total_orders' => $totalOrders,
+            'unique_customers' => $uniqueCustomers,
+            'repeat_customers' => $repeatCustomers,
+            'new_customers' => max(0, $newCustomers),
+            'repeat_percentage' => $uniqueCustomers > 0 ? round(($repeatCustomers / $uniqueCustomers) * 100, 1) : 0,
+            'new_percentage' => $uniqueCustomers > 0 ? round(($newCustomers / $uniqueCustomers) * 100, 1) : 0,
+            'avg_items_per_order' => round($avgItemsPerOrder, 1),
+            'total_items' => (int) $totalItems,
+        ];
+    }
+    
+    /**
+     * Get weekly trend (last 7 days)
+     */
+    public function getWeeklyTrend(int $tenantId, Carbon $endDate): array
+    {
+        $days = [];
+        $dates = [];
+        
+        // Get last 7 days
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $endDate->copy()->subDays($i);
+            $dates[] = $date;
+            
+            $daySummary = $this->calculateDailySummary($tenantId, $date);
+            
+            $days[] = [
+                'date' => $date->format('Y-m-d'),
+                'day_name' => $date->format('l'),
+                'day_short' => $date->format('D'),
+                'revenue' => $daySummary['net_sales'],
+                'orders' => $daySummary['total_orders'],
+                'items' => $daySummary['total_items'],
+            ];
+        }
+        
+        // Calculate totals
+        $totalRevenue = array_sum(array_column($days, 'revenue'));
+        $totalOrders = array_sum(array_column($days, 'orders'));
+        
+        // Find best and worst days
+        $sortedByRevenue = collect($days)->sortByDesc('revenue')->values();
+        $bestDay = $sortedByRevenue->first();
+        $worstDay = $sortedByRevenue->last();
+        
+        // Calculate week-over-week growth
+        $previousWeekStart = $endDate->copy()->subDays(13);
+        $previousWeekEnd = $endDate->copy()->subDays(7);
+        
+        $previousWeekOrders = Order::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$previousWeekStart->startOfDay(), $previousWeekEnd->endOfDay()])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->sum('total_amount');
+        
+        $weekOverWeekGrowth = $previousWeekOrders > 0 
+            ? (($totalRevenue - $previousWeekOrders) / $previousWeekOrders) * 100 
+            : 0;
+        
+        return [
+            'days' => $days,
+            'summary' => [
+                'total_revenue' => $totalRevenue,
+                'total_orders' => $totalOrders,
+                'average_per_day' => $totalOrders > 0 ? $totalRevenue / 7 : 0,
+                'best_day' => $bestDay,
+                'worst_day' => $worstDay,
+            ],
+            'growth' => [
+                'previous_week_revenue' => $previousWeekOrders,
+                'current_week_revenue' => $totalRevenue,
+                'percentage' => round($weekOverWeekGrowth, 1),
+                'trend' => $weekOverWeekGrowth >= 0 ? 'up' : 'down',
+            ],
+        ];
+    }
+    
+    /**
+     * Get stock alerts (low stock items)
+     */
+    public function getStockAlerts(int $tenantId, Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Get today's sales to calculate velocity
+        $todaySales = DB::table('order_items')
+            ->select('product_id', DB::raw('SUM(quantity) as sold_today'))
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.tenant_id', $tenantId)
+            ->whereBetween('orders.created_at', [$startOfDay, $endOfDay])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
+            ->groupBy('product_id')
+            ->get()
+            ->keyBy('product_id');
+        
+        // Get products with stock info
+        $products = DB::table('products')
+            ->select('id', 'name', 'stock', 'category_id')
+            ->where('tenant_id', $tenantId)
+            ->where('stock', '>', 0)
+            ->get();
+        
+        $alerts = [];
+        
+        foreach ($products as $product) {
+            $soldToday = $todaySales[$product->id]->sold_today ?? 0;
+            $stock = $product->stock;
+            
+            // Determine alert level
+            $alertLevel = null;
+            if ($stock < 10 && $soldToday > 0) {
+                $alertLevel = 'critical';
+            } elseif ($stock < 20 && $soldToday > 5) {
+                $alertLevel = 'warning';
+            } elseif ($stock < 30 && $soldToday > 10) {
+                $alertLevel = 'watch';
+            }
+            
+            if ($alertLevel) {
+                $daysUntilStockout = $soldToday > 0 ? floor($stock / $soldToday) : 999;
+                
+                $alerts[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'current_stock' => $stock,
+                    'sold_today' => $soldToday,
+                    'days_until_stockout' => $daysUntilStockout,
+                    'alert_level' => $alertLevel,
+                    'recommendation' => $daysUntilStockout <= 2 ? 'Reorder NOW!' : 'Monitor closely',
+                ];
+            }
+        }
+        
+        // Sort by alert level (critical first)
+        $sorted = collect($alerts)->sortBy(function($item) {
+            $priority = ['critical' => 1, 'warning' => 2, 'watch' => 3];
+            return $priority[$item['alert_level']];
+        })->values()->toArray();
+        
+        return [
+            'alerts' => $sorted,
+            'summary' => [
+                'critical_count' => collect($sorted)->where('alert_level', 'critical')->count(),
+                'warning_count' => collect($sorted)->where('alert_level', 'warning')->count(),
+                'watch_count' => collect($sorted)->where('alert_level', 'watch')->count(),
+            ],
+        ];
+    }
+    
+    /**
+     * Get staff performance
+     */
+    public function getStaffPerformance(int $tenantId, Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Get performance per cashier
+        $performance = DB::table('orders')
+            ->select(
+                'cashier_id',
+                'users.name as user_name',
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(total_amount) as total_revenue'),
+                DB::raw('AVG(total_amount) as avg_transaction')
+            )
+            ->join('users', 'orders.cashier_id', '=', 'users.id')
+            ->where('orders.tenant_id', $tenantId)
+            ->whereBetween('orders.created_at', [$startOfDay, $endOfDay])
+            ->whereIn('orders.status', ['paid', 'cooking', 'complete'])
+            ->whereNotNull('orders.cashier_id')
+            ->groupBy('cashier_id', 'users.name')
+            ->orderByDesc('total_revenue')
+            ->get();
+        
+        if ($performance->isEmpty()) {
+            return [
+                'staff' => [],
+                'summary' => [
+                    'total_staff' => 0,
+                    'avg_orders_per_staff' => 0,
+                    'avg_revenue_per_staff' => 0,
+                ],
+            ];
+        }
+        
+        $totalOrders = $performance->sum('total_orders');
+        $totalRevenue = $performance->sum('total_revenue');
+        $staffCount = $performance->count();
+        
+        $avgOrdersPerStaff = $totalOrders / $staffCount;
+        $avgRevenuePerStaff = $totalRevenue / $staffCount;
+        
+        $staff = $performance->map(function($item, $index) use ($avgOrdersPerStaff, $avgRevenuePerStaff) {
+            $ordersVsAvg = $avgOrdersPerStaff > 0 
+                ? (($item->total_orders - $avgOrdersPerStaff) / $avgOrdersPerStaff) * 100 
+                : 0;
+                
+            return [
+                'user_id' => $item->cashier_id,
+                'user_name' => $item->user_name,
+                'total_orders' => (int) $item->total_orders,
+                'total_revenue' => (float) $item->total_revenue,
+                'avg_transaction' => (float) $item->avg_transaction,
+                'rank' => $index + 1,
+                'performance_vs_avg' => round($ordersVsAvg, 1),
+                'badge' => $index === 0 ? 'top_performer' : ($ordersVsAvg > 0 ? 'above_average' : 'below_average'),
+            ];
+        })->toArray();
+        
+        return [
+            'staff' => $staff,
+            'summary' => [
+                'total_staff' => $staffCount,
+                'avg_orders_per_staff' => round($avgOrdersPerStaff, 1),
+                'avg_revenue_per_staff' => round($avgRevenuePerStaff, 0),
+            ],
+        ];
+    }
+    
+    /**
+     * Get profit analysis
+     */
+    public function getProfitAnalysis(int $tenantId, Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+        
+        // Get orders for the day
+        $orders = Order::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->with('orderItems.product')
+            ->get();
+        
+        if ($orders->isEmpty()) {
+            return [
+                'summary' => [
+                    'gross_revenue' => 0,
+                    'total_cogs' => 0,
+                    'total_discount' => 0,
+                    'net_profit' => 0,
+                    'profit_margin' => 0,
+                    'target_margin' => 35,
+                    'margin_difference' => -35,
+                ],
+                'products' => [],
+                'recommendations' => [],
+            ];
+        }
+        
+        $grossRevenue = $orders->sum('subtotal'); // Before tax & service
+        $totalDiscount = $orders->sum('discount_amount');
+        $totalCogs = 0;
+        $productProfits = [];
+        
+        // Calculate COGS and product-level profitability
+        foreach ($orders as $order) {
+            foreach ($order->orderItems as $item) {
+                $product = $item->product;
+                if (!$product) continue;
+                
+                $productCost = $product->cost * $item->quantity;
+                $productRevenue = $item->price * $item->quantity;
+                $productProfit = $productRevenue - $productCost;
+                $productMargin = $productRevenue > 0 ? ($productProfit / $productRevenue) * 100 : 0;
+                
+                $totalCogs += $productCost;
+                
+                // Aggregate by product
+                if (!isset($productProfits[$product->id])) {
+                    $productProfits[$product->id] = [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity_sold' => 0,
+                        'revenue' => 0,
+                        'cogs' => 0,
+                        'profit' => 0,
+                        'margin' => 0,
+                        'target_margin' => $product->profit_margin_target,
+                    ];
+                }
+                
+                $productProfits[$product->id]['quantity_sold'] += $item->quantity;
+                $productProfits[$product->id]['revenue'] += $productRevenue;
+                $productProfits[$product->id]['cogs'] += $productCost;
+                $productProfits[$product->id]['profit'] += $productProfit;
+            }
+        }
+        
+        // Calculate margins for each product
+        foreach ($productProfits as $id => $data) {
+            $productProfits[$id]['margin'] = $data['revenue'] > 0 
+                ? round(($data['profit'] / $data['revenue']) * 100, 1)
+                : 0;
+        }
+        
+        // Sort by profit descending
+        usort($productProfits, function($a, $b) {
+            return $b['profit'] <=> $a['profit'];
+        });
+        
+        // Calculate overall profit
+        $netProfit = $grossRevenue - $totalCogs - $totalDiscount;
+        $profitMargin = $grossRevenue > 0 ? ($netProfit / $grossRevenue) * 100 : 0;
+        $targetMargin = 35; // Default target
+        $marginDifference = $profitMargin - $targetMargin;
+        
+        // Generate recommendations
+        $recommendations = [];
+        
+        if ($profitMargin < $targetMargin) {
+            $recommendations[] = [
+                'type' => 'warning',
+                'icon' => '⚠️',
+                'message' => "Profit margin ({$profitMargin}%) below target ({$targetMargin}%)",
+                'action' => 'Consider increasing prices or reducing costs',
+            ];
+        } else {
+            $recommendations[] = [
+                'type' => 'success',
+                'icon' => '✅',
+                'message' => "Profit margin ({$profitMargin}%) meets target!",
+                'action' => 'Keep up the good work',
+            ];
+        }
+        
+        // Find low-margin products
+        $lowMarginProducts = array_filter($productProfits, function($p) {
+            return $p['margin'] < 20;
+        });
+        
+        if (!empty($lowMarginProducts)) {
+            $names = array_slice(array_column($lowMarginProducts, 'product_name'), 0, 3);
+            $recommendations[] = [
+                'type' => 'warning',
+                'icon' => '📉',
+                'message' => 'Low margin products: ' . implode(', ', $names),
+                'action' => 'Review pricing or reduce costs',
+            ];
+        }
+        
+        // Find high-margin products to promote
+        $highMarginProducts = array_filter($productProfits, function($p) {
+            return $p['margin'] > 50;
+        });
+        
+        if (!empty($highMarginProducts)) {
+            $names = array_slice(array_column($highMarginProducts, 'product_name'), 0, 3);
+            $recommendations[] = [
+                'type' => 'success',
+                'icon' => '🎯',
+                'message' => 'High margin products: ' . implode(', ', $names),
+                'action' => 'Promote these items more!',
+            ];
+        }
+        
+        return [
+            'summary' => [
+                'gross_revenue' => $grossRevenue,
+                'total_cogs' => $totalCogs,
+                'total_discount' => $totalDiscount,
+                'net_profit' => $netProfit,
+                'profit_margin' => round($profitMargin, 1),
+                'target_margin' => $targetMargin,
+                'margin_difference' => round($marginDifference, 1),
+            ],
+            'products' => $productProfits,
+            'recommendations' => $recommendations,
+        ];
     }
 }

@@ -26,11 +26,50 @@ class DailyReportExport implements WithMultipleSheets
 
     public function sheets(): array
     {
-        return [
+        $sheets = [
             new SummarySheet($this->data),
-            new ProductsSheet($this->products),
-            new PaymentSheet($this->data),
         ];
+
+        // Add comparison if available
+        if (isset($this->data['comparison'])) {
+            $sheets[] = new ComparisonSheet($this->data);
+        }
+
+        // Add weekly trend if available
+        if (isset($this->data['weekly_trend'])) {
+            $sheets[] = new WeeklyTrendSheet($this->data);
+        }
+
+        // Add hourly breakdown if available
+        if (isset($this->data['peak_hours'])) {
+            $sheets[] = new HourlyBreakdownSheet($this->data);
+        }
+
+        // Add customer insights if available
+        if (isset($this->data['customer_insights'])) {
+            $sheets[] = new CustomerInsightsSheet($this->data);
+        }
+
+        // Add stock alerts if available
+        if (isset($this->data['stock_alerts']) && !empty($this->data['stock_alerts']['alerts'])) {
+            $sheets[] = new StockAlertsSheet($this->data);
+        }
+
+        // Add staff performance if available
+        if (isset($this->data['staff_performance']) && !empty($this->data['staff_performance']['staff'])) {
+            $sheets[] = new StaffPerformanceSheet($this->data);
+        }
+
+        // Add profit analysis if available
+        if (isset($this->data['profit_analysis']) && !empty($this->data['profit_analysis']['products'])) {
+            $sheets[] = new ProfitAnalysisSheet($this->data);
+        }
+
+        // Always add products and payment
+        $sheets[] = new ProductsSheet($this->products);
+        $sheets[] = new PaymentSheet($this->data);
+
+        return $sheets;
     }
 }
 
@@ -157,18 +196,21 @@ class PaymentSheet implements FromCollection, WithHeadings, WithStyles, WithTitl
     public function collection()
     {
         return collect($this->data['payment_breakdown'])->map(function($payment) {
+            $avg = $payment['count'] > 0 ? $payment['amount'] / $payment['count'] : 0;
+            
             return [
                 strtoupper($payment['method']),
                 $payment['count'],
                 'Rp ' . number_format($payment['amount'], 0, ',', '.'),
                 $payment['percentage'] . '%',
+                'Rp ' . number_format($avg, 0, ',', '.'),
             ];
         });
     }
 
     public function headings(): array
     {
-        return ['Metode Pembayaran', 'Jumlah Transaksi', 'Total Amount', 'Persentase'];
+        return ['Metode Pembayaran', 'Jumlah Transaksi', 'Total Amount', 'Persentase', 'Avg/Transaction'];
     }
 
     public function styles(Worksheet $sheet)

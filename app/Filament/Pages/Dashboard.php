@@ -14,26 +14,19 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            // Row 1: Stats Overview (4 cards)
+            // Row 1: Key Metrics (Full Width - 4 Cards)
             \App\Filament\Widgets\TodaySalesWidget::class,
-            \App\Filament\Widgets\TotalOrdersWidget::class,
-            \App\Filament\Widgets\InventoryValueWidget::class,
+            
+            // Row 2: Main Charts (2 Columns - 8:4 ratio)
+            \App\Filament\Widgets\SalesChartWidget::class,
             \App\Filament\Widgets\LowStockAlertsWidget::class,
             
-            // Row 2: Charts (2 columns)
-            \App\Filament\Widgets\SalesChartWidget::class,
-            \App\Filament\Widgets\InventoryHealthWidget::class,
-            
-            // Row 3: Tables (2 columns)
-            \App\Filament\Widgets\CriticalAlertsWidget::class,
+            // Row 3: Performance Insights (2 Columns - 6:6 ratio)
             \App\Filament\Widgets\TopProductsWidget::class,
+            \App\Filament\Widgets\CriticalAlertsWidget::class,
             
-            // Row 4: Recent Orders (full width)
+            // Row 4: Recent Activity (Full Width)
             \App\Filament\Widgets\RecentOrdersWidget::class,
-            
-            // Row 5: Activity & Actions (2 columns)
-            \App\Filament\Widgets\StockMovementsWidget::class,
-            \App\Filament\Widgets\PendingActionsWidget::class,
         ];
     }
 

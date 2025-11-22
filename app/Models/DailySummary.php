@@ -11,7 +11,7 @@ class DailySummary extends Model
     
     protected $fillable = [
         'tenant_id',
-        'date',
+        'summary_date',
         'total_orders',
         'total_items',
         'total_customers',
@@ -32,7 +32,7 @@ class DailySummary extends Model
     ];
     
     protected $casts = [
-        'date' => 'date',
+        'summary_date' => 'date',
         'is_closed' => 'boolean',
         'closed_at' => 'datetime',
         'gross_sales' => 'integer',

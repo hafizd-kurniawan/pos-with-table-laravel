@@ -2,43 +2,71 @@
 
 namespace App\Filament\Widgets;
 
-use App\Services\DashboardService;
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
+use App\Models\Ingredient;
+use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\DB;
 
-class LowStockAlertsWidget extends BaseWidget
+class LowStockAlertsWidget extends Widget
 {
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 6;
     
     protected int | string | array $columnSpan = [
-        'md' => 6,    // Medium: 50% (2 per row)
-        'lg' => 4,    // Large: 33% (3 per row) - Laptop 1366x768
-        'xl' => 3,    // XL: 25% (4 per row) - Laptop 1600x900+
-        '2xl' => 3,   // 2XL: 25% (4 per row)
+        'md' => 12,
+        'xl' => 4,
     ];
 
-    protected static ?string $pollingInterval = '60s';
+    protected static string $view = 'filament.widgets.low-stock-alerts-widget';
 
-    protected function getStats(): array
+    protected static ?string $pollingInterval = '120s';
+
+    public function getAlerts(): array
     {
-        $service = new DashboardService();
-        $data = $service->getInventoryStats();
+        $tenantId = auth()->user()->tenant_id ?? null;
+        
+        return Ingredient::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->where('current_stock', '<=', DB::raw('min_stock'))
+                    ->orWhere('current_stock', '<=', 0);
+            })
+            ->selectRaw('
+                id,
+                name,
+                current_stock,
+                min_stock,
+                unit,
+                CASE 
+                    WHEN current_stock <= 0 THEN "critical"
+                    WHEN current_stock <= min_stock THEN "warning"
+                END as alert_level,
+                CASE
+                    WHEN current_stock <= 0 THEN 0
+                    ELSE ROUND((current_stock / min_stock) * 100, 0)
+                END as percentage
+            ')
+            ->orderByRaw('CASE WHEN current_stock <= 0 THEN 0 ELSE 1 END')
+            ->orderBy('percentage', 'asc')
+            ->limit(10)
+            ->get()
+            ->toArray();
+    }
 
-        $total = $data['total_alerts'];
-        $critical = $data['out_of_stock'];
-        $warning = $data['low_stock'];
-
-        $color = $critical > 0 ? 'danger' : ($warning > 0 ? 'warning' : 'success');
-        $icon = $critical > 0 ? 'heroicon-o-exclamation-circle' : 'heroicon-o-bell-alert';
+    public function getStats(): array
+    {
+        $tenantId = auth()->user()->tenant_id ?? null;
+        
+        $stats = Ingredient::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->selectRaw('
+                SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock,
+                SUM(CASE WHEN current_stock <= min_stock AND current_stock > 0 THEN 1 ELSE 0 END) as low_stock
+            ')
+            ->first();
 
         return [
-            Stat::make('⚠️ Alerts', number_format($total))
-                ->description(
-                    $critical . ' critical • ' . $warning . ' low'
-                )
-                ->descriptionIcon($icon)
-                ->color($color)
-                ->url(route('filament.admin.resources.ingredients.index')),
+            'out_of_stock' => $stats->out_of_stock ?? 0,
+            'low_stock' => $stats->low_stock ?? 0,
+            'total' => ($stats->out_of_stock ?? 0) + ($stats->low_stock ?? 0),
         ];
     }
 }
