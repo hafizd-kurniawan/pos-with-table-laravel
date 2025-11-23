@@ -2,38 +2,82 @@
 
 namespace App\Filament\Widgets;
 
-use App\Services\DashboardService;
+use App\Models\Order;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\DB;
 
 class SalesChartWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Sales Trend (Last 7 Days)';
+    protected static ?string $heading = '📈 Today\'s Sales by Hour';
     protected static ?int $sort = 5;
     
     protected int | string | array $columnSpan = [
-        'md' => 4,
-        'xl' => 6,
+        'md' => 12,
+        'xl' => 8,
     ];
 
-    protected static ?string $pollingInterval = '120s';
+    protected static ?string $pollingInterval = '60s';
 
     protected function getData(): array
     {
-        $service = new DashboardService();
-        $data = $service->getSalesTrend();
+        $tenantId = auth()->user()->tenant_id ?? null;
+        
+        // Get hourly sales for today
+        $hourlySales = Order::where('tenant_id', $tenantId)
+            ->whereDate('created_at', today())
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->select(
+                DB::raw('HOUR(created_at) as hour'),
+                DB::raw('SUM(total_amount) as total'),
+                DB::raw('COUNT(*) as orders')
+            )
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->get()
+            ->keyBy('hour');
+
+        // Prepare data for all 24 hours (only show operating hours)
+        $salesData = [];
+        $ordersData = [];
+        $labels = [];
+        
+        // Operating hours: 8 AM to 10 PM (22:00)
+        $startHour = 8;
+        $endHour = 22;
+        
+        for ($hour = $startHour; $hour <= $endHour; $hour++) {
+            $data = $hourlySales->get($hour);
+            $salesData[] = $data ? (float) $data->total : 0;
+            $ordersData[] = $data ? (int) $data->orders : 0;
+            $labels[] = sprintf('%02d:00', $hour);
+        }
+
+        $totalSales = array_sum($salesData);
+        $totalOrders = array_sum($ordersData);
+        $peakHour = $salesData ? array_search(max($salesData), $salesData) + $startHour : 0;
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Daily Sales',
-                    'data' => $data['sales'],
-                    'borderColor' => '#3B82F6',
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                    'label' => 'Sales (Rp)',
+                    'data' => $salesData,
+                    'borderColor' => '#10B981',
+                    'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                     'fill' => true,
                     'tension' => 0.4,
+                    'yAxisID' => 'y',
+                ],
+                [
+                    'label' => 'Orders',
+                    'data' => $ordersData,
+                    'borderColor' => '#3B82F6',
+                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                    'fill' => false,
+                    'tension' => 0.4,
+                    'yAxisID' => 'y1',
                 ],
             ],
-            'labels' => $data['labels'],
+            'labels' => $labels,
         ];
     }
 
@@ -48,16 +92,33 @@ class SalesChartWidget extends ChartWidget
             'plugins' => [
                 'legend' => [
                     'display' => true,
+                    'position' => 'top',
+                ],
+                'tooltip' => [
+                    'mode' => 'index',
+                    'intersect' => false,
                 ],
             ],
             'scales' => [
                 'y' => [
-                    'ticks' => [
-                        'callback' => '
-                            function(value) { 
-                                return "Rp " + value.toLocaleString("id-ID"); 
-                            }
-                        ',
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'left',
+                    'title' => [
+                        'display' => true,
+                        'text' => 'Sales (Rp)',
+                    ],
+                ],
+                'y1' => [
+                    'type' => 'linear',
+                    'display' => true,
+                    'position' => 'right',
+                    'title' => [
+                        'display' => true,
+                        'text' => 'Orders',
+                    ],
+                    'grid' => [
+                        'drawOnChartArea' => false,
                     ],
                 ],
             ],
@@ -66,9 +127,25 @@ class SalesChartWidget extends ChartWidget
 
     public function getDescription(): ?string
     {
-        $service = new DashboardService();
-        $data = $service->getSalesTrend();
+        $tenantId = auth()->user()->tenant_id ?? null;
+        
+        $peakData = Order::where('tenant_id', $tenantId)
+            ->whereDate('created_at', today())
+            ->whereIn('status', ['paid', 'cooking', 'complete'])
+            ->select(
+                DB::raw('HOUR(created_at) as hour'),
+                DB::raw('SUM(total_amount) as total')
+            )
+            ->groupBy('hour')
+            ->orderBy('total', 'desc')
+            ->first();
 
-        return 'Rata-rata: Rp ' . number_format($data['average'], 0, ',', '.') . '/hari • Tertinggi: Rp ' . number_format($data['best_day'], 0, ',', '.');
+        if ($peakData) {
+            $peakHour = sprintf('%02d:00', $peakData->hour);
+            $peakSales = number_format($peakData->total, 0, ',', '.');
+            return "🔥 Peak: {$peakHour} (Rp {$peakSales}) • Real-time updates every minute";
+        }
+
+        return "Real-time sales tracking • Updates every minute";
     }
 }

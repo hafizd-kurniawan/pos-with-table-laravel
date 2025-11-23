@@ -21,8 +21,8 @@ class TableCategoryResource extends Resource
     protected static ?string $model = TableCategory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Table Management';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationGroup = 'Settings';
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Table Categories';
     protected static ?string $modelLabel = 'Table Category';

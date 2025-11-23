@@ -1,8 +1,16 @@
 <x-filament-widgets::widget>
     <x-filament::section class="h-full">
-        <x-slot name="heading">
-            🏆 Top Products (Last 7 Days)
-        </x-slot>
+        <div class="flex items-center justify-between mb-2">
+            <x-slot name="heading">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🏆</span>
+                    <span>Top Products</span>
+                </div>
+            </x-slot>
+            <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                Last 7 Days
+            </div>
+        </div>
 
         @php
             $products = $this->getProducts();

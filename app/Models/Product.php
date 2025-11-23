@@ -16,6 +16,8 @@ class Product extends Model
         'barcode', 
         'description', 
         'price', 
+        'cost',
+        'profit_margin_target',
         'is_featured', 
         'is_favorite', 
         'category_id', 
@@ -27,6 +29,8 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'integer',
+        'cost' => 'decimal:0',
+        'profit_margin_target' => 'decimal:0',
         'stock' => 'integer',
         'is_featured' => 'boolean',
         'is_favorite' => 'boolean',

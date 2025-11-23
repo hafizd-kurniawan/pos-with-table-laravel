@@ -12,7 +12,7 @@ class CriticalAlertsWidget extends BaseWidget
     protected static ?int $sort = 7;
     
     protected int | string | array $columnSpan = [
-        'md' => 4,
+        'md' => 12,
         'xl' => 6,
     ];
 

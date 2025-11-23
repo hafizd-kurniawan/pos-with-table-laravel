@@ -229,4 +229,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     // SETTINGS API (For Flutter App)
     Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);
     Route::get('/settings/{key}', [\App\Http\Controllers\API\SettingsController::class, 'show']);
+    
+    // DASHBOARD SUMMARY (for Flutter)
+    Route::get('/dashboard/today-summary', [\App\Http\Controllers\Api\DashboardController::class, 'todaySummary']);
 });

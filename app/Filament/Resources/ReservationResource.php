@@ -21,8 +21,8 @@ class ReservationResource extends Resource
     protected static ?string $model = Reservation::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
-    protected static ?string $navigationGroup = 'Table Management';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationGroup = 'Operations';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {

@@ -26,7 +26,7 @@ class OrderSettings extends Page implements HasForms
     
     protected static ?string $navigationGroup = 'Settings';
     
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     protected static string $view = 'filament.pages.order-settings';
 

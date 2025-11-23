@@ -20,15 +20,15 @@ class SettingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationLabel = 'Settings';
+    protected static ?string $navigationLabel = 'System Settings';
 
     protected static ?string $modelLabel = 'Setting';
 
     protected static ?string $pluralModelLabel = 'Settings';
 
-    protected static ?string $navigationGroup = 'Configuration';
+    protected static ?string $navigationGroup = 'Settings';
     
-    protected static ?int $navigationSort = 99;
+    protected static ?int $navigationSort = 3;
 
     // Authorization: Check permissions
     public static function canViewAny(): bool
