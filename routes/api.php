@@ -69,6 +69,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user()->load('tenant', 'role');
     });
+    
+    // FCM Token Management
+    Route::post('/fcm-token', [\App\Http\Controllers\Api\AuthController::class, 'updateFcmToken']);
 });
 
 // ========================================
@@ -76,7 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // ========================================
 Route::post('/midtrans/prod/callback', [OrderController::class, 'midtransCallback']);
 Route::get('images/{filename}', [App\Http\Controllers\ImageController::class, 'show']);
-Route::get('/settings', [\App\Http\Controllers\Api\SettingController::class, 'getValue']);
+// Route::get('/settings', [\App\Http\Controllers\Api\SettingController::class, 'getValue']);
 
 // QRIS Order endpoints for Flutter (Public)
 Route::post('order/create-qris', [OrderController::class, 'createQrisOrder']);
@@ -225,6 +228,18 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 
     // FCM TOKEN UPDATE
     Route::post('/fcm-token', [\App\Http\Controllers\Api\AuthController::class, 'updateFcmToken']);
+    
+    // NOTIFICATIONS
+    Route::prefix('notifications')->group(function () {
+        Route::get('preferences', [\App\Http\Controllers\Api\NotificationController::class, 'getPreferences']);
+        Route::put('preferences', [\App\Http\Controllers\Api\NotificationController::class, 'updatePreferences']);
+        Route::get('/', [\App\Http\Controllers\Api\NotificationController::class, 'getNotifications']);
+        Route::get('unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'getUnreadCount']);
+        Route::put('{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+        Route::put('read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+        Route::delete('{id}', [\App\Http\Controllers\Api\NotificationController::class, 'delete']);
+        Route::post('test', [\App\Http\Controllers\Api\NotificationController::class, 'sendTest']);
+    });
     
     // SETTINGS API (For Flutter App)
     Route::get('/settings', [\App\Http\Controllers\API\SettingsController::class, 'index']);

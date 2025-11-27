@@ -33,6 +33,7 @@ class Order extends Model
         'customer_email',
         'expired_at',
         'order_type', // NEW: dine_in or takeaway
+        'cashier_name', // NEW: Save cashier name
     ];
 
     protected $casts = [

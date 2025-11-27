@@ -10,6 +10,8 @@ use App\Models\Reservation;
 use App\Observers\ReservationObserver;
 use App\Models\PurchaseOrder;
 use App\Observers\PurchaseOrderObserver;
+use App\Models\Order;
+use App\Observers\OrderObserver;
 use App\Events\LowStockDetected;
 use App\Listeners\SendLowStockNotification;
 
@@ -47,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         // Register Observers
         Reservation::observe(ReservationObserver::class);
         PurchaseOrder::observe(PurchaseOrderObserver::class);
+        Order::observe(OrderObserver::class);
 
         // Register Event Listeners
         Event::listen(

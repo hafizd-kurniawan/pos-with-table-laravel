@@ -644,12 +644,13 @@ class OrderController extends Controller
                     'total_amount' => $validatedData['total'],
                     'payment_method' => $validatedData['payment_method'],
                     'payment_status' => $request->input('payment_status', 'paid'),
-                    'tax_amount' => $validatedData['tax'], // FIX: Save to tax_amount
-                    'tax_percentage' => $request->input('tax_percentage', 0), // NEW: Save percentage
-                    'discount_amount' => $request->input('discount_amount', 0), // FIX: Save discount_amount
-                    'service_charge_amount' => $validatedData['service_charge'], // FIX: Save to service_charge_amount
-                    'service_charge_percentage' => $request->input('service_charge_percentage', 0), // NEW: Save percentage
+                    'tax_amount' => $validatedData['tax'],
+                    'tax_percentage' => $request->input('tax_percentage', 0),
+                    'discount_amount' => $validatedData['discount'], // Use validated discount
+                    'service_charge_amount' => $validatedData['service_charge'],
+                    'service_charge_percentage' => $request->input('service_charge_percentage', 0),
                     'subtotal' => $validatedData['sub_total'],
+                    'cashier_name' => $request->input('cashier_name'), // NEW: Save cashier name
                 ]);
 
                 Log::info('✅ Order created', [

@@ -15,7 +15,8 @@ class DefaultTenantSettingsSeeder extends Seeder
      */
     public function run(): void
     {
-        $tenantId = $this->command->option('tenant');
+        // $tenantId = $this->command->option('tenant');
+        $tenantId = null;
 
         if ($tenantId) {
             $this->createDefaultSettings($tenantId);
