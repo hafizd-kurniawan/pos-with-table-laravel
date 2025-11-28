@@ -50,7 +50,7 @@ class OrderController extends Controller
             $this->decreaseProductStock($order);
             
             // Send notification to user
-            $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name);
+            $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
         } elseif (in_array($transaction, ['cancel', 'expire', 'deny'])) {
             $order->status = 'failed';
             
@@ -65,12 +65,30 @@ class OrderController extends Controller
     }
 
     // Method for send notification to restaurant/user/driver
-    public function sendNotification($title, $message)
+    public function sendNotification($title, $message, $tenantId = null)
     {
-        //find user is login
-        $user = User::where('is_login', true)->first();
+        Log::info("🔔 sendNotification called", ['title' => $title, 'tenant_id' => $tenantId]);
+
+        // Find user is login
+        $query = User::query();
+        
+        // CRITICAL: Ensure we only notify user from the same tenant
+        if ($tenantId) {
+            // Use forTenant scope from BelongsToTenant trait
+            $query->forTenant($tenantId);
+        }
+        
+        $user = $query->where('is_login', true)->first();
+        
+        if ($user) {
+            Log::info("👤 User found for notification", ['user_id' => $user->id, 'has_token' => !empty($user->fcm_token)]);
+        } else {
+            Log::warning("⚠️ No logged-in user found for tenant", ['tenant_id' => $tenantId]);
+        }
+
         if ($user && $user->fcm_token) {
             $token = $user->fcm_token;
+            Log::info("📱 Sending FCM to token", ['token_preview' => substr($token, 0, 10) . '...']);
 
             // Kirim notifikasi ke perangkat Android
             $messaging = app('firebase.messaging');
@@ -81,8 +99,9 @@ class OrderController extends Controller
 
             try {
                 $messaging->send($message);
+                Log::info("✅ Notification sent successfully");
             } catch (\Exception $e) {
-                Log::error('Failed to send notification', ['error' => $e->getMessage()]);
+                Log::error('❌ Failed to send notification', ['error' => $e->getMessage()]);
             }
         }
     }
