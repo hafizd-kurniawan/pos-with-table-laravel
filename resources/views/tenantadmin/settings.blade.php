@@ -70,6 +70,7 @@
                     <div>
                         <label class="block text-sm font-bold mb-1">Server Key</label>
                         <input type="password" name="server_key" 
+                               value="{{ $tenant->midtrans_server_key ? \Illuminate\Support\Facades\Crypt::decryptString($tenant->midtrans_server_key) : '' }}"
                                class="w-full px-3 py-2 border rounded text-sm"
                                placeholder="SB-Mid-server-...">
                     </div>
@@ -77,6 +78,7 @@
                     <div>
                         <label class="block text-sm font-bold mb-1">Client Key</label>
                         <input type="password" name="client_key" 
+                               value="{{ $tenant->midtrans_client_key ? \Illuminate\Support\Facades\Crypt::decryptString($tenant->midtrans_client_key) : '' }}"
                                class="w-full px-3 py-2 border rounded text-sm"
                                placeholder="SB-Mid-client-...">
                     </div>
@@ -123,6 +125,7 @@
                     <div>
                         <label class="block text-sm font-bold mb-1">Webhook URL</label>
                         <input type="url" name="webhook_url" 
+                               value="{{ $tenant->n8n_webhook_url ? \Illuminate\Support\Facades\Crypt::decryptString($tenant->n8n_webhook_url) : '' }}"
                                class="w-full px-3 py-2 border rounded text-sm"
                                placeholder="https://n8n.yourdomain.com/webhook/...">
                         @if($tenant->n8n_webhook_url)
@@ -166,7 +169,7 @@
                         <label class="block text-sm font-bold mb-1">Service Account JSON</label>
                         <textarea name="credentials" rows="6"
                                   class="w-full px-3 py-2 border rounded text-xs font-mono"
-                                  placeholder='{"type": "service_account", "project_id": "..."}'></textarea>
+                                  placeholder='{"type": "service_account", "project_id": "..."}'>{{ $tenant->firebase_credentials ? \Illuminate\Support\Facades\Crypt::decryptString($tenant->firebase_credentials) : '' }}</textarea>
                         @if($tenant->firebase_credentials)
                             <p class="text-xs text-green-600 mt-1">✅ Currently configured</p>
                         @endif
