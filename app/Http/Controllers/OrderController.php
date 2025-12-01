@@ -749,10 +749,10 @@ class OrderController extends Controller
             
             // CRITICAL: Restore stock that was reserved
             // Load items relationship first (in case not loaded)
-            $order->load('items');
+            $order->load('orderItems');
             
-            if ($order->items && $order->items->count() > 0) {
-                foreach ($order->items as $item) {
+            if ($order->orderItems && $order->orderItems->count() > 0) {
+                foreach ($order->orderItems as $item) {
                     $product = Product::find($item->product_id);
                     if ($product) {
                         $product->increment('stock', $item->quantity);

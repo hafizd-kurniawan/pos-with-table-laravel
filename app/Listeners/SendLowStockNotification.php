@@ -24,11 +24,38 @@ class SendLowStockNotification
             'tenant_id' => $ingredient->tenant_id,
         ]);
         
-        // TODO: Send WhatsApp notification (future enhancement)
-        // TODO: Send email to admin (future enhancement)
-        // TODO: Push notification to mobile app (future enhancement)
-        
-        // For now, just log it
-        // You can add notification logic here later
+        // Send FCM notifications to admin users IN THIS TENANT ONLY
+        try {
+            $notificationService = app(\App\Services\NotificationService::class);
+            
+            // Get admin users in THIS tenant only
+            $adminUsers = \App\Models\User::where('tenant_id', $ingredient->tenant_id)
+                ->whereHas('role', function($query) {
+                    $query->where('slug', 'admin');
+                })
+                ->whereNotNull('fcm_token')
+                ->get();
+            
+            $successCount = 0;
+            $failedCount = 0;
+            
+            foreach ($adminUsers as $user) {
+                if ($notificationService->sendLowStockNotification($user, $ingredient)) {
+                    $successCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+            
+            Log::info("Low stock notifications sent", [
+                'tenant_id' => $ingredient->tenant_id,
+                'admins_count' => $adminUsers->count(),
+                'success' => $successCount,
+                'failed' => $failedCount,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to send low stock notifications: " . $e->getMessage());
+        }
     }
 }

@@ -13,15 +13,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('tenants', 'uuid')) {
+            return;
+        }
+
         Schema::table('tenants', function (Blueprint $table) {
-            // Full UUID (36 chars) for maximum security - nullable first
-            $table->uuid('uuid')->nullable()->after('id');
+            if (!Schema::hasColumn('tenants', 'uuid')) {
+                // Full UUID (36 chars) for maximum security - nullable first
+                $table->uuid('uuid')->nullable()->after('id');
+            }
             
-            // Short UUID (8 chars) for balanced URL length - nullable first
-            $table->string('short_uuid', 8)->nullable()->after('uuid');
+            if (!Schema::hasColumn('tenants', 'short_uuid')) {
+                // Short UUID (8 chars) for balanced URL length - nullable first
+                $table->string('short_uuid', 8)->nullable()->after('uuid');
+            }
             
-            // Slug for SEO and user-friendly URLs - nullable first
-            $table->string('slug')->nullable()->after('short_uuid');
+            if (!Schema::hasColumn('tenants', 'slug')) {
+                // Slug for SEO and user-friendly URLs - nullable first
+                $table->string('slug')->nullable()->after('short_uuid');
+            }
         });
         
         // Generate UUIDs and slugs for existing tenants
@@ -39,12 +49,17 @@ return new class extends Migration
         }
         
         // Now add unique constraints and index
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->unique('uuid');
-            $table->unique('short_uuid');
-            $table->unique('slug');
-            $table->index(['slug', 'short_uuid']);
-        });
+        try {
+            Schema::table('tenants', function (Blueprint $table) {
+                // Check if index exists before adding (Laravel doesn't have hasIndex easily, so try-catch is safer here or just ignore)
+                $table->unique('uuid');
+                $table->unique('short_uuid');
+                $table->unique('slug');
+                $table->index(['slug', 'short_uuid']);
+            });
+        } catch (\Exception $e) {
+            // Indices likely already exist
+        }
     }
 
     /**

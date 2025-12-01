@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'tenant_id', // Nullable for super admin
         'role_id', // User's role
+        'fcm_token', // Firebase Cloud Messaging token
     ];
 
     /**
@@ -146,5 +147,32 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->isSuperAdmin() || $this->hasRole('admin');
+    }
+
+    // FCM Token Management
+    public function hasFcmToken(): bool
+    {
+        return !empty($this->fcm_token);
+    }
+
+    public function updateFcmToken(string $token): void
+    {
+        $this->update(['fcm_token' => $token]);
+    }
+
+    public function clearFcmToken(): void
+    {
+        $this->update(['fcm_token' => null]);
+    }
+
+    // Notification Relationships
+    public function notificationPreferences()
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
     }
 }
