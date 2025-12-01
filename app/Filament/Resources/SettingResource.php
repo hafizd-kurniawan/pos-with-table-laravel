@@ -99,23 +99,23 @@ class SettingResource extends Resource
                 
                 Forms\Components\Section::make('Value Configuration')
                     ->schema([
-                        Forms\Components\Textarea::make('value')
+                        Forms\Components\Textarea::make('value_text')
                             ->label('Setting Value')
                             ->required()
                             ->columnSpanFull()
                             ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number'])),
                         
-                        Forms\Components\Toggle::make('value')
+                        Forms\Components\Toggle::make('value_boolean')
                             ->label('Setting Value')
                             ->visible(fn ($get) => $get('type') === 'boolean')
                             ->formatStateUsing(fn ($state) => filter_var($state, FILTER_VALIDATE_BOOLEAN))
                             ->dehydrateStateUsing(fn ($state) => $state ? '1' : '0'),
                         
-                        Forms\Components\ColorPicker::make('value')
+                        Forms\Components\ColorPicker::make('value_color')
                             ->label('Setting Value')
                             ->visible(fn ($get) => $get('type') === 'color'),
                         
-                        Forms\Components\FileUpload::make('value')
+                        Forms\Components\FileUpload::make('value_file')
                             ->label('Setting Value')
                             ->image()
                             ->imageEditor()

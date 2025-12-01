@@ -27,7 +27,7 @@
         <form action="{{ route('order.addToCartWithNote', [$table->name, $product->id]) }}" method="POST" class="mt-5">
             @csrf
             <label class="block text-sm font-medium mb-1">Catatan:</label>
-            <textarea name="notes" class="w-full border rounded p-2" placeholder="Catatan untuk pesanan..."></textarea>
+            <textarea name="notes" class="w-full border rounded p-2" placeholder="Catatan untuk pesanan..." maxlength="100"></textarea>
 
             <label class="block text-sm font-medium mt-3 mb-1">Jumlah:</label>
             <input type="number" name="qty" value="1" min="1" class="w-20 border rounded p-1">

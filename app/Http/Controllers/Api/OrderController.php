@@ -114,7 +114,9 @@ class OrderController extends Controller
             'items' => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1',
             'items.*.notes' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500', // NEW: Global note validation
         ]);
 
         $paymentMethod = strtolower($request->input('payment_method', 'cash'));
@@ -428,6 +430,7 @@ class OrderController extends Controller
                 'customer_name' => $request->customer_name,
                 'customer_phone' => $request->customer_phone,
                 'customer_email' => $request->customer_email,
+                'notes' => $request->notes, // Added global note mapping
             ]);
 
             // Buat order items
@@ -491,6 +494,7 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'order_code' => $order->code,
                 'qr_string' => $order->qr_string,
+                'payment_url' => $order->payment_url,
                 'total_amount' => $order->total_amount,
                 'message' => 'Order created successfully',
             ]);
