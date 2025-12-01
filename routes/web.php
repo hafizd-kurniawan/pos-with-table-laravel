@@ -28,6 +28,7 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         Route::delete('/tenants/{tenant}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'destroy'])->name('tenants.destroy');
         
         // Tenant Actions
+        Route::get('/tenants/{tenant}/export-pdf', [App\Http\Controllers\SuperAdmin\TenantController::class, 'exportPdf'])->name('tenants.export-pdf');
         Route::post('/tenants/{tenant}/extend-trial', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'extendTrial'])->name('tenants.extend-trial');
         Route::post('/tenants/{tenant}/activate-subscription', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'activateSubscription'])->name('tenants.activate-subscription');
         Route::post('/tenants/{tenant}/suspend', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'suspend'])->name('tenants.suspend');
@@ -68,8 +69,8 @@ Route::prefix('tenant/admin')->name('tenantadmin.')->group(function () {
 });
 
 Route::get('/', function () {
-    // Show navigation page
-    return view('navigation');
+    // Show landing page
+    return view('landing');
 })->name('home');
 
 // Self-Order Routes (Public - with UUID for security)
@@ -132,3 +133,21 @@ Route::prefix('order-settings')->name('order-settings.')->group(function () {
     Route::get('/', [App\Http\Controllers\Web\OrderSettingController::class, 'index'])->name('index');
     Route::put('/update', [App\Http\Controllers\Web\OrderSettingController::class, 'update'])->name('update');
 });
+
+Route::get('/storage-proxy/{any}', function ($any) {
+    // Strip 'storage/' prefix if present, as we are looking in storage/app/public
+    $filename = str_replace('storage/', '', $any);
+    $path = storage_path('app/public/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    $file = \Illuminate\Support\Facades\File::get($path);
+    $type = \Illuminate\Support\Facades\File::mimeType($path);
+
+    return response($file, 200)
+        ->header('Content-Type', $type)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+})->where('any', '.*');
