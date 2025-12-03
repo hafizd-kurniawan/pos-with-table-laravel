@@ -1727,6 +1727,12 @@ class OrderController extends Controller
                 "item_details" => $itemDetails,
                 "customer_details" => [
                     "first_name" => $customerName,
+                ],
+                // NEW: Set Expiry time (e.g., 15 minutes)
+                // This is better than a cron job because Midtrans will notify us via Webhook when it expires.
+                "custom_expiry" => [
+                    "expiry_duration" => 2, // 15 minutes
+                    "unit" => "minute"
                 ]
             ];
 

@@ -26,8 +26,16 @@ class SaaSDatabaseSeeder extends Seeder
         $this->command->info('');
         
         // ================================================
-        // STEP 1: CREATE SUPER ADMIN
+        // STEP 1: GLOBAL CONFIGURATION
         // ================================================
+        $this->command->info('🌍 Seeding Global Configuration...');
+        $this->call(PermissionSeeder::class);
+        $this->call(SubscriptionPlanSeeder::class);
+
+        // ================================================
+        // STEP 2: CREATE SUPER ADMIN
+        // ================================================
+        $this->command->info('');
         $this->command->info('👑 Creating Super Admin...');
         
         $superAdmin = User::withoutGlobalScope('tenant')->firstOrCreate(
@@ -42,20 +50,25 @@ class SaaSDatabaseSeeder extends Seeder
         $this->command->info("   ✅ Super Admin: {$superAdmin->email}");
         
         // ================================================
-        // STEP 2: CREATE SUBSCRIPTION PLANS
-        // ================================================
-        $this->command->info('');
-        $this->command->info('💳 Creating Subscription Plans...');
-        
-        $this->call(SubscriptionPlanSeeder::class);
-        
-        // ================================================
-        // STEP 3: CREATE DEFAULT TENANT (Optional)
+        // STEP 3: CREATE DEFAULT TENANT
         // ================================================
         $this->command->info('');
         $this->command->info('🏢 Creating Default Tenant...');
         
         $this->call(DefaultTenantSeeder::class);
+
+        // ================================================
+        // STEP 4: TENANT CONFIGURATION
+        // ================================================
+        $this->command->info('');
+        $this->command->info('⚙️  Seeding Tenant Configuration...');
+        
+        $this->call([
+            RoleSeeder::class,
+            DefaultTenantSettingsSeeder::class,
+            OrderSettingsSeeder::class,
+            TakeawayTableSeeder::class,
+        ]);
         
         // ================================================
         // SUMMARY

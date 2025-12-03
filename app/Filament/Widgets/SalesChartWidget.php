@@ -20,47 +20,14 @@ class SalesChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $tenantId = auth()->user()->tenant_id ?? null;
-        
-        // Get hourly sales for today
-        $hourlySales = Order::where('tenant_id', $tenantId)
-            ->whereDate('created_at', today())
-            ->whereIn('status', ['paid', 'cooking', 'complete'])
-            ->select(
-                DB::raw('HOUR(created_at) as hour'),
-                DB::raw('SUM(total_amount) as total'),
-                DB::raw('COUNT(*) as orders')
-            )
-            ->groupBy('hour')
-            ->orderBy('hour')
-            ->get()
-            ->keyBy('hour');
-
-        // Prepare data for all 24 hours (only show operating hours)
-        $salesData = [];
-        $ordersData = [];
-        $labels = [];
-        
-        // Operating hours: 8 AM to 10 PM (22:00)
-        $startHour = 8;
-        $endHour = 22;
-        
-        for ($hour = $startHour; $hour <= $endHour; $hour++) {
-            $data = $hourlySales->get($hour);
-            $salesData[] = $data ? (float) $data->total : 0;
-            $ordersData[] = $data ? (int) $data->orders : 0;
-            $labels[] = sprintf('%02d:00', $hour);
-        }
-
-        $totalSales = array_sum($salesData);
-        $totalOrders = array_sum($ordersData);
-        $peakHour = $salesData ? array_search(max($salesData), $salesData) + $startHour : 0;
+        $service = new \App\Services\DashboardService();
+        $trend = $service->getSalesTrend();
 
         return [
             'datasets' => [
                 [
                     'label' => 'Sales (Rp)',
-                    'data' => $salesData,
+                    'data' => $trend['sales'],
                     'borderColor' => '#10B981',
                     'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
                     'fill' => true,
@@ -69,7 +36,7 @@ class SalesChartWidget extends ChartWidget
                 ],
                 [
                     'label' => 'Orders',
-                    'data' => $ordersData,
+                    'data' => $trend['orders'],
                     'borderColor' => '#3B82F6',
                     'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
                     'fill' => false,
@@ -77,7 +44,7 @@ class SalesChartWidget extends ChartWidget
                     'yAxisID' => 'y1',
                 ],
             ],
-            'labels' => $labels,
+            'labels' => $trend['labels'],
         ];
     }
 

@@ -70,6 +70,8 @@ class RoleSeeder extends Seeder
                 'process_payments', 'view_payment_history',
                 'view_inventory', 'manage_inventory', 'view_stock_reports',
                 'manage_discounts', 'manage_taxes', 'manage_service_charges',
+                'view_printers', 'create_printers', 'edit_printers', 'delete_printers',
+                'view_kds', 'manage_kds_status',
             ];
             $managerRole->permissions()->sync($permissions->whereIn('slug', $managerPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;
@@ -110,6 +112,7 @@ class RoleSeeder extends Seeder
                 'view_dashboard',
                 'view_orders', 'manage_order_status', // Can see orders and mark as cooking/ready
                 'view_products', // Can view menu items
+                'view_kds', 'manage_kds_status', // KDS Access
             ];
             $chefRole->permissions()->sync($permissions->whereIn('slug', $chefPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;

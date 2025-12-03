@@ -84,6 +84,16 @@ class PermissionSeeder extends Seeder
             ['name' => 'Manage Discounts', 'slug' => 'manage_discounts', 'group' => 'pricing', 'description' => 'Manage discount rules'],
             ['name' => 'Manage Taxes', 'slug' => 'manage_taxes', 'group' => 'pricing', 'description' => 'Manage tax rules'],
             ['name' => 'Manage Service Charges', 'slug' => 'manage_service_charges', 'group' => 'pricing', 'description' => 'Manage service charge rules'],
+
+            // Printers Group
+            ['name' => 'View Printers', 'slug' => 'view_printers', 'group' => 'printers', 'description' => 'View printers list'],
+            ['name' => 'Create Printers', 'slug' => 'create_printers', 'group' => 'printers', 'description' => 'Add new printers'],
+            ['name' => 'Edit Printers', 'slug' => 'edit_printers', 'group' => 'printers', 'description' => 'Edit printers'],
+            ['name' => 'Delete Printers', 'slug' => 'delete_printers', 'group' => 'printers', 'description' => 'Delete printers'],
+
+            // Kitchen Display System (KDS) Group
+            ['name' => 'View KDS', 'slug' => 'view_kds', 'group' => 'kds', 'description' => 'Access Kitchen Display System'],
+            ['name' => 'Manage KDS Status', 'slug' => 'manage_kds_status', 'group' => 'kds', 'description' => 'Update order status from KDS'],
         ];
 
         foreach ($permissions as $permission) {

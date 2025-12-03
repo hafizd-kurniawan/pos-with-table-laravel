@@ -15,6 +15,7 @@ class TableController extends Controller
     public function index(): JsonResponse
     {
         $tables = Table::with(['currentReservation', 'category'])
+                      ->where('name', '!=', 'Takeaway')
                       ->orderBy('name')
                       ->get();
 
@@ -81,6 +82,12 @@ class TableController extends Controller
      */
     public function update(Request $request, Table $table): JsonResponse
     {
+        if ($table->name === 'Takeaway') {
+            return response()->json([
+                'success' => false,
+                'message' => 'The Takeaway table cannot be edited'
+            ], 403);
+        }
         $request->validate([
             'name' => 'sometimes|string|unique:tables,name,' . $table->id,
             'category_id' => 'sometimes|exists:table_categories,id',
@@ -120,6 +127,12 @@ class TableController extends Controller
      */
     public function destroy(Table $table): JsonResponse
     {
+        if ($table->name === 'Takeaway') {
+            return response()->json([
+                'success' => false,
+                'message' => 'The Takeaway table cannot be deleted'
+            ], 403);
+        }
         // Check if table has active reservations or orders
         if ($table->reservations()->whereIn('status', ['pending', 'confirmed'])->exists()) {
             return response()->json([
@@ -163,6 +176,12 @@ class TableController extends Controller
      */
     public function updateStatus(Request $request, Table $table): JsonResponse
     {
+        if ($table->name === 'Takeaway') {
+            return response()->json([
+                'success' => false,
+                'message' => 'The Takeaway table status cannot be manually changed'
+            ], 403);
+        }
         $request->validate([
             'status' => 'required|in:available,occupied,reserved,pending_bill',
             'customer_name' => 'nullable|string',
@@ -199,7 +218,7 @@ class TableController extends Controller
      */
     public function available(): JsonResponse
     {
-        $tables = Table::available()->orderBy('name')->get();
+        $tables = Table::available()->where('name', '!=', 'Takeaway')->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
