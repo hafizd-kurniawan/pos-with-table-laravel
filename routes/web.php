@@ -95,12 +95,12 @@ Route::get('/api/order/{code}/status', [\App\Http\Controllers\OrderManagementCon
 
 Route::get('/order/{tenantIdentifier}/{tablenumber}/success/{code}', [OrderController::class, 'success'])->name('order.success');
 Route::post('/midtrans/callback', [OrderController::class, 'midtransCallback']);
-Route::get('/table/{table}/product/{product}', [OrderController::class, 'detail'])
+Route::get('/order/{tenantIdentifier}/{tablenumber}/product/{product}', [OrderController::class, 'detail'])
     ->name('order.detail');
-Route::post('/table/{table}/product/{productId}/add', [OrderController::class, 'addToCartWithNote'])->name('order.addToCartWithNote');
+Route::post('/order/{tenantIdentifier}/{tablenumber}/product/{productId}/add', [OrderController::class, 'addToCartWithNote'])->name('order.addToCartWithNote');
 
 // AJAX Add to Cart Route (with session support)
-Route::post('/ajax/order/{tablenumber}/add-cart', [OrderController::class, 'addToCartAjax'])->name('order.addToCartAjax');
+Route::post('/ajax/order/{tenantIdentifier}/{tablenumber}/add-cart', [OrderController::class, 'addToCartAjax'])->name('order.addToCartAjax');
 
 // QR Code routes
 Route::get('/table/{table}/print-qr', [QRCodeController::class, 'printTableQR'])->name('table.print-qr');

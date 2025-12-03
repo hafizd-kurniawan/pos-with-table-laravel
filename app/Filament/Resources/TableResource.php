@@ -185,8 +185,13 @@ class TableResource extends Resource
                     ->square()
                     ->size(60)
                     ->getStateUsing(function (TableModel $record) {
-                        $tenant = $record->tenant;
-                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
+                        // Use stored QR code or generate safe URL
+                        $url = $record->qr_code;
+                        if (empty($url)) {
+                            $url = $record->tenant 
+                                ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}")
+                                : url("/order/{$record->name}");
+                        }
                         return QRCodeService::generateDataUrl($url, 'svg', 200);
                     })
                     ->tooltip('Preview QR Code')
@@ -195,7 +200,9 @@ class TableResource extends Resource
                 Tables\Columns\TextColumn::make('qr_url')
                     ->label('Order URL')
                     ->getStateUsing(function (TableModel $record) {
-                        return url("/order/{$record->name}");
+                        return $record->qr_code ?: ($record->tenant 
+                            ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}")
+                            : url("/order/{$record->name}"));
                     })
                     ->copyable()
                     ->copyMessage('URL berhasil disalin!')
@@ -333,9 +340,8 @@ class TableResource extends Resource
                     ->color('info')
                     ->tooltip('Generate atau update QR Code')
                     ->action(function (TableModel $record) {
-                        $tenant = $record->tenant;
-                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
-                        $record->update(['qr_code' => $url]);
+                        // Use model method to ensure consistency and safety
+                        $url = $record->generateQrCode();
                         
                         Notification::make()
                             ->title('QR Code Generated! ✅')
@@ -358,7 +364,7 @@ class TableResource extends Resource
                     ->modalDescription(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
                         nl2br(
                             "Generate QR code untuk Table: {$record->name}?\n\n" .
-                            "URL yang akan di-generate:\n" . url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}") . "\n\n" .
+                            "URL yang akan di-generate:\n" . ($record->tenant ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}") : url("/order/{$record->name}")) . "\n\n" .
                             "Customer dapat scan QR code ini untuk langsung order ke table tersebut."
                         )
                     ))
@@ -386,9 +392,8 @@ class TableResource extends Resource
                             $urls = [];
                             
                             foreach ($records as $record) {
-                                $tenant = $record->tenant;
-                                $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$record->name}");
-                                $record->update(['qr_code' => $url]);
+                                // Use model method
+                                $url = $record->generateQrCode();
                                 $urls[] = "Table {$record->name}: {$url}";
                                 $successCount++;
                             }
@@ -407,7 +412,7 @@ class TableResource extends Resource
                         })
                         ->requiresConfirmation()
                         ->modalHeading('🎯 Generate QR Codes for Selected Tables')
-                        ->modalDescription(fn ($records) => "Generate QR codes untuk **" . count($records) . " tables** yang dipilih?\n\n📱 Setiap table akan mendapat QR code dengan URL:\n`" . url('/order/{table-name}') . "`\n\n✨ QR codes dapat langsung digunakan untuk customer order.")
+                        ->modalDescription(fn ($records) => "Generate QR codes untuk **" . count($records) . " tables** yang dipilih?\n\n📱 Setiap table akan mendapat QR code dengan URL yang sesuai format tenant.\n\n✨ QR codes dapat langsung digunakan untuk customer order.")
                         ->modalSubmitActionLabel('🚀 Generate All QR Codes')
                         ->modalIcon('heroicon-o-sparkles'),
                         
