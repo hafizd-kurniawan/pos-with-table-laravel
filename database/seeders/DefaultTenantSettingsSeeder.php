@@ -40,7 +40,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             // General Settings
             [
                 'key' => 'app_name',
-                'value' => 'Hayo POS',
+                'value' => 'HayoPOS',
                 'type' => 'text',
                 'group' => 'general',
                 'label' => 'Nama Aplikasi',
@@ -158,14 +158,14 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
 
             // Notification Settings
-            [
-                'key' => 'n8n_webhook_url',
-                'value' => '',
-                'type' => 'url',
-                'group' => 'notification',
-                'label' => 'N8N Webhook URL',
-                'description' => 'URL webhook N8N untuk notifikasi order baru'
-            ],
+            /* [ */
+            /*     'key' => 'n8n_webhook_url', */
+            /*     'value' => '', */
+            /*     'type' => 'url', */
+            /*     'group' => 'notification', */
+            /*     'label' => 'N8N Webhook URL', */
+            /*     'description' => 'URL webhook N8N untuk notifikasi order baru' */
+            /* ], */
             // [
             //     'key' => 'firebase_fcm_token',
             //     'value' => '',

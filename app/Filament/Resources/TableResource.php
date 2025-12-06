@@ -188,9 +188,7 @@ class TableResource extends Resource
                         // Use stored QR code or generate safe URL
                         $url = $record->qr_code;
                         if (empty($url)) {
-                            $url = $record->tenant 
-                                ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}")
-                                : url("/order/{$record->name}");
+                            $url = $record->qr_url;
                         }
                         return QRCodeService::generateDataUrl($url, 'svg', 200);
                     })
@@ -200,9 +198,7 @@ class TableResource extends Resource
                 Tables\Columns\TextColumn::make('qr_url')
                     ->label('Order URL')
                     ->getStateUsing(function (TableModel $record) {
-                        return $record->qr_code ?: ($record->tenant 
-                            ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}")
-                            : url("/order/{$record->name}"));
+                        return $record->qr_code ?: $record->qr_url;
                     })
                     ->copyable()
                     ->copyMessage('URL berhasil disalin!')
@@ -364,7 +360,7 @@ class TableResource extends Resource
                     ->modalDescription(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
                         nl2br(
                             "Generate QR code untuk Table: {$record->name}?\n\n" .
-                            "URL yang akan di-generate:\n" . ($record->tenant ? url("/order/{$record->tenant->slug}-{$record->tenant->short_uuid}/{$record->name}") : url("/order/{$record->name}")) . "\n\n" .
+                            "URL yang akan di-generate:\n" . ($record->qr_url) . "\n\n" .
                             "Customer dapat scan QR code ini untuk langsung order ke table tersebut."
                         )
                     ))

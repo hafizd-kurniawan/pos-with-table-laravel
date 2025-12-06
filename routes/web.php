@@ -7,6 +7,21 @@ use App\Http\Controllers\QRCodeController;
 // Include debug routes
 require __DIR__.'/debug.php';
 
+Route::get('/debug-admin', function () {
+    return response()->json([
+        'url' => request()->url(),
+        'method' => request()->method(),
+        'ip' => request()->ip(),
+        'ips' => request()->ips(),
+        'user_agent' => request()->userAgent(),
+        'headers' => request()->headers->all(),
+        'is_secure' => request()->secure(),
+        'scheme' => request()->getScheme(),
+        'user' => auth()->user(),
+        // 'session' => session()->all(),
+    ]);
+});
+
 // ========================================
 // SUPER ADMIN ROUTES
 // ========================================
