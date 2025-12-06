@@ -105,25 +105,7 @@
             </button>
         </form>
 
-        @if(app()->environment(['local', 'development']))
-        <!-- DEBUG Button untuk testing -->
-        <div class="text-center px-4 mt-2 mb-1">
-            <button onclick="forcePaymentSuccess()" 
-                class="w-full bg-green-600 text-white font-bold py-2 rounded-md text-sm shadow hover:bg-green-700 transition">
-                🚀 DEBUG: Force Payment Success
-            </button>
-        </div>
-        @endif
 
-        @if(app()->environment(['local', 'development']))
-        <!-- DEBUG Button untuk testing -->
-        <div class="text-center px-4 mt-2 mb-1">
-            <button onclick="simulatePaymentSuccess()" 
-                class="w-full bg-green-600 text-white font-bold py-2 rounded-md text-sm shadow hover:bg-green-700 transition">
-                🚀 DEBUG: Simulate Payment Success
-            </button>
-        </div>
-        @endif
 
         <!-- Info Bantuan -->
         <div class="text-xs text-gray-400 text-center mt-6 px-4">
@@ -236,17 +218,6 @@
                         }, 2000);
                         
                     } 
-                    // else {
-                    //     console.log('⏳ Payment still pending...');
-                    //     // Update status to show last check time
-                    //     const now = new Date().toLocaleTimeString();
-                    //     statusDiv.innerHTML = `
-                    //         <div class="flex items-center justify-center">
-                    //             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                    //             <span class="text-sm text-blue-600">Waiting for payment... (last check: ${now})</span>
-                    //         </div>
-                    //     `;
-                    // }
                 })
                 .catch(error => {
                     console.error('❌ Error checking payment status:', error);
@@ -263,43 +234,16 @@
         // Start auto-checking every 3 seconds
         window.statusCheckInterval = setInterval(checkPaymentStatus, 3000);
         
-                // Check immediately on page load
+        // Check immediately on page load
         setTimeout(checkPaymentStatus, 1000);
 
-        @if(app()->environment(['local', 'development']))
-        // DEBUG function untuk force payment success
-        function forcePaymentSuccess() {
-            console.log('🚀 Manually forcing payment success...');
-            
-            fetch('{{ route("debug.order.force-success", [$table->tenantIdentifier, $table->name, $order->code]) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('✅ Payment forced to success:', data);
-                // Trigger status check immediately after forcing
-                setTimeout(checkPaymentStatus, 500);
-            })
-            .catch(error => {
-                console.error('❌ Error forcing payment success:', error);
-            });
-        }
-        @endif
-    </script>
-
-        @if(app()->environment(['local', 'development']))
-        // DEBUG function untuk simulate payment success
-        function simulatePaymentSuccess() {
-            console.log('🚀 Simulating payment success...');
-            
-            // Trigger immediate status check (the endpoint will force success in local env)
-            checkPaymentStatus();
-        }
-        @endif
+        // 🔹 CONSOLE LOGGING FOR MANUAL PAYMENT TESTING 🔹
+        console.log('==========================================');
+        console.log('💳 Payment ID (Order Code):', '{{ $order->code }}');
+        console.log('🔗 Payment URL:', '{{ $order->payment_url }}');
+        console.log('🌍 Environment:', '{{ $isProduction ? "PRODUCTION" : "SANDBOX" }}');
+        console.log('👉 Use this ID in Midtrans Simulator to pay!');
+        console.log('==========================================');
     </script>
 </body>
 

@@ -30,9 +30,9 @@ class RecentOrdersWidget extends BaseWidget
                     ->orderBy('created_at', 'desc')
             )
             ->columns([
-                Tables\Columns\TextColumn::make('time')
+                Tables\Columns\TextColumn::make('created_at')
                     ->label('Time')
-                    ->formatStateUsing(fn ($record) => $record->created_at->format('H:i')),
+                    ->formatStateUsing(fn ($state) => $state->format('H:i')),
                 
                 Tables\Columns\TextColumn::make('code')
                     ->label('Order #')

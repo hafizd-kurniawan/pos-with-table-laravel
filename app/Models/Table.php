@@ -80,12 +80,14 @@ class Table extends Model
             if ($table->isDirty('name')) {
                 // Get tenant from table
                 $tenant = $table->tenant;
+                $baseUrl = $table->getQrBaseUrl();
+                
                 if ($tenant) {
                     // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
-                    $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}");
+                    $url = "{$baseUrl}/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}";
                 } else {
                     // Fallback to old format if tenant not found
-                    $url = url("/order/{$table->name}");
+                    $url = "{$baseUrl}/order/{$table->name}";
                 }
                 
                 // Update QR code immediately (in same transaction)
@@ -108,12 +110,14 @@ class Table extends Model
                 dispatch(function () use ($table) {
                     // Get tenant from table
                     $tenant = $table->tenant;
+                    $baseUrl = $table->getQrBaseUrl();
+
                     if ($tenant) {
                         // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
-                        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}");
+                        $url = "{$baseUrl}/order/{$tenant->slug}-{$tenant->short_uuid}/{$table->name}";
                     } else {
                         // Fallback to old format if tenant not found
-                        $url = url("/order/{$table->name}");
+                        $url = "{$baseUrl}/order/{$table->name}";
                     }
                     
                     // Use updateQuietly to avoid triggering events again
@@ -176,19 +180,35 @@ class Table extends Model
     // Accessors & Mutators
     
     /**
+     * Get the base URL for QR codes
+     */
+    private function getQrBaseUrl()
+    {
+        $baseUrl = config('app.qr_code_base_url') ?? env('QR_CODE_BASE_URL');
+        
+        if (empty($baseUrl)) {
+            return url('/');
+        }
+        
+        return rtrim($baseUrl, '/');
+    }
+
+    /**
      * Get the QR code URL for this table
      */
     public function getQrUrlAttribute()
     {
+        $baseUrl = $this->getQrBaseUrl();
+        
         // Get tenant from table
         $tenant = $this->tenant;
         if ($tenant) {
             // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
-            return url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}");
+            return "{$baseUrl}/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}";
         }
         
         // Fallback to old format if tenant not found
-        return url("/order/{$this->name}");
+        return "{$baseUrl}/order/{$this->name}";
     }
     
     /**
@@ -196,7 +216,7 @@ class Table extends Model
      */
     public function getQrImageDataUrlAttribute()
     {
-        $url = $this->qr_code ?: url("/order/{$this->name}");
+        $url = $this->qr_code ?: $this->qr_url;
         return QRCodeService::generateDataUrl($url, 'svg', 200);
     }
     
@@ -235,14 +255,16 @@ class Table extends Model
      */
     public function generateQrCode()
     {
+        $baseUrl = $this->getQrBaseUrl();
+        
         // Get tenant from table
         $tenant = $this->tenant;
         if ($tenant) {
             // Use multi-tenant format: /order/{tenant-slug-uuid}/{table-name}
-            $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}");
+            $url = "{$baseUrl}/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->name}";
         } else {
             // Fallback to old format if tenant not found
-            $url = url("/order/{$this->name}");
+            $url = "{$baseUrl}/order/{$this->name}";
         }
         
         $this->update(['qr_code' => $url]);

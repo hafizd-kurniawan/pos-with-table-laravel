@@ -46,15 +46,35 @@ class OrderController extends Controller
             $order->status = 'paid';
             $order->completed_at = now();
             
-            // Kurangi stock ketika payment berhasil
-            $this->decreaseProductStock($order);
+            // CRITICAL FIX: Only decrease stock if it wasn't already decreased at creation
+            // QRIS orders created via Web OrderController ALREADY decreased stock.
+            if ($order->payment_method !== 'qris') { 
+                 $this->decreaseProductStock($order);
+            }
             
             // Send notification to user
             $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
         } elseif (in_array($transaction, ['cancel', 'expire', 'deny'])) {
             $order->status = 'failed';
             
-            // Tidak perlu restore stock karena stock belum dikurangi saat order dibuat
+            // CRITICAL FIX: Restore stock if it was reserved (QRIS orders)
+            // QRIS orders reserved stock at creation, so we must release it on failure/expiry
+            if ($order->payment_method === 'qris') {
+                 $this->releaseStock($order);
+                 Log::info("Stock restored for expired/cancelled QRIS order: {$order->code}");
+                 
+                 // Release Table
+                 if ($order->table_id) {
+                     $table = \App\Models\Table::find($order->table_id);
+                     if ($table && $table->status === 'occupied') {
+                         $table->status = 'available';
+                         $table->customer_name = null;
+                         $table->occupied_at = null;
+                         $table->save();
+                         Log::info("Table {$table->name} released due to expired/cancelled order");
+                     }
+                 }
+            }
         } elseif ($transaction === 'pending') {
             $order->status = 'pending';
         }

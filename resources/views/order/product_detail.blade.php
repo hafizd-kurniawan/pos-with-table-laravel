@@ -8,13 +8,13 @@
 <div class="max-w-md mx-auto bg-white min-h-screen flex flex-col pb-24">
     <!-- Header -->
     <div class="flex items-center px-4 py-3 border-b">
-        <a href="{{ route('order.menu', $table->name) }}" class="text-blue-500 text-sm">&larr; Back</a>
+        <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="text-blue-500 text-sm">&larr; Back</a>
         <h1 class="flex-1 text-center font-medium">Detail Produk</h1>
         <span class="w-12"></span>
     </div>
 
     <!-- Gambar Produk -->
-    <img src="{{ $product->image }}" class="w-full h-64 object-cover" alt="{{ $product->name }}">
+    <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}" class="w-full h-64 object-cover" alt="{{ $product->name }}" onerror="this.src='{{ asset('images/no-image.svg') }}'">
 
     <!-- Info Produk -->
     <div class="p-4 flex-1">
@@ -24,7 +24,7 @@
         <p class="mt-2 text-sm text-gray-500">Stok: {{ $product->stock ?? '-' }}</p>
 
         <!-- Form Add to Cart -->
-        <form action="{{ route('order.addToCartWithNote', [$table->name, $product->id]) }}" method="POST" class="mt-5">
+        <form action="{{ route('order.addToCartWithNote', [$table->tenantIdentifier, $table->name, $product->id]) }}" method="POST" class="mt-5">
             @csrf
             <label class="block text-sm font-medium mb-1">Catatan:</label>
             <textarea name="notes" class="w-full border rounded p-2" placeholder="Catatan untuk pesanan..." maxlength="100"></textarea>
@@ -48,7 +48,7 @@
             <span class="font-medium">Total</span> &nbsp;
             <span class="ml-1 text-lg font-bold">Rp{{ number_format($total) }}</span>
         </div>
-        <a href="{{ route('order.cart', $table->name) }}"
+        <a href="{{ route('order.cart', [$table->tenantIdentifier, $table->name]) }}"
         class="ml-3 bg-white text-black font-bold px-4 py-2 rounded shadow text-sm">CHECK OUT</a>
     </div>
 

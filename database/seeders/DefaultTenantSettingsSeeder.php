@@ -40,7 +40,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             // General Settings
             [
                 'key' => 'app_name',
-                'value' => 'Self Order POS',
+                'value' => 'HayoPOS',
                 'type' => 'text',
                 'group' => 'general',
                 'label' => 'Nama Aplikasi',
@@ -64,7 +64,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
             [
                 'key' => 'restaurant_email',
-                'value' => 'info@restaurant.com',
+                'value' => 'hayopos@restaurant.com',
                 'type' => 'email',
                 'group' => 'general',
                 'label' => 'Email Restoran',
@@ -72,7 +72,7 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
             [
                 'key' => 'restaurant_website',
-                'value' => 'https://www.restaurant.com',
+                'value' => 'https://www.hayopos.com',
                 'type' => 'url',
                 'group' => 'general',
                 'label' => 'Website Restoran',
@@ -158,22 +158,22 @@ class DefaultTenantSettingsSeeder extends Seeder
             ],
 
             // Notification Settings
-            [
-                'key' => 'n8n_webhook_url',
-                'value' => '',
-                'type' => 'url',
-                'group' => 'notification',
-                'label' => 'N8N Webhook URL',
-                'description' => 'URL webhook N8N untuk notifikasi order baru'
-            ],
-            [
-                'key' => 'firebase_fcm_token',
-                'value' => '',
-                'type' => 'textarea',
-                'group' => 'notification',
-                'label' => 'Firebase FCM Token',
-                'description' => 'Token FCM untuk push notification ke mobile app'
-            ],
+            /* [ */
+            /*     'key' => 'n8n_webhook_url', */
+            /*     'value' => '', */
+            /*     'type' => 'url', */
+            /*     'group' => 'notification', */
+            /*     'label' => 'N8N Webhook URL', */
+            /*     'description' => 'URL webhook N8N untuk notifikasi order baru' */
+            /* ], */
+            // [
+            //     'key' => 'firebase_fcm_token',
+            //     'value' => '',
+            //     'type' => 'textarea',
+            //     'group' => 'notification',
+            //     'label' => 'Firebase FCM Token',
+            //     'description' => 'Token FCM untuk push notification ke mobile app'
+            // ],
         ];
     }
 

@@ -11,7 +11,12 @@ class QRCodeController extends Controller
     public function printTableQR($tableId)
     {
         $table = Table::findOrFail($tableId);
-        $url = url("/order/{$table->name}");
+        
+        // Use stored QR code or generate safe URL
+        $url = $table->qr_code;
+        if (empty($url)) {
+            $url = $table->generateQrCode();
+        }
         
         // Generate QR code using service
         $qrCode = QRCodeService::generate($url, 'svg', 300);
@@ -22,7 +27,12 @@ class QRCodeController extends Controller
     public function downloadTableQR($tableId)
     {
         $table = Table::findOrFail($tableId);
-        $url = url("/order/{$table->name}");
+        
+        // Use stored QR code or generate safe URL
+        $url = $table->qr_code;
+        if (empty($url)) {
+            $url = $table->generateQrCode();
+        }
         
         // Try PNG first, fallback to SVG
         $format = QRCodeService::getBestFormat();

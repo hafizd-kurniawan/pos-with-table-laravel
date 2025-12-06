@@ -228,7 +228,7 @@
                             @endphp
                             <div class="flex items-center border-b p-4 bg-white hover:bg-gray-50 transition-colors {{ !$canAdd ? 'opacity-70' : '' }}">
                                 <!-- Link ke detail produk -->
-                                <a href="{{ route('order.detail', [$table->name, $product->id]) }}" class="flex items-center flex-1 min-w-0">
+                                <a href="{{ route('order.detail', [$table->tenantIdentifier, $table->name, $product->id]) }}" class="flex items-center flex-1 min-w-0">
                                     <img src="{{ $product->image ? asset('storage/' . $product->image) : asset('images/no-image.svg') }}"
                                          class="w-20 h-20 object-cover rounded-lg mr-4 flex-shrink-0 shadow-sm"
                                          alt="{{ $product->name }}"
@@ -507,7 +507,8 @@
                     const productName = button.dataset.productName;
                     const tableName = this.dataset.table;
 
-                    console.log('📊 Form data: productName=' + productName + ', tableName=' + tableName);
+                    const tenantIdentifier = "{{ $table->tenantIdentifier }}";
+                    console.log('📊 Form data: productName=' + productName + ', tableName=' + tableName + ', tenant=' + tenantIdentifier);
 
                     // Disable button and show loading
                     button.disabled = true;
@@ -520,7 +521,7 @@
                         
                         console.log('🔍 Sending request with productId:', productId); // Debug log
                         
-                        const response = await fetch(`/ajax/order/${tableName}/add-cart`, {
+                        const response = await fetch(`/ajax/order/${tenantIdentifier}/${tableName}/add-cart`, {
                             method: 'POST',
                             body: formData,
                             headers: {
