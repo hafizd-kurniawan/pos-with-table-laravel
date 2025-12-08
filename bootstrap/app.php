@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'tenantadmin' => \App\Http\Middleware\TenantAdminMiddleware::class,
         ]);
+
+        // Trust all proxies for Tunnelmole/Ngrok
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

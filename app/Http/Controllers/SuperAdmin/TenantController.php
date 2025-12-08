@@ -69,13 +69,18 @@ class TenantController extends Controller
             ->with('show_credentials', true);
     }
     
-    public function show(Tenant $tenant)
+    public function show(Request $request, Tenant $tenant)
     {
         $tenant->load('users');
+        
+        // Date Filtering
+        $startDate = $request->input('start_date') ? \Carbon\Carbon::parse($request->input('start_date')) : today();
+        $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date')) : today();
         
         // Get data counts for this tenant
         app()->instance('tenant', $tenant);
         
+        // Basic Stats
         $stats = [
             'products' => \App\Models\Product::count(),
             'categories' => \App\Models\Category::count(),
@@ -83,13 +88,26 @@ class TenantController extends Controller
             'tables' => \App\Models\Table::count(),
             'users' => \App\Models\User::count(),
         ];
+
+        // Rich Dashboard Stats
+        $dashboardService = new \App\Services\DashboardService($tenant->id);
+        $dashboardData = [
+            'sales_summary' => $dashboardService->getSalesSummary($startDate, $endDate),
+            'sales_trend' => $dashboardService->getSalesTrend($startDate, $endDate),
+            'sales_by_payment' => $dashboardService->getSalesByPaymentMethod($startDate, $endDate),
+            'sales_by_type' => $dashboardService->getSalesByOrderType($startDate, $endDate),
+            'top_products' => $dashboardService->getTopProducts(5, $startDate, $endDate),
+            'recent_orders' => $dashboardService->getRecentOrders(10), // Recent orders always show latest
+            'inventory_stats' => $dashboardService->getInventoryStats(), // Inventory is always current state
+            'critical_alerts' => $dashboardService->getCriticalAlerts(5), // Alerts are always current state
+        ];
         
         app()->forgetInstance('tenant');
         
         // Get active subscription plans for dropdown
         $plans = SubscriptionPlan::active()->ordered()->get();
         
-        return view('superadmin.tenants.show', compact('tenant', 'stats', 'plans'));
+        return view('superadmin.tenants.show', compact('tenant', 'stats', 'plans', 'dashboardData', 'startDate', 'endDate'));
     }
     
     public function update(Request $request, Tenant $tenant)
@@ -209,5 +227,34 @@ class TenantController extends Controller
             ->with('success', 'Password reset successfully!')
             ->with('new_password', $newPassword)
             ->with('show_password', true);
+    }
+
+    public function exportPdf(Request $request, Tenant $tenant)
+    {
+        // Date Filtering
+        $startDate = $request->input('start_date') ? \Carbon\Carbon::parse($request->input('start_date')) : today();
+        $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date')) : today();
+        
+        // Get data counts for this tenant
+        app()->instance('tenant', $tenant);
+        
+        // Rich Dashboard Stats
+        $dashboardService = new \App\Services\DashboardService($tenant->id);
+        $dashboardData = [
+            'sales_summary' => $dashboardService->getSalesSummary($startDate, $endDate),
+            'sales_trend' => $dashboardService->getSalesTrend($startDate, $endDate),
+            'sales_by_payment' => $dashboardService->getSalesByPaymentMethod($startDate, $endDate),
+            'sales_by_type' => $dashboardService->getSalesByOrderType($startDate, $endDate),
+            'top_products' => $dashboardService->getTopProducts(10, $startDate, $endDate), // Top 10 for PDF
+            'recent_orders' => $dashboardService->getRecentOrders(20), // More recent orders for PDF
+            'inventory_stats' => $dashboardService->getInventoryStats(),
+            'critical_alerts' => $dashboardService->getCriticalAlerts(10), // More alerts for PDF
+        ];
+        
+        app()->forgetInstance('tenant');
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('superadmin.tenants.pdf', compact('tenant', 'dashboardData', 'startDate', 'endDate'));
+        
+        return $pdf->download("report-{$tenant->subdomain}-" . now()->format('YmdHis') . ".pdf");
     }
 }

@@ -15,7 +15,7 @@ class TableController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Table::with('category');
+        $query = Table::with('category')->where('name', '!=', 'Takeaway');
 
         // Filter by category
         if ($request->filled('category')) {
@@ -113,6 +113,11 @@ class TableController extends Controller
      */
     public function edit(Table $table): View
     {
+        if ($table->name === 'Takeaway') {
+            return redirect()->route('table-management.index')
+                           ->with('error', 'The Takeaway table cannot be edited.');
+        }
+
         $categories = TableCategory::active()->ordered()->get();
         return view('tables.edit', compact('table', 'categories'));
     }
@@ -122,6 +127,11 @@ class TableController extends Controller
      */
     public function update(Request $request, Table $table)
     {
+        if ($table->name === 'Takeaway') {
+            return redirect()->route('table-management.index')
+                           ->with('error', 'The Takeaway table cannot be edited.');
+        }
+
         $request->validate([
             'name' => 'required|string|unique:tables,name,' . $table->id,
             'category_id' => 'required|exists:table_categories,id',
@@ -153,6 +163,11 @@ class TableController extends Controller
      */
     public function destroy(Table $table)
     {
+        if ($table->name === 'Takeaway') {
+            return redirect()->route('table-management.index')
+                           ->with('error', 'The Takeaway table cannot be deleted.');
+        }
+
         $table->delete();
         
         return redirect()->route('table-management.index')

@@ -8,7 +8,7 @@
                 </div>
             </x-slot>
             <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                Last 7 Days
+                Best selling items
             </div>
         </div>
 

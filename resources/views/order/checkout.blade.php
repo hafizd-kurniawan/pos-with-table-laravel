@@ -96,25 +96,15 @@
             </div>
 
             @php
-                // Get cart data
-                $cart = session('cart_' . $table->name, []);
+                // Use cart passed from controller
                 $itemsSubtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
                 
-                // Get selected items from settings (ONLY if enabled!)
-                $selectedDiscounts = get_selected_discounts();
-                $selectedTaxes = get_selected_taxes();
-                $selectedServices = get_selected_services();
+                // Use settings passed from controller
+                // $selectedDiscounts, $selectedTaxes, $selectedServices are now available directly
                 
                 // Auto-select first available items (for auto-apply) ONLY if items exist
                 $autoTax = $selectedTaxes->first();
                 $autoService = $selectedServices->first();
-                
-                // Debug: Check what we got
-                // dd([
-                //     'discounts' => $selectedDiscounts->pluck('name'),
-                //     'taxes' => $selectedTaxes->pluck('name'),
-                //     'services' => $selectedServices->pluck('name'),
-                // ]);
             @endphp
 
             </div>

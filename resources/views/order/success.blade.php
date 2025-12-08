@@ -36,10 +36,31 @@
 
         <!-- Button Back to Menu/Home -->
         <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}"
-            class="inline-block bg-black text-white font-bold px-6 py-3 rounded shadow mb-16">
+            class="inline-block bg-black text-white font-bold px-6 py-3 rounded shadow mb-4">
             Back to Menu
         </a>
+        
+        <p class="text-gray-500 text-sm mb-16">
+            Redirecting to menu in <span id="countdown">5</span> seconds...
+        </p>
     </div>
+
+    <script>
+        // Auto redirect to menu after 5 seconds
+        let seconds = 5;
+        const countdownElement = document.getElementById('countdown');
+        const menuUrl = "{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}";
+        
+        const timer = setInterval(() => {
+            seconds--;
+            countdownElement.textContent = seconds;
+            
+            if (seconds <= 0) {
+                clearInterval(timer);
+                window.location.href = menuUrl;
+            }
+        }, 1000);
+    </script>
 </body>
 
 </html>

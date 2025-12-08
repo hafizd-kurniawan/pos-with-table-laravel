@@ -21,6 +21,6 @@ class TopProductsWidget extends Widget
     public function getProducts(): array
     {
         $service = new DashboardService();
-        return $service->getTopProducts(7, 5);
+        return $service->getTopProducts(5);
     }
 }

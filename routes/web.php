@@ -7,6 +7,21 @@ use App\Http\Controllers\QRCodeController;
 // Include debug routes
 require __DIR__.'/debug.php';
 
+Route::get('/debug-admin', function () {
+    return response()->json([
+        'url' => request()->url(),
+        'method' => request()->method(),
+        'ip' => request()->ip(),
+        'ips' => request()->ips(),
+        'user_agent' => request()->userAgent(),
+        'headers' => request()->headers->all(),
+        'is_secure' => request()->secure(),
+        'scheme' => request()->getScheme(),
+        'user' => auth()->user(),
+        // 'session' => session()->all(),
+    ]);
+});
+
 // ========================================
 // SUPER ADMIN ROUTES
 // ========================================
@@ -28,6 +43,7 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         Route::delete('/tenants/{tenant}', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'destroy'])->name('tenants.destroy');
         
         // Tenant Actions
+        Route::get('/tenants/{tenant}/export-pdf', [App\Http\Controllers\SuperAdmin\TenantController::class, 'exportPdf'])->name('tenants.export-pdf');
         Route::post('/tenants/{tenant}/extend-trial', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'extendTrial'])->name('tenants.extend-trial');
         Route::post('/tenants/{tenant}/activate-subscription', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'activateSubscription'])->name('tenants.activate-subscription');
         Route::post('/tenants/{tenant}/suspend', [\App\Http\Controllers\SuperAdmin\TenantController::class, 'suspend'])->name('tenants.suspend');
@@ -68,8 +84,8 @@ Route::prefix('tenant/admin')->name('tenantadmin.')->group(function () {
 });
 
 Route::get('/', function () {
-    // Show navigation page
-    return view('navigation');
+    // Show landing page
+    return view('landing');
 })->name('home');
 
 // Self-Order Routes (Public - with UUID for security)
@@ -94,12 +110,12 @@ Route::get('/api/order/{code}/status', [\App\Http\Controllers\OrderManagementCon
 
 Route::get('/order/{tenantIdentifier}/{tablenumber}/success/{code}', [OrderController::class, 'success'])->name('order.success');
 Route::post('/midtrans/callback', [OrderController::class, 'midtransCallback']);
-Route::get('/table/{table}/product/{product}', [OrderController::class, 'detail'])
+Route::get('/order/{tenantIdentifier}/{tablenumber}/product/{product}', [OrderController::class, 'detail'])
     ->name('order.detail');
-Route::post('/table/{table}/product/{productId}/add', [OrderController::class, 'addToCartWithNote'])->name('order.addToCartWithNote');
+Route::post('/order/{tenantIdentifier}/{tablenumber}/product/{productId}/add', [OrderController::class, 'addToCartWithNote'])->name('order.addToCartWithNote');
 
 // AJAX Add to Cart Route (with session support)
-Route::post('/ajax/order/{tablenumber}/add-cart', [OrderController::class, 'addToCartAjax'])->name('order.addToCartAjax');
+Route::post('/ajax/order/{tenantIdentifier}/{tablenumber}/add-cart', [OrderController::class, 'addToCartAjax'])->name('order.addToCartAjax');
 
 // QR Code routes
 Route::get('/table/{table}/print-qr', [QRCodeController::class, 'printTableQR'])->name('table.print-qr');
@@ -132,3 +148,21 @@ Route::prefix('order-settings')->name('order-settings.')->group(function () {
     Route::get('/', [App\Http\Controllers\Web\OrderSettingController::class, 'index'])->name('index');
     Route::put('/update', [App\Http\Controllers\Web\OrderSettingController::class, 'update'])->name('update');
 });
+
+Route::get('/storage-proxy/{any}', function ($any) {
+    // Strip 'storage/' prefix if present, as we are looking in storage/app/public
+    $filename = str_replace('storage/', '', $any);
+    $path = storage_path('app/public/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    $file = \Illuminate\Support\Facades\File::get($path);
+    $type = \Illuminate\Support\Facades\File::mimeType($path);
+
+    return response($file, 200)
+        ->header('Content-Type', $type)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+})->where('any', '.*');

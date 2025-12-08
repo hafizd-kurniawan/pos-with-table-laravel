@@ -13,12 +13,26 @@ use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $tenant = $user->tenant;
         
-        // Statistics for tenant
+        // Date Filter
+        $startDate = $request->has('start_date') 
+            ? \Carbon\Carbon::parse($request->start_date) 
+            : now()->startOfMonth();
+            
+        $end = $request->has('end_date') 
+            ? \Carbon\Carbon::parse($request->end_date) 
+            : now()->endOfMonth();
+            
+        // Ensure end date is not in future for accurate "current" reporting, 
+        // but allow it if user explicitly selects it. 
+        // Actually, for reports, end of month is fine.
+        $endDate = $end;
+
+        // Statistics for tenant (Basic Counts)
         $stats = [
             'total_products' => Product::count(),
             'total_categories' => Category::count(),
@@ -27,30 +41,28 @@ class DashboardController extends Controller
             'total_staff' => User::where('tenant_id', $tenant->id)->count(),
         ];
         
-        // Today's orders
-        $todayOrders = Order::whereDate('created_at', today())->get();
-        $todayRevenue = $todayOrders->sum('total_amount');
+        // Rich Dashboard Stats via Service
+        // We explicitly pass tenant->id to ensure service uses correct context
+        $dashboardService = new \App\Services\DashboardService($tenant->id);
         
-        // Recent orders (latest 5)
-        $recentOrders = Order::with(['table'])
-            ->latest()
-            ->take(5)
-            ->get();
-        
-        // Low stock products (< 10)
-        $lowStockProducts = Product::where('stock', '<', 10)
-            ->where('stock', '>', 0)
-            ->orderBy('stock', 'asc')
-            ->take(5)
-            ->get();
+        $dashboardData = [
+            'sales_summary' => $dashboardService->getSalesSummary($startDate, $endDate),
+            'today_sales' => $dashboardService->getTodaySales(),
+            'sales_trend' => $dashboardService->getSalesTrend($startDate, $endDate),
+            'sales_by_payment' => $dashboardService->getSalesByPaymentMethod($startDate, $endDate),
+            'sales_by_type' => $dashboardService->getSalesByOrderType($startDate, $endDate),
+            'top_products' => $dashboardService->getTopProducts(5, $startDate, $endDate),
+            'recent_orders' => $dashboardService->getRecentOrders(10),
+            'inventory_stats' => $dashboardService->getInventoryStats(),
+            'critical_alerts' => $dashboardService->getCriticalAlerts(5),
+        ];
         
         return view('tenantadmin.dashboard', compact(
             'tenant',
             'stats',
-            'todayOrders',
-            'todayRevenue',
-            'recentOrders',
-            'lowStockProducts'
+            'dashboardData',
+            'startDate',
+            'endDate'
         ));
     }
     

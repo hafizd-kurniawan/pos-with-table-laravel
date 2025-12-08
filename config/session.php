@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Str;
 
+// Dynamic Session Config for Tunnels
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$isTunnel = str_contains($host, 'tunnelmole.net') || str_contains($host, 'ngrok-free.app');
+
 return [
 
     /*
@@ -156,7 +160,7 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => $isTunnel ? '.' . $host : env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +173,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => $isTunnel ? true : env('SESSION_SECURE_COOKIE'),
 
     /*
     |--------------------------------------------------------------------------
@@ -199,7 +203,7 @@ return [
     |
     */
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    'same_site' => $isTunnel ? 'none' : env('SESSION_SAME_SITE', 'lax'),
 
     /*
     |--------------------------------------------------------------------------

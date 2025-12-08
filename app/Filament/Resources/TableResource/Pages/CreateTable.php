@@ -21,8 +21,7 @@ class CreateTable extends CreateRecord
     
     protected function getCreatedNotification(): ?Notification
     {
-        $tenant = $this->record->tenant;
-        $url = url("/order/{$tenant->slug}-{$tenant->short_uuid}/{$this->record->name}");
+        $url = $this->record->qr_url;
         
         return Notification::make()
             ->success()
