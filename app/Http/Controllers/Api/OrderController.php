@@ -668,6 +668,8 @@ class OrderController extends Controller
             ]);
 
             return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $validatedData) {
+
+
                 // Get table_number and handle 0 or null
                 $tableNumber = $request->input('table_number', 0);
                 $tableId = ($tableNumber && $tableNumber > 0) ? $tableNumber : 1; // Default to table 1 if 0 or null
@@ -694,6 +696,8 @@ class OrderController extends Controller
                     'service_charge_percentage' => $request->input('service_charge_percentage', 0),
                     'subtotal' => $validatedData['sub_total'],
                     'cashier_name' => $request->input('cashier_name'), // NEW: Save cashier name
+                    'payment_amount' => $validatedData['payment_amount'], // NEW: Save payment amount
+                    'change_amount' => $validatedData['payment_amount'] - $validatedData['total'], // NEW: Calculate and save change
                 ]);
 
                 Log::info('✅ Order created', [
