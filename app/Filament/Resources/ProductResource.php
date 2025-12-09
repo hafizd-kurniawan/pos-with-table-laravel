@@ -194,36 +194,6 @@ class ProductResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->where('stock', '<=', 0)),
             ])
             ->actions([
-                Tables\Actions\Action::make('toggle_status')
-                    ->label(fn ($record) => $record->status === 'available' ? 'Set Unavailable' : 'Set Available')
-                    ->icon(fn ($record) => $record->status === 'available' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->color(fn ($record) => $record->status === 'available' ? 'danger' : 'success')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => $record->status === 'available' ? 'unavailable' : 'available'
-                        ]);
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Change Product Status')
-                    ->modalDescription(fn ($record) => 
-                        'Are you sure you want to set this product as ' . 
-                        ($record->status === 'available' ? 'unavailable' : 'available') . '?'
-                    ),
-                Tables\Actions\Action::make('add_stock')
-                    ->label('Add Stock')
-                    ->icon('heroicon-o-plus')
-                    ->color('success')
-                    ->form([
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Quantity to Add')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1)
-                            ->default(1),
-                    ])
-                    ->action(function ($record, array $data) {
-                        $record->increaseStock($data['quantity']);
-                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
