@@ -24,64 +24,81 @@ class TableCategoryResource extends Resource
     protected static ?string $navigationGroup = 'Settings';
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $navigationLabel = 'Table Categories';
-    protected static ?string $modelLabel = 'Table Category';
-    protected static ?string $pluralModelLabel = 'Table Categories';
+    public static function getModelLabel(): string
+    {
+        return __('resource.table_category.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.table_category.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.table_category.plural_label');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Category Information')
+                Forms\Components\Section::make(__('resource.table_category.label'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label(__('resource.table_category.name'))
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
-                            ->helperText('Nama kategori table'),
+                            ->helperText(__('resource.table_category.helpers.name')),
 
                         Forms\Components\TextInput::make('icon')
+                            ->label(__('resource.table_category.icon'))
                             ->maxLength(10)
-                            ->helperText('Emoji atau ikon untuk kategori (contoh: 🪑, 👑, 🚪)'),
+                            ->helperText(__('resource.table_category.helpers.icon')),
 
                         Forms\Components\Select::make('color')
+                            ->label(__('resource.table_category.color'))
                             ->options([
-                                'gray' => 'Gray',
-                                'red' => 'Red',
-                                'orange' => 'Orange',
-                                'amber' => 'Amber',
-                                'yellow' => 'Yellow',
-                                'lime' => 'Lime',
-                                'green' => 'Green',
-                                'emerald' => 'Emerald',
-                                'teal' => 'Teal',
-                                'cyan' => 'Cyan',
-                                'sky' => 'Sky',
-                                'blue' => 'Blue',
-                                'indigo' => 'Indigo',
-                                'violet' => 'Violet',
-                                'purple' => 'Purple',
-                                'fuchsia' => 'Fuchsia',
-                                'pink' => 'Pink',
-                                'rose' => 'Rose',
+                                'gray' => __('resource.general.colors.gray'),
+                                'red' => __('resource.general.colors.red'),
+                                'orange' => __('resource.general.colors.orange'),
+                                'amber' => __('resource.general.colors.amber'),
+                                'yellow' => __('resource.general.colors.yellow'),
+                                'lime' => __('resource.general.colors.lime'),
+                                'green' => __('resource.general.colors.green'),
+                                'emerald' => __('resource.general.colors.emerald'),
+                                'teal' => __('resource.general.colors.teal'),
+                                'cyan' => __('resource.general.colors.cyan'),
+                                'sky' => __('resource.general.colors.sky'),
+                                'blue' => __('resource.general.colors.blue'),
+                                'indigo' => __('resource.general.colors.indigo'),
+                                'violet' => __('resource.general.colors.violet'),
+                                'purple' => __('resource.general.colors.purple'),
+                                'fuchsia' => __('resource.general.colors.fuchsia'),
+                                'pink' => __('resource.general.colors.pink'),
+                                'rose' => __('resource.general.colors.rose'),
                             ])
                             ->default('blue')
                             ->native(false)
-                            ->helperText('Warna badge kategori'),
+                            ->helperText(__('resource.table_category.helpers.color')),
 
                         Forms\Components\Textarea::make('description')
+                            ->label(__('resource.table_category.description'))
                             ->rows(3)
                             ->maxLength(500)
-                            ->helperText('Deskripsi kategori table'),
+                            ->helperText(__('resource.table_category.helpers.description')),
 
                         Forms\Components\TextInput::make('sort_order')
+                            ->label(__('resource.table_category.sort_order'))
                             ->numeric()
                             ->default(0)
-                            ->helperText('Urutan tampilan kategori (angka kecil tampil duluan)'),
+                            ->helperText(__('resource.table_category.helpers.sort_order')),
 
                         Forms\Components\Toggle::make('is_active')
+                            ->label(__('resource.table_category.is_active'))
                             ->default(true)
-                            ->helperText('Status aktif kategori'),
+                            ->helperText(__('resource.table_category.helpers.is_active')),
                     ])->columns(2),
             ]);
     }
@@ -91,17 +108,17 @@ class TableCategoryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Category Name')
+                    ->label(__('resource.table_category.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('icon')
-                    ->label('Icon')
+                    ->label(__('resource.table_category.icon'))
                     ->formatStateUsing(fn ($state) => $state ? $state . ' Icon' : 'No Icon'),
 
                 Tables\Columns\BadgeColumn::make('color')
-                    ->label('Color')
+                    ->label(__('resource.table_category.color'))
                     ->colors([
                         'gray' => 'gray',
                         'red' => 'danger',
@@ -124,11 +141,12 @@ class TableCategoryResource extends Resource
                     ]),
 
                 Tables\Columns\TextColumn::make('tables_count')
-                    ->label('Tables Count')
+                    ->label(__('resource.table_category.tables_count'))
                     ->counts('tables')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('description')
+                    ->label(__('resource.table_category.description'))
                     ->limit(50)
                     ->tooltip(function (TableCategory $record): ?string {
                         if (!$record->description) {
@@ -139,16 +157,16 @@ class TableCategoryResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort Order')
+                    ->label(__('resource.table_category.sort_order'))
                     ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('resource.table_category.is_active'))
                     ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -156,10 +174,10 @@ class TableCategoryResource extends Resource
             ->defaultSort('sort_order', 'asc')
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status')
+                    ->label(__('resource.table_category.filters.active_status'))
                     ->boolean()
-                    ->trueLabel('Active Only')
-                    ->falseLabel('Inactive Only')
+                    ->trueLabel(__('resource.table_category.filters.active_only'))
+                    ->falseLabel(__('resource.table_category.filters.inactive_only'))
                     ->native(false),
             ])
             ->actions([
@@ -179,6 +197,12 @@ class TableCategoryResource extends Resource
         return [
             RelationManagers\TablesRelationManager::class,
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('tenant_id', auth()->user()->tenant_id);
     }
 
     public static function getPages(): array

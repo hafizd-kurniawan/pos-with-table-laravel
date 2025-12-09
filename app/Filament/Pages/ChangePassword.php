@@ -18,11 +18,20 @@ class ChangePassword extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
     
-    protected static ?string $navigationLabel = 'Change Password';
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.change_password.navigation_label');
+    }
     
-    protected static ?string $title = 'Change Password';
+    public function getTitle(): string
+    {
+        return __('resource.change_password.title');
+    }
     
-    protected static ?string $navigationGroup = 'Settings';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.general.navigation.settings');
+    }
     
     protected static ?int $navigationSort = 4;
 
@@ -40,7 +49,7 @@ class ChangePassword extends Page implements HasForms
         return $form
             ->schema([
                 TextInput::make('current_password')
-                    ->label('Current Password')
+                    ->label(__('resource.change_password.current_password'))
                     ->password()
                     ->revealable()
                     ->required()
@@ -48,17 +57,17 @@ class ChangePassword extends Page implements HasForms
                     ->autocomplete('current-password'),
                 
                 TextInput::make('password')
-                    ->label('New Password')
+                    ->label(__('resource.change_password.new_password'))
                     ->password()
                     ->revealable()
                     ->required()
                     ->rule(Password::min(8))
                     ->same('password_confirmation')
                     ->autocomplete('new-password')
-                    ->helperText('Minimum 8 characters'),
+                    ->helperText(__('resource.change_password.helper_text')),
                 
                 TextInput::make('password_confirmation')
-                    ->label('Confirm New Password')
+                    ->label(__('resource.change_password.confirm_password'))
                     ->password()
                     ->revealable()
                     ->required()
@@ -80,8 +89,8 @@ class ChangePassword extends Page implements HasForms
         
         // Show success notification
         Notification::make()
-            ->title('Password Changed!')
-            ->body('Your password has been changed successfully.')
+            ->title(__('resource.change_password.notifications.success_title'))
+            ->body(__('resource.change_password.notifications.success_body'))
             ->success()
             ->send();
         
@@ -93,7 +102,7 @@ class ChangePassword extends Page implements HasForms
     {
         return [
             \Filament\Actions\Action::make('submit')
-                ->label('Change Password')
+                ->label(__('resource.change_password.submit'))
                 ->submit('submit')
                 ->color('primary')
                 ->icon('heroicon-o-check'),

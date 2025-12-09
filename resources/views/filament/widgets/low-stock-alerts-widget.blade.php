@@ -4,7 +4,7 @@
             <x-slot name="heading">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">🚨</span>
-                    <span>Stock Alerts</span>
+                    <span>{{ __('report.widgets.low_stock_alerts.heading') }}</span>
                 </div>
             </x-slot>
             @php
@@ -12,7 +12,7 @@
             @endphp
             @if($stats['total'] > 0)
                 <x-filament::badge color="danger" size="lg">
-                    {{ $stats['total'] }} alerts
+                    {{ __('report.widgets.low_stock_alerts.alerts', ['count' => $stats['total']]) }}
                 </x-filament::badge>
             @endif
         </div>
@@ -48,11 +48,11 @@
                                 </h4>
                                 @if($alert['alert_level'] === 'critical')
                                     <span class="flex-shrink-0 px-2 py-1 text-xs font-bold bg-red-600 text-white rounded-full">
-                                        OUT OF STOCK
+                                        {{ __('report.widgets.low_stock_alerts.out_of_stock') }}
                                     </span>
                                 @else
                                     <span class="flex-shrink-0 px-2 py-1 text-xs font-bold bg-yellow-600 text-white rounded-full">
-                                        LOW
+                                        {{ __('report.widgets.low_stock_alerts.low') }}
                                     </span>
                                 @endif
                             </div>
@@ -62,7 +62,7 @@
                                     <strong>{{ number_format($alert['current_stock'], 0, ',', '.') }}</strong> {{ $alert['unit'] }}
                                 </span>
                                 <span class="{{ $alert['alert_level'] === 'critical' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400' }}">
-                                    Min: {{ number_format($alert['min_stock'], 0, ',', '.') }} {{ $alert['unit'] }}
+                                    {{ __('report.widgets.low_stock_alerts.min') }} {{ number_format($alert['min_stock'], 0, ',', '.') }} {{ $alert['unit'] }}
                                 </span>
                                 @if($alert['percentage'] > 0)
                                     <span class="{{ $alert['alert_level'] === 'critical' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400' }}">
@@ -84,7 +84,7 @@
             @if(count($alerts) >= 10)
                 <div class="mt-4 text-center">
                     <a href="{{ route('filament.admin.resources.ingredients.index') }}" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
-                        View all alerts →
+                        {{ __('report.widgets.low_stock_alerts.view_all') }}
                     </a>
                 </div>
             @endif
@@ -96,10 +96,10 @@
                     </svg>
                 </div>
                 <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    All Good!
+                    {{ __('report.widgets.low_stock_alerts.all_good_title') }}
                 </h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                    No low stock alerts
+                    {{ __('report.widgets.low_stock_alerts.all_good_desc') }}
                 </p>
             </div>
         @endif

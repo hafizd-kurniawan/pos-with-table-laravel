@@ -25,6 +25,21 @@ class UserResource extends Resource
     
     protected static ?int $navigationSort = 1;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.user.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.user.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.user.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -50,14 +65,16 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('User Information')
+                Forms\Components\Section::make(__('resource.user.label') . ' Information')
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label(__('resource.user.name'))
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(1),
                         
                         Forms\Components\TextInput::make('email')
+                            ->label(__('resource.user.email'))
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true)
@@ -65,16 +82,17 @@ class UserResource extends Resource
                             ->columnSpan(1),
                         
                         Forms\Components\TextInput::make('password')
+                            ->label(__('resource.user.password'))
                             ->password()
                             ->required(fn (string $operation) => $operation === 'create')
                             ->dehydrated(fn ($state) => filled($state))
                             ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                             ->maxLength(255)
-                            ->helperText('Leave blank to keep current password')
+                            ->helperText(__('resource.user.helpers.password'))
                             ->columnSpan(1),
                         
                         Forms\Components\Select::make('role_id')
-                            ->label('Role')
+                            ->label(__('resource.user.roles'))
                             ->relationship(
                                 'role',
                                 'name',
@@ -102,17 +120,19 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(__('resource.user.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 
                 Tables\Columns\TextColumn::make('email')
+                    ->label(__('resource.user.email'))
                     ->searchable()
                     ->sortable()
                     ->icon('heroicon-o-envelope'),
                 
                 Tables\Columns\TextColumn::make('role.name')
-                    ->label('Role')
+                    ->label(__('resource.user.roles'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'Admin' => 'success',
@@ -136,7 +156,7 @@ class UserResource extends Resource
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Joined')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->since()

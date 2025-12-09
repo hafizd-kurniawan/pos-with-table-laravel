@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SupplierResource\Pages;
 use App\Filament\Resources\SupplierResource\RelationManagers;
+use App\Filament\Traits\BelongsToTenantResource;
 use App\Models\Supplier;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,72 +16,94 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SupplierResource extends Resource
 {
+    use BelongsToTenantResource;
+
     protected static ?string $model = Supplier::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
     
     protected static ?string $navigationGroup = 'Inventory';
     
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.general.navigation.inventory');
+    }
+    
     protected static ?int $navigationSort = 1;
+
+    public static function getModelLabel(): string
+    {
+        return __('resource.supplier.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.supplier.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.supplier.plural_label');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Supplier Information')
+                Forms\Components\Section::make(__('resource.supplier.label') . ' ' . __('resource.general.information'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Supplier Name')
+                            ->label(__('resource.supplier.name'))
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('e.g., PT Sumber Makmur')
+                            ->placeholder(__('resource.supplier.placeholders.name'))
                             ->columnSpan(2),
                         
                         Forms\Components\TextInput::make('code')
-                            ->label('Code')
+                            ->label(__('resource.supplier.code'))
                             ->disabled()
                             ->dehydrated(false)
-                            ->default(fn() => 'Auto-generated')
-                            ->helperText('Auto: SUP-0001, SUP-0002, etc')
+                            ->default(fn() => __('resource.supplier.helpers.auto_generated'))
+                            ->helperText(__('resource.supplier.helpers.code'))
                             ->columnSpan(1),
                         
                         Forms\Components\Select::make('status')
-                            ->label('Status')
+                            ->label(__('resource.supplier.status'))
                             ->options([
-                                'active' => 'Active',
-                                'inactive' => 'Inactive',
+                                'active' => __('resource.general.statuses.active'),
+                                'inactive' => __('resource.general.statuses.inactive'),
                             ])
                             ->default('active')
                             ->required()
                             ->columnSpan(1),
                     ])->columns(4),
                 
-                Forms\Components\Section::make('Kontak')
+                Forms\Components\Section::make(__('resource.supplier.contact_info'))
                     ->schema([
                         Forms\Components\TextInput::make('contact_person')
-                            ->label('Nama Kontak')
+                            ->label(__('resource.supplier.contact_person'))
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('phone')
-                            ->label('Telepon')
+                            ->label(__('resource.supplier.phone'))
                             ->tel()
                             ->maxLength(255),
                         
                         Forms\Components\TextInput::make('email')
-                            ->label('Email')
+                            ->label(__('resource.supplier.email'))
                             ->email()
                             ->maxLength(255),
                         
                         Forms\Components\Textarea::make('address')
-                            ->label('Alamat')
+                            ->label(__('resource.supplier.address'))
                             ->rows(3)
                             ->columnSpanFull(),
                     ])->columns(3),
                 
-                Forms\Components\Section::make('Catatan')
+                Forms\Components\Section::make(__('resource.supplier.notes'))
                     ->schema([
                         Forms\Components\Textarea::make('notes')
-                            ->label('Catatan')
+                            ->label(__('resource.supplier.notes'))
                             ->rows(3)
                             ->columnSpanFull(),
                     ])->collapsible(),
@@ -92,7 +115,7 @@ class SupplierResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('code')
-                    ->label('Code')
+                    ->label(__('resource.supplier.code'))
                     ->searchable()
                     ->sortable()
                     ->badge()
@@ -100,55 +123,59 @@ class SupplierResource extends Resource
                     ->copyable(),
                 
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Supplier Name')
+                    ->label(__('resource.supplier.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 
                 Tables\Columns\TextColumn::make('contact_person')
-                    ->label('Contact Person')
+                    ->label(__('resource.supplier.contact_person'))
                     ->searchable()
                     ->toggleable(),
                 
                 Tables\Columns\TextColumn::make('phone')
-                    ->label('Phone')
+                    ->label(__('resource.supplier.phone'))
                     ->searchable()
                     ->icon('heroicon-o-phone')
                     ->copyable(),
                 
                 Tables\Columns\TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('resource.supplier.email'))
                     ->searchable()
                     ->icon('heroicon-o-envelope')
                     ->copyable()
                     ->toggleable(),
                 
                 Tables\Columns\BadgeColumn::make('status')
-                    ->label('Status')
+                    ->label(__('resource.supplier.status'))
                     ->colors([
                         'success' => 'active',
                         'danger' => 'inactive',
                     ])
-                    ->formatStateUsing(fn (string $state): string => ucfirst($state)),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => __('resource.general.statuses.active'),
+                        'inactive' => __('resource.general.statuses.inactive'),
+                        default => $state,
+                    }),
                 
                 Tables\Columns\TextColumn::make('ingredients_count')
-                    ->label('Ingredients')
+                    ->label(__('resource.ingredient_category.ingredients_count'))
                     ->counts('ingredients')
                     ->badge()
                     ->color('info'),
                 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('resource.supplier.status'))
                     ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
+                        'active' => __('resource.general.statuses.active'),
+                        'inactive' => __('resource.general.statuses.inactive'),
                     ]),
                 
                 Tables\Filters\TrashedFilter::make(),
@@ -167,17 +194,11 @@ class SupplierResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->striped()
-            ->emptyStateHeading('No suppliers yet')
-            ->emptyStateDescription('Create your first supplier to get started.')
+            ->emptyStateHeading(__('resource.general.empty.heading'))
+            ->emptyStateDescription(__('resource.general.empty.description'))
             ->emptyStateIcon('heroicon-o-building-storefront');
     }
     
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->where('tenant_id', auth()->user()->tenant_id);
-    }
-
     public static function getRelations(): array
     {
         return [

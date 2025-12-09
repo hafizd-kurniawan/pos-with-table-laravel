@@ -24,30 +24,45 @@ class ReservationResource extends Resource
     protected static ?string $navigationGroup = 'Operations';
     protected static ?int $navigationSort = 3;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.reservation.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.reservation.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.reservation.plural_label');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Customer Information')
+                Forms\Components\Section::make(__('resource.reservation.label'))
                     ->schema([
                         Forms\Components\TextInput::make('customer_name')
                             ->required()
                             ->maxLength(255)
-                            ->label('Customer Name'),
+                            ->label(__('resource.reservation.customer_name')),
                             
                         Forms\Components\TextInput::make('customer_phone')
                             ->tel()
                             ->required()
                             ->maxLength(255)
-                            ->label('Phone Number'),
+                            ->label(__('resource.reservation.phone')),
                             
                         Forms\Components\TextInput::make('customer_email')
                             ->email()
                             ->maxLength(255)
-                            ->label('Email Address'),
+                            ->label(__('resource.reservation.email')),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Reservation Details')
+                Forms\Components\Section::make(__('resource.reservation.label'))
                     ->schema([
                         Forms\Components\Select::make('table_id')
                             ->relationship(
@@ -59,7 +74,8 @@ class ReservationResource extends Resource
                                     
                                     // Filter out tables that have active reservations
                                     // Active = confirmed or checked_in status
-                                    return $query->whereDoesntHave('reservations', function ($q) use ($currentRecordId) {
+                                    return $query->where('tenant_id', auth()->user()->tenant_id)
+                                        ->whereDoesntHave('reservations', function ($q) use ($currentRecordId) {
                                         $q->whereIn('status', ['confirmed', 'checked_in'])
                                           ->when($currentRecordId, function ($query) use ($currentRecordId) {
                                               // If editing, exclude current reservation from check
@@ -72,8 +88,8 @@ class ReservationResource extends Resource
                             ->searchable()
                             ->preload()
                             ->native(false)
-                            ->label('Table')
-                            ->helperText('Only available tables are shown (tables with active reservations are hidden)')
+                            ->label(__('resource.reservation.table'))
+                            ->helperText(__('resource.reservation.helpers.table'))
                             ->getOptionLabelFromRecordUsing(function ($record) {
                                 // Show table info in dropdown
                                 $status = match($record->status) {
@@ -108,7 +124,7 @@ class ReservationResource extends Resource
                                         
                                         if ($hasConflict) {
                                             $table = \App\Models\Table::find($value);
-                                            $fail("Table {$table->name} is already reserved at this date and time. Please choose another table or time slot.");
+                                            $fail(__('resource.reservation.messages.conflict', ['table' => $table->name]));
                                         }
                                     };
                                 }
@@ -119,15 +135,15 @@ class ReservationResource extends Resource
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(20)
-                            ->label('Party Size'),
+                            ->label(__('resource.reservation.party_size')),
                             
                         Forms\Components\DatePicker::make('reservation_date')
                             ->required()
-                            ->label('Reservation Date')
+                            ->label(__('resource.reservation.reservation_date'))
                             ->native(false)
                             ->minDate(now())
                             ->displayFormat('d/m/Y')
-                            ->helperText('Select future date for reservation')
+                            ->helperText(__('resource.reservation.helpers.reservation_date'))
                             ->live()
                             ->afterStateUpdated(function ($state, $set) {
                                 // When date changes, revalidate table selection
@@ -136,11 +152,11 @@ class ReservationResource extends Resource
                             
                         Forms\Components\TimePicker::make('reservation_time')
                             ->required()
-                            ->label('Reservation Time')
+                            ->label(__('resource.reservation.reservation_time'))
                             ->native(false)
                             ->seconds(false)
                             ->minutesStep(15)
-                            ->helperText('Time slot in 15-minute intervals')
+                            ->helperText(__('resource.reservation.helpers.reservation_time'))
                             ->live()
                             ->afterStateUpdated(function ($state, $set) {
                                 // When time changes, revalidate table selection
@@ -150,27 +166,27 @@ class ReservationResource extends Resource
                         Forms\Components\Select::make('status')
                             ->required()
                             ->options([
-                                'pending' => 'Pending',
-                                'confirmed' => 'Confirmed',
-                                'checked_in' => 'Checked In',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                                'no_show' => 'No Show'
+                                'pending' =>(__('resource.reservation.statuses.pending')),
+                                'confirmed' =>(__('resource.reservation.statuses.confirmed')),
+                                'checked_in' =>(__('resource.reservation.statuses.checked_in')),
+                                'completed' =>(__('resource.reservation.statuses.completed')),
+                                'cancelled' =>(__('resource.reservation.statuses.cancelled')),
+                                'no_show' =>(__('resource.reservation.statuses.no_show'))
                             ])
                             ->default('pending')
-                            ->label('Status'),
+                            ->label(__('resource.reservation.status')),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Additional Information')
+                Forms\Components\Section::make(__('resource.general.additional_info'))
                     ->schema([
                         Forms\Components\Textarea::make('notes')
-                            ->label('Internal Notes')
-                            ->helperText('Notes for staff (not visible to customer)')
+                            ->label(__('resource.reservation.notes'))
+                            ->helperText(__('resource.reservation.helpers.notes'))
                             ->rows(3),
                             
                         Forms\Components\Textarea::make('special_requests')
-                            ->label('Special Requests')
-                            ->helperText('Customer special requests or dietary requirements')
+                            ->label(__('resource.reservation.special_requests'))
+                            ->helperText(__('resource.reservation.helpers.special_requests'))
                             ->rows(3),
                     ])->columns(2),
             ]);
@@ -181,42 +197,43 @@ class ReservationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('table.name')
-                    ->label('Table')
+                    ->label(__('resource.reservation.table'))
                     ->sortable()
                     ->searchable()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('customer_name')
-                    ->label('Customer')
+                    ->label(__('resource.reservation.customer_name'))
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
 
                 Tables\Columns\TextColumn::make('customer_phone')
-                    ->label('Phone')
+                    ->label(__('resource.reservation.phone'))
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Phone copied!')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('party_size')
-                    ->label('Party Size')
+                    ->label(__('resource.reservation.party_size'))
                     ->numeric()
                     ->sortable()
                     ->suffix(' people')
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('reservation_date')
-                    ->label('Date')
+                    ->label(__('resource.reservation.reservation_date'))
                     ->date('M j, Y')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('reservation_time')
-                    ->label('Time')
+                    ->label(__('resource.reservation.reservation_time'))
                     ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('H:i'))
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
+                    ->label(__('resource.reservation.status'))
                     ->colors([
                         'warning' => 'pending',
                         'success' => 'confirmed',
@@ -233,10 +250,19 @@ class ReservationResource extends Resource
                         'heroicon-m-x-circle' => 'cancelled',
                         'heroicon-m-exclamation-triangle' => 'no_show',
                     ])
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('resource.reservation.statuses.pending'),
+                        'confirmed' => __('resource.reservation.statuses.confirmed'),
+                        'checked_in' => __('resource.reservation.statuses.checked_in'),
+                        'completed' => __('resource.reservation.statuses.completed'),
+                        'cancelled' => __('resource.reservation.statuses.cancelled'),
+                        'no_show' => __('resource.reservation.statuses.no_show'),
+                        default => ucfirst($state),
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('resource.reservation.created_at'))
                     ->dateTime('M j, Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -244,22 +270,23 @@ class ReservationResource extends Resource
             ->defaultSort('reservation_date', 'asc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label(__('resource.reservation.status'))
                     ->options([
-                        'pending' => 'Pending',
-                        'confirmed' => 'Confirmed',
-                        'checked_in' => 'Checked In',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                        'no_show' => 'No Show'
+                        'pending' => __('resource.reservation.statuses.pending'),
+                        'confirmed' => __('resource.reservation.statuses.confirmed'),
+                        'checked_in' => __('resource.reservation.statuses.checked_in'),
+                        'completed' => __('resource.reservation.statuses.completed'),
+                        'cancelled' => __('resource.reservation.statuses.cancelled'),
+                        'no_show' => __('resource.reservation.statuses.no_show')
                     ])
                     ->multiple(),
 
                 Tables\Filters\Filter::make('today')
-                    ->label('Today\'s Reservations')
+                    ->label(__('resource.reservation.filters.today'))
                     ->query(fn (Builder $query) => $query->whereDate('reservation_date', today())),
 
                 Tables\Filters\Filter::make('upcoming')
-                    ->label('Upcoming Reservations')
+                    ->label(__('resource.reservation.filters.upcoming'))
                     ->query(fn (Builder $query) => $query->where('reservation_date', '>=', today())),
             ])
             ->actions([
@@ -268,102 +295,102 @@ class ReservationResource extends Resource
                     Tables\Actions\EditAction::make(),
                     
                     Tables\Actions\Action::make('confirm')
-                        ->label('Confirm')
+                        ->label(__('resource.reservation.actions.confirm.label'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(fn (Reservation $record) => $record->update(['status' => 'confirmed']))
                         ->requiresConfirmation()
-                        ->modalHeading('Confirm Reservation')
-                        ->modalDescription(fn (Reservation $record) => "Confirm reservation for {$record->customer_name}? Table will be marked as RESERVED.")
+                        ->modalHeading(__('resource.reservation.actions.confirm.heading'))
+                        ->modalDescription(fn (Reservation $record) => __('resource.reservation.actions.confirm.description', ['name' => $record->customer_name]))
                         ->visible(fn (Reservation $record) => $record->status === 'pending')
-                        ->successNotificationTitle('Reservation Confirmed!')
+                        ->successNotificationTitle(__('resource.reservation.actions.confirm.success_title'))
                         ->after(function (Reservation $record) {
                             \Filament\Notifications\Notification::make()
                                 ->success()
-                                ->title('✅ Reservation Confirmed')
-                                ->body("Table {$record->table->name} reserved for {$record->customer_name}")
+                                ->title(__('resource.reservation.actions.confirm.success_title'))
+                                ->body(__('resource.reservation.actions.confirm.success_body', ['table' => $record->table->name, 'name' => $record->customer_name]))
                                 ->send();
                         }),
 
                     Tables\Actions\Action::make('checkin')
-                        ->label('Check In')
+                        ->label(__('resource.reservation.actions.checkin.label'))
                         ->icon('heroicon-o-arrow-right-circle')
                         ->color('info')
                         ->action(fn (Reservation $record) => $record->update(['status' => 'checked_in']))
                         ->requiresConfirmation()
-                        ->modalHeading('Check In Customer')
-                        ->modalDescription(fn (Reservation $record) => "Check in {$record->customer_name}? Table will be marked as OCCUPIED.")
+                        ->modalHeading(__('resource.reservation.actions.checkin.heading'))
+                        ->modalDescription(fn (Reservation $record) => __('resource.reservation.actions.checkin.description', ['name' => $record->customer_name]))
                         ->visible(fn (Reservation $record) => $record->status === 'confirmed')
-                        ->successNotificationTitle('Customer Checked In!')
+                        ->successNotificationTitle(__('resource.reservation.actions.checkin.success_title'))
                         ->after(function (Reservation $record) {
                             \Filament\Notifications\Notification::make()
                                 ->success()
-                                ->title('🎉 Customer Checked In')
-                                ->body("{$record->customer_name} is now seated at Table {$record->table->name}")
+                                ->title(__('resource.reservation.actions.checkin.success_title'))
+                                ->body(__('resource.reservation.actions.checkin.success_body', ['name' => $record->customer_name, 'table' => $record->table->name]))
                                 ->send();
                         }),
                         
                     Tables\Actions\Action::make('complete')
-                        ->label('Complete')
+                        ->label(__('resource.reservation.actions.complete.label'))
                         ->icon('heroicon-o-check-badge')
                         ->color('success')
                         ->action(fn (Reservation $record) => $record->update(['status' => 'completed']))
                         ->requiresConfirmation()
-                        ->modalHeading('Complete Reservation')
-                        ->modalDescription(fn (Reservation $record) => "Mark reservation as completed? Table will be made AVAILABLE.")
+                        ->modalHeading(__('resource.reservation.actions.complete.heading'))
+                        ->modalDescription(fn (Reservation $record) => __('resource.reservation.actions.complete.description'))
                         ->visible(fn (Reservation $record) => in_array($record->status, ['confirmed', 'checked_in']))
-                        ->successNotificationTitle('Reservation Completed!')
+                        ->successNotificationTitle(__('resource.reservation.actions.complete.success_title'))
                         ->after(function (Reservation $record) {
                             \Filament\Notifications\Notification::make()
                                 ->success()
-                                ->title('✅ Reservation Completed')
-                                ->body("Table {$record->table->name} is now available")
+                                ->title(__('resource.reservation.actions.complete.success_title'))
+                                ->body(__('resource.reservation.actions.complete.success_body', ['table' => $record->table->name]))
                                 ->send();
                         }),
                         
                     Tables\Actions\Action::make('cancel')
-                        ->label('Cancel')
+                        ->label(__('resource.reservation.actions.cancel.label'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->action(fn (Reservation $record) => $record->update(['status' => 'cancelled']))
                         ->requiresConfirmation()
-                        ->modalHeading('Cancel Reservation')
-                        ->modalDescription(fn (Reservation $record) => "Cancel reservation for {$record->customer_name}? Table will be made AVAILABLE.")
+                        ->modalHeading(__('resource.reservation.actions.cancel.heading'))
+                        ->modalDescription(fn (Reservation $record) => __('resource.reservation.actions.cancel.description', ['name' => $record->customer_name]))
                         ->visible(fn (Reservation $record) => in_array($record->status, ['pending', 'confirmed']))
-                        ->successNotificationTitle('Reservation Cancelled')
+                        ->successNotificationTitle(__('resource.reservation.actions.cancel.success_title'))
                         ->after(function (Reservation $record) {
                             \Filament\Notifications\Notification::make()
                                 ->warning()
-                                ->title('⚠️ Reservation Cancelled')
-                                ->body("Reservation for {$record->customer_name} has been cancelled")
+                                ->title(__('resource.reservation.actions.cancel.success_title'))
+                                ->body(__('resource.reservation.actions.cancel.success_body', ['name' => $record->customer_name]))
                                 ->send();
                         }),
                         
                     Tables\Actions\Action::make('no_show')
-                        ->label('Mark No Show')
+                        ->label(__('resource.reservation.actions.no_show.label'))
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('warning')
                         ->action(fn (Reservation $record) => $record->update(['status' => 'no_show']))
                         ->requiresConfirmation()
-                        ->modalHeading('Mark as No Show')
-                        ->modalDescription(fn (Reservation $record) => "Mark {$record->customer_name} as no show? Table will be made AVAILABLE.")
+                        ->modalHeading(__('resource.reservation.actions.no_show.heading'))
+                        ->modalDescription(fn (Reservation $record) => __('resource.reservation.actions.no_show.description', ['name' => $record->customer_name]))
                         ->visible(fn (Reservation $record) => in_array($record->status, ['confirmed']))
-                        ->successNotificationTitle('Marked as No Show')
+                        ->successNotificationTitle(__('resource.reservation.actions.no_show.success_title'))
                         ->after(function (Reservation $record) {
                             \Filament\Notifications\Notification::make()
                                 ->warning()
-                                ->title('⚠️ Customer No Show')
-                                ->body("Customer {$record->customer_name} did not show up")
+                                ->title(__('resource.reservation.actions.no_show.success_title'))
+                                ->body(__('resource.reservation.actions.no_show.success_body', ['name' => $record->customer_name]))
                                 ->send();
                         }),
                         
                     Tables\Actions\DeleteAction::make()
-                        ->label('Delete')
+                        ->label(__('resource.general.actions.delete.label'))
                         ->icon('heroicon-o-trash')
                         ->requiresConfirmation()
-                        ->modalHeading('Delete Reservation')
-                        ->modalDescription('Are you sure you want to delete this reservation? This action cannot be undone.')
-                        ->successNotificationTitle('Reservation Deleted'),
+                        ->modalHeading(__('resource.general.actions.delete.heading', ['label' => __('resource.reservation.label')]))
+                        ->modalDescription(__('resource.general.actions.delete.description'))
+                        ->successNotificationTitle(__('resource.general.actions.delete.success_title', ['label' => __('resource.reservation.label')])),
                 ])->tooltip('Quick Actions')
                     ->icon('heroicon-m-ellipsis-vertical')
                     ->size('sm')
@@ -382,6 +409,12 @@ class ReservationResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('tenant_id', auth()->user()->tenant_id);
     }
 
     public static function getPages(): array

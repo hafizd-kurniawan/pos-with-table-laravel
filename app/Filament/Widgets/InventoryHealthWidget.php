@@ -7,7 +7,10 @@ use Filament\Widgets\ChartWidget;
 
 class InventoryHealthWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Inventory Health';
+    public function getHeading(): ?string
+    {
+        return __('report.widgets.inventory_health.heading');
+    }
     protected static ?int $sort = 6;
     
     protected int | string | array $columnSpan = [
@@ -35,7 +38,7 @@ class InventoryHealthWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Inventory Status',
+                    'label' => __('report.widgets.inventory_health.label'),
                     'data' => [$healthy, $lowStock, $outOfStock],
                     'backgroundColor' => [
                         'rgb(16, 185, 129)',  // Green - Healthy
@@ -45,9 +48,9 @@ class InventoryHealthWidget extends ChartWidget
                 ],
             ],
             'labels' => [
-                "Healthy ({$healthyPct}%)",
-                "Low Stock ({$lowPct}%)",
-                "Out of Stock ({$outPct}%)",
+                __('report.widgets.inventory_health.healthy') . " ({$healthyPct}%)",
+                __('report.widgets.inventory_health.low_stock') . " ({$lowPct}%)",
+                __('report.widgets.inventory_health.out_of_stock') . " ({$outPct}%)",
             ],
         ];
     }
@@ -77,9 +80,9 @@ class InventoryHealthWidget extends ChartWidget
         $actionNeeded = $data['low_stock'] + $data['out_of_stock'];
         
         if ($actionNeeded > 0) {
-            return "⚠️ {$actionNeeded} items need attention";
+            return __('report.widgets.inventory_health.attention_needed', ['count' => $actionNeeded]);
         }
 
-        return '✅ All items in good stock';
+        return __('report.widgets.inventory_health.all_good');
     }
 }

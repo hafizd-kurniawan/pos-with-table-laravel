@@ -24,9 +24,15 @@ class InventoryReports extends Page implements HasForms
     
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     
-    protected static ?string $navigationGroup = 'Reports';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.general.navigation.reports');
+    }
     
-    protected static ?string $navigationLabel = 'Inventory Reports';
+    public static function getNavigationLabel(): string
+    {
+        return __('report.inventory.title');
+    }
     
     protected static ?int $navigationSort = 2;
 
@@ -175,7 +181,7 @@ class InventoryReports extends Page implements HasForms
             ->get()
             ->map(function ($item) {
                 return [
-                    'category' => $item->ingredientCategory?->name ?? 'Uncategorized',
+                    'category' => $item->ingredientCategory?->name ?? __('resource.general.uncategorized'),
                     'total_value' => $item->total_value,
                 ];
             })
@@ -237,7 +243,7 @@ class InventoryReports extends Page implements HasForms
     public function exportStockSummaryPdf()
     {
         $data = [
-            'title' => 'Stock Summary Report',
+            'title' => __('report.inventory.stock_summary.heading'),
             'date' => now()->format('d M Y'),
             'tenant' => $this->cleanText(auth()->user()->tenant->name ?? 'Restaurant'),
             'items' => $this->cleanDataForPdf($this->stockSummary),
@@ -267,11 +273,11 @@ class InventoryReports extends Page implements HasForms
     public function exportStockMovementsPdf()
     {
         $data = [
-            'title' => 'Stock Movements Report',
+            'title' => __('report.inventory.stock_movements.heading'),
             'date_range' => $this->startDate . ' to ' . $this->endDate,
             'tenant' => $this->cleanText(auth()->user()->tenant->name ?? 'Restaurant'),
             'movements' => $this->cleanDataForPdf($this->stockMovements),
-            'type' => $this->movementType ? ucfirst($this->movementType) : 'All Types',
+            'type' => $this->movementType ? ucfirst($this->movementType) : __('report.inventory.stock_movements.filters.all_types'),
         ];
         
         // Force UTF-8 through JSON
@@ -296,7 +302,7 @@ class InventoryReports extends Page implements HasForms
     public function exportPurchaseOrdersPdf()
     {
         $data = [
-            'title' => 'Purchase Orders Report',
+            'title' => __('report.inventory.purchase_orders.heading'),
             'date_range' => $this->startDate . ' to ' . $this->endDate,
             'tenant' => $this->cleanText(auth()->user()->tenant->name ?? 'Restaurant'),
             'orders' => $this->cleanDataForPdf($this->purchaseOrders),
@@ -382,7 +388,7 @@ class InventoryReports extends Page implements HasForms
             $categoryValue = $this->cleanDataForPdf($this->categoryValue);
             
             $data = [
-                'title' => 'Complete Inventory Reports',
+                'title' => __('report.inventory.export.complete.title'),
                 'date' => now()->format('d M Y'),
                 'tenant' => $this->cleanText(auth()->user()->tenant->name ?? 'Restaurant'),
                 'stockSummary' => $stockSummary,

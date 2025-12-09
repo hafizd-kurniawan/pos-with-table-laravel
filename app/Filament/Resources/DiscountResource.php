@@ -24,6 +24,21 @@ class DiscountResource extends Resource
     protected static ?string $navigationGroup = 'Finance';
     protected static ?int $navigationSort = 1;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.discount.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.discount.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.discount.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -49,54 +64,54 @@ class DiscountResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Discount Information')
+                Forms\Components\Section::make(__('resource.discount.label') . ' Information')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
-                            ->label('Discount Name'),
+                            ->label(__('resource.discount.name')),
                         
                         Forms\Components\Textarea::make('description')
-                            ->label('Description')
+                            ->label(__('resource.discount.description'))
                             ->rows(3)
                             ->columnSpanFull(),
                     ])->columns(1),
 
-                Forms\Components\Section::make('Discount Details')
+                Forms\Components\Section::make(__('resource.discount.label') . ' Details')
                     ->schema([
                         Forms\Components\Select::make('type')
                             ->required()
                             ->options([
-                                'percentage' => 'Percentage (%)',
-                                'fixed' => 'Fixed Amount'
+                                'percentage' => __('resource.discount.types.percentage'),
+                                'fixed' => __('resource.discount.types.fixed')
                             ])
                             ->default('percentage')
                             ->reactive()
-                            ->label('Discount Type'),
+                            ->label(__('resource.discount.type')),
 
                         Forms\Components\TextInput::make('value')
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->label('Discount Value')
+                            ->label(__('resource.discount.value'))
                             ->suffix(fn ($get) => $get('type') === 'percentage' ? '%' : '')
                             ->prefix(fn ($get) => $get('type') === 'fixed' ? 'Rp' : '')
                             ->helperText(fn ($get) => $get('type') === 'percentage' 
-                                ? 'Enter percentage (0-100)'
-                                : 'Enter fixed amount in Rupiah'),
+                                ? __('resource.discount.helpers.percentage')
+                                : __('resource.discount.helpers.fixed')),
 
                         Forms\Components\Select::make('status')
                             ->required()
                             ->options([
-                                'active' => 'Active',
-                                'inactive' => 'Inactive'
+                                'active' => __('resource.discount.statuses.active'),
+                                'inactive' => __('resource.discount.statuses.inactive')
                             ])
                             ->default('active')
-                            ->label('Status'),
+                            ->label(__('resource.discount.status')),
 
                         Forms\Components\DatePicker::make('expired_date')
-                            ->label('Expiry Date')
-                            ->helperText('Leave empty for no expiry date')
+                            ->label(__('resource.discount.expired_date'))
+                            ->helperText(__('resource.discount.helpers.expiry'))
                             ->after('today'),
                     ])->columns(2),
             ]);
@@ -109,17 +124,22 @@ class DiscountResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->label('Discount Name'),
+                    ->label(__('resource.discount.name')),
 
                 Tables\Columns\BadgeColumn::make('type')
                     ->colors([
                         'success' => 'percentage',
                         'warning' => 'fixed',
                     ])
-                    ->label('Type'),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'percentage' => __('resource.discount.types.percentage'),
+                        'fixed' => __('resource.discount.types.fixed'),
+                        default => $state,
+                    })
+                    ->label(__('resource.discount.type')),
 
                 Tables\Columns\TextColumn::make('value')
-                    ->label('Value')
+                    ->label(__('resource.discount.value'))
                     ->formatStateUsing(fn ($record) => 
                         $record->type === 'percentage' 
                             ? $record->value . '%' 
@@ -131,32 +151,39 @@ class DiscountResource extends Resource
                         'success' => 'active',
                         'danger' => 'inactive',
                     ])
-                    ->label('Status'),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => __('resource.discount.statuses.active'),
+                        'inactive' => __('resource.discount.statuses.inactive'),
+                        default => $state,
+                    })
+                    ->label(__('resource.discount.status')),
 
                 Tables\Columns\TextColumn::make('expired_date')
                     ->date('M j, Y')
                     ->sortable()
-                    ->label('Expires')
-                    ->placeholder('No expiry'),
+                    ->label(__('resource.discount.expired_date'))
+                    ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y H:i')
                     ->sortable()
-                    ->label('Created')
+                    ->label(__('resource.general.created_at'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'percentage' => 'Percentage',
-                        'fixed' => 'Fixed Amount',
-                    ]),
+                        'percentage' => __('resource.discount.types.percentage'),
+                        'fixed' => __('resource.discount.types.fixed'),
+                    ])
+                    ->label(__('resource.discount.type')),
                 
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                    ]),
+                        'active' => __('resource.discount.statuses.active'),
+                        'inactive' => __('resource.discount.statuses.inactive'),
+                    ])
+                    ->label(__('resource.discount.status')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

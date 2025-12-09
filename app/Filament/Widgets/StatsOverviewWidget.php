@@ -23,24 +23,24 @@ class StatsOverviewWidget extends BaseWidget
         $trendColor = $change >= 0 ? 'success' : 'danger';
 
         return [
-            Stat::make('Total Sales', 'Rp ' . number_format($summary['total_sales'], 0, ',', '.'))
-                ->description(abs($change) . '% vs previous period')
+            Stat::make(__('report.widgets.stats_overview.total_sales'), 'Rp ' . number_format($summary['total_sales'], 0, ',', '.'))
+                ->description(__('report.widgets.stats_overview.vs_previous', ['percentage' => abs($change)]))
                 ->descriptionIcon($trendIcon)
                 ->color($trendColor)
                 ->chart($this->getTrendChart($service)),
 
-            Stat::make('Total Orders', number_format($summary['total_orders']))
-                ->description('Transactions in period')
+            Stat::make(__('report.widgets.stats_overview.total_orders'), number_format($summary['total_orders']))
+                ->description(__('report.widgets.stats_overview.transactions_period'))
                 ->icon('heroicon-o-shopping-cart')
                 ->color('primary'),
 
-            Stat::make('Avg Order Value', 'Rp ' . number_format($summary['avg_order'], 0, ',', '.'))
-                ->description('Per transaction')
+            Stat::make(__('report.widgets.stats_overview.avg_order_value'), 'Rp ' . number_format($summary['avg_order'], 0, ',', '.'))
+                ->description(__('report.widgets.stats_overview.per_transaction'))
                 ->icon('heroicon-o-currency-dollar')
                 ->color('warning'),
                 
-            Stat::make('Inventory Value', 'Rp ' . number_format($inventory['total_value'], 0, ',', '.'))
-                ->description($inventory['total_items'] . ' items tracked')
+            Stat::make(__('report.widgets.stats_overview.inventory_value'), 'Rp ' . number_format($inventory['total_value'], 0, ',', '.'))
+                ->description(__('report.widgets.stats_overview.items_tracked', ['count' => $inventory['total_items']]))
                 ->icon('heroicon-o-archive-box')
                 ->color('info'),
         ];

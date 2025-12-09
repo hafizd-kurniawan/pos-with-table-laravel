@@ -20,11 +20,20 @@ class OrderSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     
-    protected static ?string $navigationLabel = 'Order Settings';
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.order_settings.navigation_label');
+    }
     
-    protected static ?string $title = 'Order Settings';
+    public function getTitle(): string
+    {
+        return __('resource.order_settings.title');
+    }
     
-    protected static ?string $navigationGroup = 'Settings';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.general.navigation.settings');
+    }
     
     protected static ?int $navigationSort = 2;
 
@@ -51,11 +60,11 @@ class OrderSettings extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Select Items to Show in POS & Self-Order')
-                    ->description('Choose which specific items will be available for customers to select')
+                Section::make(__('resource.order_settings.section.heading'))
+                    ->description(__('resource.order_settings.section.description'))
                     ->schema([
                         CheckboxList::make('selected_discount_ids')
-                            ->label('🎁 Discounts')
+                            ->label(__('resource.order_settings.fields.discounts'))
                             ->options(function () {
                                 return Discount::where('status', 'active')
                                     ->where(function($query) {
@@ -80,7 +89,7 @@ class OrderSettings extends Page implements HasForms
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($discount) {
-                                        $desc = $discount->description ?? 'No description';
+                                        $desc = $discount->description ?? __('resource.order_settings.helpers.no_description');
                                         return [$discount->id => $desc];
                                     })
                                     ->toArray();
@@ -88,10 +97,10 @@ class OrderSettings extends Page implements HasForms
                             ->columns(2)
                             ->gridDirection('row')
                             ->bulkToggleable()
-                            ->helperText('Only checked discounts will appear in POS/Self-Order'),
+                            ->helperText(__('resource.order_settings.helpers.discounts')),
 
                         CheckboxList::make('selected_tax_ids')
-                            ->label('🧾 Taxes (PPN)')
+                            ->label(__('resource.order_settings.fields.taxes'))
                             ->options(function () {
                                 return Tax::where('status', 'active')
                                     ->where('type', 'pajak')
@@ -109,7 +118,7 @@ class OrderSettings extends Page implements HasForms
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($tax) {
-                                        $desc = $tax->description ?? 'Tax applied to subtotal';
+                                        $desc = $tax->description ?? __('resource.order_settings.helpers.tax_desc');
                                         return [$tax->id => $desc];
                                     })
                                     ->toArray();
@@ -117,10 +126,10 @@ class OrderSettings extends Page implements HasForms
                             ->columns(2)
                             ->gridDirection('row')
                             ->bulkToggleable()
-                            ->helperText('Only checked taxes will appear in POS/Self-Order'),
+                            ->helperText(__('resource.order_settings.helpers.taxes')),
 
                         CheckboxList::make('selected_service_ids')
-                            ->label('💼 Service Charges')
+                            ->label(__('resource.order_settings.fields.services'))
                             ->options(function () {
                                 return Tax::where('status', 'active')
                                     ->where('type', 'layanan')
@@ -138,15 +147,17 @@ class OrderSettings extends Page implements HasForms
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($service) {
-                                        $desc = $service->description ?? 'Service charge applied after tax';
+                                        $desc = $service->description ?? __('resource.order_settings.helpers.service_desc');
                                         return [$service->id => $desc];
                                     })
                                     ->toArray();
                             })
                             ->columns(2)
                             ->gridDirection('row')
+                            ->columns(2)
+                            ->gridDirection('row')
                             ->bulkToggleable()
-                            ->helperText('Only checked services will appear in POS/Self-Order'),
+                            ->helperText(__('resource.order_settings.helpers.services')),
                     ])
                     ->columns(1),
             ])
@@ -192,8 +203,8 @@ class OrderSettings extends Page implements HasForms
         Cache::flush();
 
         Notification::make()
-            ->title('Order settings saved successfully!')
-            ->body('Selected items will now appear in POS and Self-Order systems.')
+            ->title(__('resource.order_settings.notifications.success_title'))
+            ->body(__('resource.order_settings.notifications.success_body'))
             ->success()
             ->send();
     }

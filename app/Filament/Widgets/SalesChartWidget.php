@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\DB;
 
 class SalesChartWidget extends ChartWidget
 {
-    protected static ?string $heading = '📈 Today\'s Sales by Hour';
     protected static ?int $sort = 5;
+    
+    public function getHeading(): string
+    {
+        return __('report.widgets.sales_chart.heading');
+    }
     
     protected int | string | array $columnSpan = [
         'md' => 12,
@@ -26,7 +30,7 @@ class SalesChartWidget extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Sales (Rp)',
+                    'label' => __('report.widgets.sales_chart.sales_label'),
                     'data' => $trend['sales'],
                     'borderColor' => '#10B981',
                     'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
@@ -35,7 +39,7 @@ class SalesChartWidget extends ChartWidget
                     'yAxisID' => 'y',
                 ],
                 [
-                    'label' => 'Orders',
+                    'label' => __('report.widgets.sales_chart.orders_label'),
                     'data' => $trend['orders'],
                     'borderColor' => '#3B82F6',
                     'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
@@ -73,7 +77,7 @@ class SalesChartWidget extends ChartWidget
                     'position' => 'left',
                     'title' => [
                         'display' => true,
-                        'text' => 'Sales (Rp)',
+                        'text' => __('report.widgets.sales_chart.sales_label'),
                     ],
                 ],
                 'y1' => [
@@ -82,7 +86,7 @@ class SalesChartWidget extends ChartWidget
                     'position' => 'right',
                     'title' => [
                         'display' => true,
-                        'text' => 'Orders',
+                        'text' => __('report.widgets.sales_chart.orders_label'),
                     ],
                     'grid' => [
                         'drawOnChartArea' => false,
@@ -110,9 +114,9 @@ class SalesChartWidget extends ChartWidget
         if ($peakData) {
             $peakHour = sprintf('%02d:00', $peakData->hour);
             $peakSales = number_format($peakData->total, 0, ',', '.');
-            return "🔥 Peak: {$peakHour} (Rp {$peakSales}) • Real-time updates every minute";
+            return __('report.widgets.sales_chart.peak_label', ['hour' => $peakHour, 'amount' => $peakSales]);
         }
 
-        return "Real-time sales tracking • Updates every minute";
+        return __('report.widgets.sales_chart.default_label');
     }
 }

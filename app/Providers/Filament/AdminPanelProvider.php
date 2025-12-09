@@ -55,10 +55,19 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\SetLocale::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
                 \App\Http\Middleware\FilamentTenantMiddleware::class, // Tenant validation & scoping
+            ])
+            ->navigationItems([
+                \Filament\Navigation\NavigationItem::make('lang_switch')
+                    ->label(fn (): string => app()->getLocale() === 'id' ? 'English' : 'Bahasa Indonesia')
+                    ->url(fn (): string => route('lang.switch', app()->getLocale() === 'id' ? 'en' : 'id'))
+                    ->icon('heroicon-o-language')
+                    ->group('Settings')
+                    ->sort(99),
             ]);
     }
 }

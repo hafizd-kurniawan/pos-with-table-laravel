@@ -166,3 +166,12 @@ Route::get('/storage-proxy/{any}', function ($any) {
         ->header('Access-Control-Allow-Origin', '*')
         ->header('Access-Control-Allow-Methods', 'GET, OPTIONS');
 })->where('any', '.*');
+
+Route::get('lang/{locale}', function ($locale) {
+    if (in_array($locale, ['id', 'en'])) {
+        \Illuminate\Support\Facades\Log::info('Language Switch: Switching to ' . $locale);
+        session(['locale' => $locale]);
+        session()->save(); // Force save session
+    }
+    return redirect()->back();
+})->name('lang.switch');

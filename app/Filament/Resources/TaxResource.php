@@ -26,6 +26,21 @@ class TaxResource extends Resource
     
     protected static ?int $navigationSort = 2;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.tax.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.tax.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.tax.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -54,19 +69,19 @@ class TaxResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
-                    ->label('Nama Pajak/Biaya')
-                    ->placeholder('Contoh: PPN 11%, Biaya Layanan')
-                    ->helperText('Nama yang akan muncul di struk'),
+                    ->label(__('resource.tax.name'))
+                    ->placeholder(__('resource.tax.placeholders.name'))
+                    ->helperText(__('resource.tax.helpers.name')),
                 
                 Forms\Components\Select::make('type')
                     ->required()
                     ->options([
-                        'pajak' => 'Pajak (Tax) - Contoh: PPN',
-                        'layanan' => 'Biaya Layanan (Service Charge)',
+                        'pajak' => __('resource.tax.types.tax'),
+                        'layanan' => __('resource.tax.types.service'),
                     ])
                     ->default('pajak')
-                    ->label('Jenis')
-                    ->helperText('Pajak = PPN/PPh, Layanan = Service Charge'),
+                    ->label(__('resource.tax.type'))
+                    ->helperText(__('resource.tax.helpers.type')),
                 
                 Forms\Components\TextInput::make('value')
                     ->required()
@@ -75,24 +90,24 @@ class TaxResource extends Resource
                     ->minValue(0)
                     ->maxValue(100)
                     ->default(11)
-                    ->label('Persentase')
-                    ->placeholder('11')
-                    ->helperText('Nilai dalam persen (%). Contoh: 11 untuk 11%'),
+                    ->label(__('resource.tax.value'))
+                    ->placeholder(__('resource.tax.placeholders.value'))
+                    ->helperText(__('resource.tax.helpers.value')),
                 
                 Forms\Components\Select::make('status')
                     ->required()
                     ->options([
-                        'active' => '✅ Aktif (Diterapkan di transaksi)',
-                        'inactive' => '❌ Tidak Aktif (Tidak diterapkan)',
+                        'active' => __('resource.tax.statuses.active'),
+                        'inactive' => __('resource.tax.statuses.inactive'),
                     ])
                     ->default('active')
-                    ->label('Status')
-                    ->helperText('Hanya pajak/biaya aktif yang diterapkan'),
+                    ->label(__('resource.tax.status'))
+                    ->helperText(__('resource.tax.helpers.status')),
                 
                 Forms\Components\Textarea::make('description')
                     ->columnSpanFull()
-                    ->label('Keterangan (Opsional)')
-                    ->placeholder('Contoh: PPN 11% sesuai peraturan pemerintah')
+                    ->label(__('resource.tax.description'))
+                    ->placeholder(__('resource.tax.placeholders.description'))
                     ->rows(3),
             ]);
     }
@@ -102,15 +117,15 @@ class TaxResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nama')
+                    ->label(__('resource.tax.name'))
                     ->searchable()
                     ->sortable(),
                 
                 Tables\Columns\BadgeColumn::make('type')
-                    ->label('Jenis')
+                    ->label(__('resource.tax.type'))
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'pajak' => 'Pajak',
-                        'layanan' => 'Biaya Layanan',
+                        'pajak' => __('resource.tax.types.tax'),
+                        'layanan' => __('resource.tax.types.service'),
                         default => $state,
                     })
                     ->colors([
@@ -119,16 +134,16 @@ class TaxResource extends Resource
                     ]),
                 
                 Tables\Columns\TextColumn::make('value')
-                    ->label('Persentase')
+                    ->label(__('resource.tax.value'))
                     ->formatStateUsing(fn ($state) => $state . '%')
                     ->sortable()
                     ->alignCenter(),
                 
                 Tables\Columns\BadgeColumn::make('status')
-                    ->label('Status')
+                    ->label(__('resource.tax.status'))
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'active' => 'Aktif',
-                        'inactive' => 'Tidak Aktif',
+                        'active' => __('resource.tax.statuses.active'),
+                        'inactive' => __('resource.tax.statuses.inactive'),
                         default => $state,
                     })
                     ->colors([
@@ -137,12 +152,12 @@ class TaxResource extends Resource
                     ]),
                 
                 Tables\Columns\TextColumn::make('description')
-                    ->label('Keterangan')
+                    ->label(__('resource.tax.description'))
                     ->limit(50)
                     ->toggleable(),
                 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
