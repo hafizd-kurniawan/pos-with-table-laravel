@@ -287,8 +287,34 @@ class OrderController extends Controller
         
         // Validasi stock untuk semua items di cart
         $stockValidation = $this->validateCartStock($cart);
+
+        // Fetch settings for cart estimation
+        $selectedDiscounts = collect();
+        $selectedTaxes = collect();
+        $selectedServices = collect();
+
+        try {
+            $discountIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('key', 'selected_discount_ids')->value('value') ?? '[]', true);
+            $taxIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('key', 'selected_tax_ids')->value('value') ?? '[]', true);
+            $serviceIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('key', 'selected_service_ids')->value('value') ?? '[]', true);
+
+            if (!empty($discountIds)) {
+                $selectedDiscounts = \App\Models\Discount::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('status', 'active')->whereIn('id', $discountIds)->get();
+            }
+            if (!empty($taxIds)) {
+                $selectedTaxes = \App\Models\Tax::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('status', 'active')->where('type', 'pajak')->whereIn('id', $taxIds)->get();
+            }
+            if (!empty($serviceIds)) {
+                $selectedServices = \App\Models\Tax::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('status', 'active')->where('type', 'layanan')->whereIn('id', $serviceIds)->get();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error fetching cart settings: ' . $e->getMessage());
+        }
+
+        $autoTax = $selectedTaxes->first();
+        $autoService = $selectedServices->first();
         
-        return view('order.cart', compact('cart', 'table', 'stockValidation'));
+        return view('order.cart', compact('cart', 'table', 'stockValidation', 'autoTax', 'autoService'));
     }
 
     // Form checkout (isi nama/phone opsional)
@@ -369,7 +395,10 @@ class OrderController extends Controller
             Log::error('Error fetching checkout settings: ' . $e->getMessage());
         }
         
-        return view('order.checkout', compact('cart', 'table', 'selectedDiscounts', 'selectedTaxes', 'selectedServices'));
+        $autoTax = $selectedTaxes->first();
+        $autoService = $selectedServices->first();
+        
+        return view('order.checkout', compact('cart', 'table', 'selectedDiscounts', 'selectedTaxes', 'selectedServices', 'autoTax', 'autoService'));
     }
 
     /**
@@ -578,12 +607,32 @@ class OrderController extends Controller
                     ->firstOrFail();
                 $paymentMethod = $request->input('payment_method', 'qris');
 
+                // Fetch default Tax & Service if not provided (Auto-apply logic)
+                $taxId = $request->input('tax_id');
+                $serviceId = $request->input('service_id');
+
+                if (!$taxId) {
+                    $taxIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('key', 'selected_tax_ids')->value('value') ?? '[]', true);
+                    if (!empty($taxIds)) {
+                        // Get the first active tax
+                        $taxId = \App\Models\Tax::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('status', 'active')->where('type', 'pajak')->whereIn('id', $taxIds)->value('id');
+                    }
+                }
+
+                if (!$serviceId) {
+                    $serviceIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('key', 'selected_service_ids')->value('value') ?? '[]', true);
+                    if (!empty($serviceIds)) {
+                        // Get the first active service charge
+                        $serviceId = \App\Models\Tax::withoutGlobalScope('tenant')->where('tenant_id', $tenant->id)->where('status', 'active')->where('type', 'layanan')->whereIn('id', $serviceIds)->value('id');
+                    }
+                }
+
                 // Calculate totals with discount, tax, and service charge
                 $totals = $this->calculateOrderTotals(
                     $cart, 
                     $request->input('discount_id'),
-                    $request->input('tax_id'),
-                    $request->input('service_id')
+                    $taxId,
+                    $serviceId
                 );
                 
                 Log::info('CHECKOUT: Calculated totals', $totals);
@@ -988,6 +1037,7 @@ class OrderController extends Controller
             if (in_array($status->transaction_status, ['settlement', 'capture'])) {
                 $order->status = 'paid';
                 $order->payment_status = 'paid'; // Sync payment_status
+                $order->payment_amount = $status->gross_amount; // Save payment amount
                 $order->completed_at = now();
                 $order->save();
                 
@@ -1089,6 +1139,7 @@ class OrderController extends Controller
                 } else {
                     $order->status = 'paid';
                     $order->payment_status = 'paid'; // Sync payment_status
+                    $order->payment_amount = $notif->gross_amount; // Save payment amount
                     $order->completed_at = now();
                     $this->decreaseProductStock($order);
                     $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
@@ -1096,6 +1147,7 @@ class OrderController extends Controller
             } elseif ($transaction == 'settlement') {
                 $order->status = 'paid';
                 $order->payment_status = 'paid'; // Sync payment_status
+                $order->payment_amount = $notif->gross_amount; // Save payment amount
                 $order->completed_at = now();
                 $this->decreaseProductStock($order);
                 $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
@@ -1286,57 +1338,65 @@ class OrderController extends Controller
      */
     private function calculateOrderTotals($cart, $discountId = null, $taxId = null, $serviceId = null)
     {
-        // 1. Calculate items subtotal
-        $itemsSubtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
+        $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
         
-        // 2. Apply discount (if provided)
+        // 1. Calculate Discount
         $discountAmount = 0;
         $discount = null;
+        
         if ($discountId) {
-            $discount = \App\Models\Discount::active()->find($discountId);
+            $discount = \App\Models\Discount::withoutGlobalScope('tenant')->find($discountId);
             if ($discount) {
-                $discountAmount = $discount->calculateDiscount($itemsSubtotal);
+                if ($discount->type === 'percentage') {
+                    $discountAmount = $subtotal * ($discount->value / 100);
+                } else {
+                    $discountAmount = min($discount->value, $subtotal);
+                }
             }
         }
+        $discountAmount = round($discountAmount);
         
-        // 3. Subtotal after discount
-        $subtotal = $itemsSubtotal - $discountAmount;
+        // Subtotal after discount
+        $subtotalAfterDiscount = max(0, $subtotal - $discountAmount);
         
-        // 4. Calculate tax (if provided)
-        $taxPercentage = 0;
+        // 2. Calculate Tax (Auto-select if not provided but active in settings)
         $taxAmount = 0;
+        $taxPercentage = 0;
+        
         if ($taxId) {
-            $tax = \App\Models\Tax::active()->where('type', 'pajak')->find($taxId);
+            $tax = \App\Models\Tax::withoutGlobalScope('tenant')->find($taxId);
             if ($tax) {
                 $taxPercentage = $tax->value;
-                $taxAmount = round($subtotal * ($taxPercentage / 100), 2);
+                $taxAmount = $subtotalAfterDiscount * ($taxPercentage / 100);
             }
         }
+        $taxAmount = round($taxAmount);
         
-        // 5. Calculate service charge (if provided)
-        $serviceChargePercentage = 0;
+        // 3. Calculate Service Charge
         $serviceChargeAmount = 0;
+        $serviceChargePercentage = 0;
+        
         if ($serviceId) {
-            $service = \App\Models\Tax::active()->where('type', 'layanan')->find($serviceId);
+            $service = \App\Models\Tax::withoutGlobalScope('tenant')->find($serviceId);
             if ($service) {
                 $serviceChargePercentage = $service->value;
-                $serviceChargeAmount = round($subtotal * ($serviceChargePercentage / 100), 2);
+                $serviceChargeAmount = $subtotalAfterDiscount * ($serviceChargePercentage / 100);
             }
         }
+        $serviceChargeAmount = round($serviceChargeAmount);
         
-        // 6. Total amount
-        $totalAmount = $subtotal + $taxAmount + $serviceChargeAmount;
+        // 4. Final Total
+        $totalAmount = $subtotalAfterDiscount + $taxAmount + $serviceChargeAmount;
         
         return [
-            'items_subtotal' => $itemsSubtotal,
-            'discount_id' => $discount?->id,
-            'discount_amount' => $discountAmount,
             'subtotal' => $subtotal,
+            'discount_id' => $discount ? $discount->id : null,
+            'discount_amount' => $discountAmount,
             'tax_percentage' => $taxPercentage,
             'tax_amount' => $taxAmount,
             'service_charge_percentage' => $serviceChargePercentage,
             'service_charge_amount' => $serviceChargeAmount,
-            'total_amount' => $totalAmount,
+            'total_amount' => round($totalAmount)
         ];
     }
 
@@ -1843,4 +1903,5 @@ class OrderController extends Controller
         // Not found
         abort(404, 'Tenant not found. Please check your QR code or URL.');
     }
+
 }

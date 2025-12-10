@@ -44,6 +44,8 @@ class OrderController extends Controller
         // Update status sesuai callback
         if (in_array($transaction, ['capture', 'settlement'])) {
             $order->status = 'paid';
+            $order->payment_status = 'paid'; // Sync payment_status
+            $order->payment_amount = $grossAmount; // Save payment amount
             $order->completed_at = now();
             
             // CRITICAL FIX: Only decrease stock if it wasn't already decreased at creation
@@ -52,8 +54,15 @@ class OrderController extends Controller
                  $this->decreaseProductStock($order);
             }
             
+            // Save FIRST to ensure status is updated even if notification fails
+            $order->save();
+            
             // Send notification to user
-            $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
+            try {
+                $this->sendNotification('1 New Order', 'New order received from table ' . $order->table->name, $order->tenant_id);
+            } catch (\Exception $e) {
+                Log::error('Notification failed but order saved: ' . $e->getMessage());
+            }
         } elseif (in_array($transaction, ['cancel', 'expire', 'deny'])) {
             $order->status = 'failed';
             
@@ -75,8 +84,10 @@ class OrderController extends Controller
                      }
                  }
             }
+            $order->save();
         } elseif ($transaction === 'pending') {
             $order->status = 'pending';
+            $order->save();
         }
 
         $order->save();

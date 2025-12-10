@@ -1,250 +1,148 @@
-<!DOCTYPE html>
-<html>
+@extends('layouts.order')
 
-<head>
-    <title>QR Payment - Table {{ $table->name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
+@section('title', 'Pembayaran QRIS - ' . $table->name)
 
-<body class="bg-gray-100">
-    <div class="max-w-md mx-auto bg-white shadow-lg min-h-screen flex flex-col pb-8">
-        <!-- Header -->
-        <div class="py-3 px-4 border-b font-semibold text-center sticky top-0 bg-white z-10 flex items-center">
-            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="mr-2">&larr;</a>
-            <span class="flex-1">
-                {{ strtoupper($order->payment_method) }} Payment
-            </span>
+@section('content')
+<div x-data="paymentSystem()" x-init="initPayment()" class="min-h-screen bg-gray-50 flex flex-col">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-center relative shadow-sm">
+        <h1 class="font-bold text-lg text-gray-900">Pembayaran</h1>
+    </div>
+
+    <div class="flex-1 px-4 py-6 flex flex-col items-center">
+        <!-- Amount Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 w-full text-center mb-6">
+            <p class="text-sm text-gray-500 mb-1">Total Pembayaran</p>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Rp{{ number_format($order->total_amount, 0, ',', '.') }}</h2>
+            
+            <div class="flex justify-center gap-2 text-xs text-gray-400 bg-gray-50 py-2 rounded-lg">
+                <span>Order ID: <span class="font-mono text-gray-600 font-bold">{{ $order->code }}</span></span>
+                <span>•</span>
+                <span>Meja {{ $table->name }}</span>
+            </div>
         </div>
 
-        <!-- Informasi Order -->
-        <div class="px-4 pt-5 pb-2 text-center">
-            <div class="font-semibold text-lg mb-1">Total Payment</div>
-            <div class="font-bold text-2xl mb-3 text-gray-800">
-                Rp{{ number_format($order->total_amount) }}
+        <!-- Timer -->
+        <div class="mb-6 flex flex-col items-center">
+            <p class="text-xs text-gray-500 mb-2">Selesaikan pembayaran dalam</p>
+            <div class="bg-red-50 text-red-600 font-bold text-xl px-4 py-2 rounded-lg border border-red-100 tabular-nums"
+                 x-text="timerDisplay" :class="{'text-red-600': timeLeft < 60, 'text-gray-800': timeLeft >= 60}">
+                --:--
             </div>
-            <div class="text-xs text-gray-500 mb-2">
-                Table <b>{{ $table->name }}</b> | Order ID:
-                <span class="font-mono">{{ $order->code }}</span>
+        </div>
+
+        <!-- QR Code Area -->
+        <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 w-full max-w-xs aspect-square flex flex-col items-center justify-center relative overflow-hidden">
+            <!-- Loading State -->
+            <div x-show="!qrLoaded" class="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
             </div>
 
-            <!-- Countdown Timer -->
-            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                <div class="text-sm text-red-600 font-medium mb-1">Payment expires in:</div>
-                <div id="countdown-timer" class="text-lg font-bold text-red-700">02:00</div>
-                <div class="text-xs text-red-500 mt-1">
-                    Order will be automatically cancelled after timeout
+            @if ($order->qr_string)
+                <div class="w-full h-full flex items-center justify-center" x-init="qrLoaded = true">
+                    {!! QrCode::size(250)->generate($order->qr_string) !!}
                 </div>
-            </div>
-
-            <!-- Payment Status Indicator -->
-            <div id="payment-status" class="">
-                <!-- <div class="flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                    <span class="text-sm text-blue-600">Checking payment status...</span>
-                </div> -->
-            </div>
-        </div>
-
-        <!-- QR Code Section -->
-        <div class="flex flex-col items-center pt-0">
-            @php
-                $meta = is_array($order->meta) ? $order->meta : json_decode($order->meta, true);
-                $isMobile = preg_match('/Mobile|Android|iPhone|iPad/i', request()->header('User-Agent'));
-            @endphp
-
-            @if ($order->payment_method === 'gopay' && $isMobile && !empty($meta['deeplink_url']))
-                {{-- 🔹 Jika mobile dan ada deeplink_url → redirect otomatis --}}
-                <script>
-                    window.location.href = "{{ $meta['deeplink_url'] }}";
-                </script>
-                <p class="text-center text-gray-600 text-sm">
-                    Mengalihkan ke aplikasi GoPay... <br>
-                    Jika tidak otomatis, <a href="{{ $meta['deeplink_url'] }}" class="text-green-600 font-semibold">
-                        klik di sini
-                    </a>
-                </p>
+            @elseif($order->payment_url)
+                 <div class="w-full h-full flex items-center justify-center" x-init="qrLoaded = true">
+                    {!! QrCode::size(250)->generate($order->payment_url) !!}
+                </div>
             @else
-                <img src='{{ asset('storage/qris.png') }}'
-                    alt="QRIS logo with a QR code in the center"
-                    class="w-32 h-20 object-contain mx-auto" />
-                <div class="bg-white rounded-lg p-4 shadow border mb-3">
-                    @if ($order->qr_string)
-                        {{-- QRIS QR string --}}
-                        {!! QrCode::size(240)->generate($order->qr_string) !!}
-                    @elseif($order->payment_method === 'gopay' && !empty($meta['qr_code_url']))
-                        {{-- GoPay QR dari URL --}}
-                        <img src="{{ $meta['qr_code_url'] }}" class="w-64 h-64" alt="QR Code GoPay">
-                    @elseif($order->payment_url)
-                        {{-- fallback QR dari payment_url --}}
-                        {!! QrCode::size(240)->generate($order->payment_url) !!}
-                    @else
-                        <p class="text-red-500">QR Code tidak tersedia</p>
-                    @endif
-                </div>
-
-                <div class="flex items-center justify-center mb-1">
-                    <span class="text-gray-600">
-                        @if ($order->payment_method === 'gopay')
-                            Scan QR via GoPay / klik tombol di bawah
-                        @else
-                            Scan QR via aplikasi e-wallet / banking (QRIS)
-                        @endif
-                    </span>
-                </div>
+                <p class="text-red-500 text-center text-sm">QR Code tidak tersedia.<br>Silakan hubungi kasir.</p>
             @endif
         </div>
 
-        <!-- Cek Status -->
-        <form method="POST" action="{{ route('order.qris.confirm', [$table->tenantIdentifier, $table->name, $order->code]) }}"
-            class="text-center px-4 mt-1 mb-1">
-            @csrf
-            <button type="submit"
-                class="w-full bg-black text-white font-bold py-2 rounded-md mt-1 text-base shadow hover:bg-gray-900 transition">
-                Sudah Bayar / Cek Status Pembayaran
+        <p class="text-center text-sm text-gray-500 mt-6 max-w-xs">
+            Scan QR di atas menggunakan aplikasi 
+            <span class="font-bold text-gray-700">GoPay, OVO, Dana, ShopeePay</span> atau Mobile Banking lainnya.
+        </p>
+
+        <!-- Manual Check Button -->
+        <div class="mt-auto w-full pt-8 pb-4">
+            <button @click="checkStatus(true)" 
+                    class="w-full bg-white border border-gray-200 text-gray-900 font-bold py-3.5 rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition flex items-center justify-center gap-2"
+                    :disabled="isChecking">
+                <span x-show="!isChecking">Cek Status Pembayaran</span>
+                <span x-show="isChecking" class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Mengecek...
+                </span>
             </button>
-        </form>
-
-
-
-        <!-- Info Bantuan -->
-        <div class="text-xs text-gray-400 text-center mt-6 px-4">
-            Jika sudah membayar namun status tidak berubah,<br>
-            klik tombol di atas untuk cek status atau hubungi kasir.
         </div>
     </div>
+</div>
 
-    <!-- Script Timer -->
-    <script>
-        console.log('🚀 Timer starting...');
+@push('scripts')
+<script>
+    function paymentSystem() {
+        return {
+            timeLeft: 120, // 2 minutes
+            timerDisplay: '02:00',
+            isChecking: false,
+            qrLoaded: false,
+            checkInterval: null,
+            timerInterval: null,
 
-        const timer = document.getElementById('countdown-timer');
-        const orderDate = new Date('{{ $order->created_at->toISOString() }}');
-        const endTime = new Date(orderDate.getTime() + (2 * 60 * 1000)); // 2 minutes
+            initPayment() {
+                // Start Countdown
+                this.startTimer();
 
-        function updateCountdown() {
-            const now = new Date();
-            const timeLeft = Math.max(0, endTime - now);
+                // Auto check every 3 seconds
+                this.checkInterval = setInterval(() => {
+                    this.checkStatus(false);
+                }, 3000);
+            },
 
-            if (timeLeft <= 0) {
-                console.log('⏰ Order expired! Auto-redirecting...');
-                timer.innerHTML = '⏰ EXPIRED';
-                timer.className = 'text-lg font-bold text-red-900';
-
-                clearInterval(window.countdownInterval);
-                clearInterval(window.statusCheckInterval);
-
-                window.location.href = '{{ route("order.menu", [$table->tenantIdentifier, $table->name]) }}';
-                return;
-            }
-
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-
-            timer.innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-            if (timeLeft > 60000) {
-                timer.className = 'text-lg font-bold text-green-700';
-            } else if (timeLeft > 30000) {
-                timer.className = 'text-lg font-bold text-orange-700';
-            } else {
-                timer.className = 'text-lg font-bold text-red-700';
-            }
-        }
-
-        updateCountdown();
-        window.countdownInterval = setInterval(updateCountdown, 1000);
-
-        console.log('✅ Timer started!');
-
-        // Auto check payment status setiap 3 detik
-        function checkPaymentStatus() {
-            console.log('🔍 Checking payment status...');
-            
-            const statusDiv = document.getElementById('payment-status');
-            
-            fetch('{{ route("order.qris.check-status", [$table->tenantIdentifier, $table->name, $order->code]) }}')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('📡 Status response:', data);
+            startTimer() {
+                const endTime = new Date('{{ $order->created_at }}').getTime() + (2 * 60 * 1000); // 2 mins from creation
+                
+                this.timerInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = endTime - now;
                     
+                    if (distance < 0) {
+                        clearInterval(this.timerInterval);
+                        this.timerDisplay = "EXPIRED";
+                        this.timeLeft = 0;
+                        // Handle expired logic if needed
+                        return;
+                    }
+
+                    this.timeLeft = Math.floor(distance / 1000);
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    this.timerDisplay = minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
+                }, 1000);
+            },
+
+            async checkStatus(manual = false) {
+                if (manual) this.isChecking = true;
+
+                try {
+                    const response = await fetch('{{ route("order.qris.check-status", [$table->tenantIdentifier, $table->name, $order->code]) }}');
+                    const data = await response.json();
+
                     if (data.status === 'paid') {
-                        console.log('✅ Payment successful! Stopping countdown and redirecting...');
-                        
-                        // Stop countdown timer
-                        clearInterval(window.countdownInterval);
-                        clearInterval(window.statusCheckInterval);
-                        
-                        // Update timer display
-                        const timer = document.getElementById('countdown-timer');
-                        timer.innerHTML = '✅ PAID';
-                        timer.className = 'text-lg font-bold text-green-700';
-                        
-                        // Update status indicator
-                        statusDiv.innerHTML = `
-                            <div class="flex items-center justify-center">
-                                <span class="text-green-600 font-semibold">✅ Payment Successful!</span>
-                            </div>
-                        `;
-                        statusDiv.className = 'bg-green-50 border border-green-200 rounded-lg p-3 mb-3';
-                        
-                        // Redirect to success page
-                        setTimeout(() => {
-                            window.location.href = data.redirect_url;
-                        }, 1500);
-                        
+                        clearInterval(this.checkInterval);
+                        window.location.href = data.redirect_url;
                     } else if (data.status === 'failed') {
-                        console.log('❌ Payment failed! Stopping countdown and redirecting...');
-                        
-                        // Stop countdown timer
-                        clearInterval(window.countdownInterval);
-                        clearInterval(window.statusCheckInterval);
-                        
-                        // Update timer display
-                        const timer = document.getElementById('countdown-timer');
-                        timer.innerHTML = '❌ FAILED';
-                        timer.className = 'text-lg font-bold text-red-900';
-                        
-                        // Update status indicator
-                        statusDiv.innerHTML = `
-                            <div class="flex items-center justify-center">
-                                <span class="text-red-600 font-semibold">❌ Payment Failed</span>
-                            </div>
-                        `;
-                        statusDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-3 mb-3';
-                        
-                        setTimeout(() => {
-                            window.location.href = data.redirect_url;
-                        }, 2000);
-                        
-                    } 
-                })
-                .catch(error => {
-                    console.error('❌ Error checking payment status:', error);
-                    const statusDiv = document.getElementById('payment-status');
-                    statusDiv.innerHTML = `
-                        <div class="flex items-center justify-center">
-                            <span class="text-orange-600 text-sm">⚠️ Error checking status. Please try manually.</span>
-                        </div>
-                    `;
-                    statusDiv.className = 'bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3';
-                });
+                        clearInterval(this.checkInterval);
+                        alert('Pembayaran Gagal atau Dibatalkan.');
+                        window.location.href = '{{ route("order.menu", [$table->tenantIdentifier, $table->name]) }}';
+                    }
+                } catch (error) {
+                    console.error('Check status error:', error);
+                } finally {
+                    if (manual) {
+                        setTimeout(() => this.isChecking = false, 500);
+                    }
+                }
+            }
         }
-
-        // Start auto-checking every 3 seconds
-        window.statusCheckInterval = setInterval(checkPaymentStatus, 3000);
-        
-        // Check immediately on page load
-        setTimeout(checkPaymentStatus, 1000);
-
-        // 🔹 CONSOLE LOGGING FOR MANUAL PAYMENT TESTING 🔹
-        console.log('==========================================');
-        console.log('💳 Payment ID (Order Code):', '{{ $order->code }}');
-        console.log('🔗 Payment URL:', '{{ $order->payment_url }}');
-        console.log('🌍 Environment:', '{{ $isProduction ? "PRODUCTION" : "SANDBOX" }}');
-        console.log('👉 Use this ID in Midtrans Simulator to pay!');
-        console.log('==========================================');
-    </script>
-</body>
-
-</html>
+    }
+</script>
+@endpush
+@endsection
