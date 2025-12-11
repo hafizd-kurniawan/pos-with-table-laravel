@@ -15,7 +15,7 @@ class TableController extends Controller
     public function index(): JsonResponse
     {
         $tables = Table::with(['currentReservation', 'category'])
-                      ->where('name', '!=', 'Takeaway')
+                      ->where('name', 'not like', 'Takeaway%')
                       ->orderBy('name')
                       ->get();
 
@@ -82,7 +82,7 @@ class TableController extends Controller
      */
     public function update(Request $request, Table $table): JsonResponse
     {
-        if ($table->name === 'Takeaway') {
+        if (str_starts_with($table->name, 'Takeaway')) {
             return response()->json([
                 'success' => false,
                 'message' => 'The Takeaway table cannot be edited'
@@ -127,7 +127,7 @@ class TableController extends Controller
      */
     public function destroy(Table $table): JsonResponse
     {
-        if ($table->name === 'Takeaway') {
+        if (str_starts_with($table->name, 'Takeaway')) {
             return response()->json([
                 'success' => false,
                 'message' => 'The Takeaway table cannot be deleted'
@@ -176,7 +176,7 @@ class TableController extends Controller
      */
     public function updateStatus(Request $request, Table $table): JsonResponse
     {
-        if ($table->name === 'Takeaway') {
+        if (str_starts_with($table->name, 'Takeaway')) {
             return response()->json([
                 'success' => false,
                 'message' => 'The Takeaway table status cannot be manually changed'
@@ -218,7 +218,7 @@ class TableController extends Controller
      */
     public function available(): JsonResponse
     {
-        $tables = Table::available()->where('name', '!=', 'Takeaway')->orderBy('name')->get();
+        $tables = Table::available()->where('name', 'not like', 'Takeaway%')->orderBy('name')->get();
 
         return response()->json([
             'success' => true,

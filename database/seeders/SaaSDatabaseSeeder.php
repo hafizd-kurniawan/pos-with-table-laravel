@@ -57,18 +57,29 @@ class SaaSDatabaseSeeder extends Seeder
         
         $this->call(DefaultTenantSeeder::class);
 
-        // ================================================
-        // STEP 4: TENANT CONFIGURATION
-        // ================================================
-        $this->command->info('');
-        $this->command->info('⚙️  Seeding Tenant Configuration...');
-        
         $this->call([
             RoleSeeder::class,
             DefaultTenantSettingsSeeder::class,
             OrderSettingsSeeder::class,
             TakeawayTableSeeder::class,
         ]);
+
+        // Create Tenant Admin for Default Tenant (After Roles are seeded)
+        $this->command->info('👤 Creating Tenant Admin...');
+        $defaultTenant = Tenant::where('subdomain', 'default')->first();
+        
+        if ($defaultTenant) {
+            User::firstOrCreate(
+                ['email' => 'admin@posrestaurant.com'],
+                [
+                    'name' => 'Tenant Admin',
+                    'password' => Hash::make('password'),
+                    'tenant_id' => $defaultTenant->id,
+                    'role_id' => 1 // Admin Role
+                ]
+            );
+            $this->command->info("   ✅ Tenant Admin: admin@posrestaurant.com");
+        }
         
         // ================================================
         // SUMMARY

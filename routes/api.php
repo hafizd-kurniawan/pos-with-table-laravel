@@ -60,6 +60,9 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('tenant')->group(function 
 // ========================================
 // AUTHENTICATION ENDPOINTS
 // ========================================
+// Registration
+Route::post('/register', [\App\Http\Controllers\Api\RegisterTenantController::class, 'register']);
+
 // Login: NO tenant middleware (user belum auth, tenant detected from user)
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 

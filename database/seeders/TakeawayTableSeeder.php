@@ -50,8 +50,8 @@ class TakeawayTableSeeder extends Seeder
                     'status' => 'available',
                     'location' => 'System',
                     'description' => 'System table for takeaway orders',
-                    'position_x' => 0,
-                    'position_y' => 0
+                    'x_position' => 0,
+                    'y_position' => 0
                 ]
             );
         }
