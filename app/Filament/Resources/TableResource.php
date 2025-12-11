@@ -27,11 +27,20 @@ class TableResource extends Resource
     protected static ?string $navigationGroup = 'Operations';
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationLabel = 'Tables';
+    public static function getModelLabel(): string
+    {
+        return __('resource.table.label');
+    }
 
-    protected static ?string $modelLabel = 'Table';
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.table.plural_label');
+    }
 
-    protected static ?string $pluralModelLabel = 'Tables';
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.table.plural_label');
+    }
 
     // Authorization
     public static function canViewAny(): bool
@@ -58,69 +67,75 @@ class TableResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Table Information')
+                Forms\Components\Section::make(__('resource.table.label') . ' Information')
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label(__('resource.table.name'))
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
-                            ->helperText('Nama table akan digunakan untuk URL QR Code'),
+                            ->helperText(__('resource.table.helpers.name')),
 
                         Forms\Components\Select::make('category_id')
-                            ->label('Category')
+                            ->label(__('resource.category.label'))
                             ->required()
                             ->relationship('category', 'name')
                             ->preload()
                             ->native(false)
-                            ->helperText('Pilih kategori table untuk memudahkan pengelompokan'),
+                            ->helperText(__('resource.table.helpers.category')),
 
                         Forms\Components\TextInput::make('location')
+                            ->label(__('resource.table.location'))
                             ->maxLength(255)
-                            ->placeholder('e.g: Lantai 1, Area Smoking, Dekat Jendela')
-                            ->helperText('Lokasi spesifik table untuk memudahkan waiter'),
+                            ->placeholder(__('resource.table.placeholders.location'))
+                            ->helperText(__('resource.table.helpers.location')),
                             
                         Forms\Components\Textarea::make('description')
-                            ->label('Deskripsi')
-                            ->helperText('Deskripsi tambahan table (fasilitas, view, dll)')
+                            ->label(__('resource.product.description'))
+                            ->helperText(__('resource.table.helpers.description'))
                             ->rows(2),
                             
                         Forms\Components\TextInput::make('qr_code')
+                            ->label(__('resource.table.qr_code'))
                             ->maxLength(255)
                             ->default(null)
                             ->disabled()
-                            ->helperText('QR Code akan otomatis di-generate setelah table dibuat'),
+                            ->helperText(__('resource.table.helpers.qr_code')),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Table Configuration')
+                Forms\Components\Section::make(__('resource.table.label') . ' Configuration')
                     ->schema([
                         Forms\Components\Select::make('status')
+                            ->label(__('resource.table.status'))
                             ->required()
                             ->options([
-                                'available' => 'Available',
-                                'occupied' => 'Occupied',
-                                'reserved' => 'Reserved',
-                                'maintenance' => 'Maintenance',
+                                'available' => __('resource.table.statuses.available'),
+                                'occupied' => __('resource.table.statuses.occupied'),
+                                'reserved' => __('resource.table.statuses.reserved'),
+                                'maintenance' => __('resource.table.statuses.maintenance'),
                             ])
                             ->default('available'),
                             
                         Forms\Components\TextInput::make('capacity')
+                            ->label(__('resource.table.capacity'))
                             ->required()
                             ->numeric()
                             ->default(1)
                             ->minValue(1)
                             ->maxValue(20)
-                            ->helperText('Kapasitas maksimal orang per table'),
+                            ->helperText(__('resource.table.helpers.capacity')),
 
                         Forms\Components\TextInput::make('party_size')
+                            ->label(__('resource.table.current_party'))
                             ->numeric()
                             ->default(0)
                             ->minValue(0)
                             ->maxValue(20)
-                            ->helperText('Jumlah tamu saat ini (0 = tidak ada tamu)'),
+                            ->helperText(__('resource.table.helpers.party_size')),
 
                         Forms\Components\DateTimePicker::make('reservation_time')
-                            ->label('Reservation Time')
-                            ->helperText('Waktu reservasi table (kosongkan jika tidak ada reservasi)')
+                            ->label(__('resource.table.reservation_time'))
+                            ->helperText(__('resource.table.helpers.reservation_time'))
                             ->seconds(false),
                     ])->columns(2),
             ]);
@@ -132,13 +147,13 @@ class TableResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['category', 'currentReservation']))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Table Name')
+                    ->label(__('resource.table.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 Tables\Columns\BadgeColumn::make('category.name')
-                    ->label('Category')
+                    ->label(__('resource.category.label'))
                     ->formatStateUsing(function ($record) {
                         $category = $record->category;
                         if (!$category) return 'No Category';
@@ -152,7 +167,7 @@ class TableResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('location')
-                    ->label('Location')
+                    ->label(__('resource.table.location'))
                     ->limit(30)
                     ->tooltip(function (TableModel $record): ?string {
                         return $record->location;
@@ -161,9 +176,9 @@ class TableResource extends Resource
                     
                 // NEW: Customer Name from reservation
                 Tables\Columns\TextColumn::make('customer_name')
-                    ->label('Customer')
+                    ->label(__('resource.order.customer_name'))
                     ->searchable()
-                    ->placeholder('No customer')
+                    ->placeholder(__('resource.table.placeholders.no_customer'))
                     ->weight('medium')
                     ->icon('heroicon-m-user')
                     ->color(fn ($state) => $state ? 'success' : 'gray')
@@ -171,17 +186,17 @@ class TableResource extends Resource
                     
                 // NEW: Customer Phone from reservation
                 Tables\Columns\TextColumn::make('customer_phone')
-                    ->label('Phone')
+                    ->label(__('resource.order.customer_phone'))
                     ->searchable()
-                    ->placeholder('No phone')
+                    ->placeholder(__('resource.table.placeholders.no_phone'))
                     ->icon('heroicon-m-phone')
                     ->copyable()
-                    ->copyMessage('Phone copied!')
+                    ->copyMessage(__('resource.table.messages.phone_copied'))
                     ->color(fn ($state) => $state ? 'info' : 'gray')
                     ->toggleable(),
                     
                 Tables\Columns\ImageColumn::make('qr_code_image')
-                    ->label('QR Code')
+                    ->label(__('resource.table.qr_code'))
                     ->square()
                     ->size(60)
                     ->getStateUsing(function (TableModel $record) {
@@ -196,12 +211,12 @@ class TableResource extends Resource
                     ->toggleable(),
                     
                 Tables\Columns\TextColumn::make('qr_url')
-                    ->label('Order URL')
+                    ->label(__('resource.table.order_url'))
                     ->getStateUsing(function (TableModel $record) {
                         return $record->qr_code ?: $record->qr_url;
                     })
                     ->copyable()
-                    ->copyMessage('URL berhasil disalin!')
+                    ->copyMessage(__('resource.table.messages.url_copied'))
                     ->copyMessageDuration(1500)
                     ->icon('heroicon-m-link')
                     ->limit(35)
@@ -209,6 +224,7 @@ class TableResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('status')
+                    ->label(__('resource.table.status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'available' => 'success',
@@ -223,21 +239,28 @@ class TableResource extends Resource
                         'reserved' => 'heroicon-m-clock',
                         'maintenance' => 'heroicon-m-wrench-screwdriver',
                         default => 'heroicon-m-question-mark-circle',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'available' => __('resource.table.statuses.available'),
+                        'occupied' => __('resource.table.statuses.occupied'),
+                        'reserved' => __('resource.table.statuses.reserved'),
+                        'maintenance' => __('resource.table.statuses.maintenance'),
+                        default => ucfirst($state),
                     }),
                     
                 Tables\Columns\TextColumn::make('capacity')
-                    ->label('Capacity')
+                    ->label(__('resource.table.capacity'))
                     ->numeric()
                     ->sortable()
-                    ->suffix(' orang')
+                    ->suffix(' ' . __('resource.unit.types.count'))
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('party_size')
-                    ->label('Current Party')
+                    ->label(__('resource.table.current_party'))
                     ->numeric()
                     ->sortable()
                     ->formatStateUsing(fn ($state, $record) => 
-                        $state > 0 ? "{$state}/{$record->capacity} people" : 'Empty'
+                        $state > 0 ? "{$state}/{$record->capacity} " . __('resource.unit.types.count') : __('resource.table.placeholders.empty')
                     )
                     ->badge()
                     ->color(fn ($state, $record) => match(true) {
@@ -250,10 +273,10 @@ class TableResource extends Resource
                     ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('reservation_time')
-                    ->label('Reserved Until')
+                    ->label(__('resource.table.reserved_until'))
                     ->dateTime('M j, H:i')
                     ->sortable()
-                    ->placeholder('No reservation')
+                    ->placeholder(__('resource.table.placeholders.no_reservation'))
                     ->icon('heroicon-m-clock')
                     ->badge()
                     ->color(fn ($state) => $state ? 'warning' : 'gray')
@@ -261,18 +284,18 @@ class TableResource extends Resource
                         if (!$record->reservation_time) return null;
                         $reservation = $record->currentReservation;
                         if (!$reservation) return 'Reserved until: ' . $record->reservation_time->format('M j, Y H:i');
-                        return "Reservation by: {$reservation->customer_name}\nParty Size: {$reservation->party_size} people\nStatus: " . ucfirst($reservation->status);
+                        return "Reservation by: {$reservation->customer_name}\nParty Size: {$reservation->party_size}\nStatus: " . ucfirst($reservation->status);
                     })
                     ->toggleable(),
                     
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('resource.general.updated_at'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -280,170 +303,117 @@ class TableResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
-                    ->label('Category')
+                    ->label(__('resource.category.label'))
                     ->relationship('category', 'name')
                     ->multiple()
                     ->preload()
-                    ->native(false),
-
+                    ->searchable(),
+                    
                 Tables\Filters\SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('resource.table.status'))
                     ->options([
-                        'available' => 'Available',
-                        'occupied' => 'Occupied',
-                        'reserved' => 'Reserved',
-                        'maintenance' => 'Maintenance',
+                        'available' => __('resource.table.statuses.available'),
+                        'occupied' => __('resource.table.statuses.occupied'),
+                        'reserved' => __('resource.table.statuses.reserved'),
+                        'maintenance' => __('resource.table.statuses.maintenance'),
                     ])
-                    ->multiple()
-                    ->native(false),
+                    ->multiple(),
 
                 Tables\Filters\Filter::make('has_location')
-                    ->label('With Location')
+                    ->label(__('resource.table.filters.has_location'))
                     ->query(fn (Builder $query) => $query->whereNotNull('location')),
 
                 Tables\Filters\Filter::make('has_reservation')
-                    ->label('Has Reservation')
+                    ->label(__('resource.table.filters.has_reservation'))
                     ->query(fn (Builder $query) => $query->whereNotNull('reservation_time')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->color('warning'),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
                     
-                // Action::make('printQR')
-                //     ->label('Print QR')
-                //     ->icon('heroicon-o-printer')
-                //     ->color('success')
-                //     ->tooltip('Print QR Code untuk table ini')
-                //     ->action(function (TableModel $record) {
-                //         // Generate QR code for printing
-                //         $url = url("/order/{$record->name}");
+                    Tables\Actions\Action::make('generate_qr')
+                        ->label(__('resource.table.actions.generate_qr.label'))
+                        ->icon('heroicon-o-qr-code')
+                        ->action(function (TableModel $record) {
+                            $record->update([
+                                'qr_code' => $record->qr_url
+                            ]);
+                            
+                            Notification::make()
+                                ->title(__('resource.table.actions.generate_qr.success_title'))
+                                ->body(__('resource.table.actions.generate_qr.success_body', ['name' => $record->name]))
+                                ->success()
+                                ->send();
+                        }),
                         
-                //         // Update qr_code field
-                //         $record->update(['qr_code' => $url]);
-                        
-                //         // Redirect to print page
-                //         return redirect()->route('table.print-qr', $record->id);
-                //     })
-                //     ->requiresConfirmation()
-                //     ->modalHeading('Print QR Code')
-                //     ->modalDescription(fn (TableModel $record) => "Print QR code untuk Table: {$record->name}?\n\nURL yang akan di-generate: " . url("/order/{$record->name}"))
-                //     ->modalSubmitActionLabel('🖨️ Print QR Code')
-                //     ->modalIcon('heroicon-o-qr-code'),
-                    
-                Action::make('generateQR')
-                    ->label('Generate QR')
-                    ->icon('heroicon-o-qr-code')
-                    ->color('info')
-                    ->tooltip('Generate atau update QR Code')
-                    ->action(function (TableModel $record) {
-                        // Use model method to ensure consistency and safety
-                        $url = $record->generateQrCode();
-                        
-                        Notification::make()
-                            ->title('QR Code Generated! ✅')
-                            ->body(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
-                                "QR code untuk Table <strong>{$record->name}</strong> berhasil di-generate!"
-                                . "<br><br>URL: {$url}"
-                            ))                            
-                            ->success()
-                            ->duration(5000)
-                            ->actions([
-                                \Filament\Notifications\Actions\Action::make('view')
-                                    ->label('View Print Page')
-                                    ->url(route('table.print-qr', $record->id))
-                                    ->openUrlInNewTab(),
-                            ])
-                            ->send();
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Generate QR Code')
-                    ->modalDescription(fn (TableModel $record) => new \Illuminate\Support\HtmlString(
-                        nl2br(
-                            "Generate QR code untuk Table: {$record->name}?\n\n" .
-                            "URL yang akan di-generate:\n" . ($record->qr_url) . "\n\n" .
-                            "Customer dapat scan QR code ini untuk langsung order ke table tersebut."
-                        )
-                    ))
-                    ->modalSubmitActionLabel('Generate QR Code')
-                    ->modalIcon('heroicon-o-sparkles'),
-                    
-                Action::make('downloadQR')
-                    ->label('Download')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('gray')
-                    ->tooltip('Download QR Code sebagai file')
-                    ->url(fn (TableModel $record) => route('table.download-qr', $record->id))
-                    ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('download_qr')
+                        ->label(__('resource.table.actions.download_qr.label'))
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->url(fn (TableModel $record) => route('table.download-qr', $record))
+                        ->openUrlInNewTab(),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     
                     Tables\Actions\BulkAction::make('generateAllQR')
-                        ->label('🎯 Generate All QR Codes')
+                        ->label(__('resource.table.actions.generate_all_qr.label'))
                         ->icon('heroicon-o-qr-code')
                         ->color('info')
                         ->action(function ($records) {
                             $successCount = 0;
-                            $urls = [];
                             
                             foreach ($records as $record) {
-                                // Use model method
-                                $url = $record->generateQrCode();
-                                $urls[] = "Table {$record->name}: {$url}";
+                                $record->update([
+                                    'qr_code' => $record->qr_url
+                                ]);
                                 $successCount++;
                             }
                             
                             Notification::make()
-                                ->title("🎉 Bulk QR Generation Complete!")
-                                ->body("**{$successCount} QR codes** berhasil di-generate!\n\n📋 Tables yang di-update:\n" . implode("\n", array_slice($urls, 0, 5)) . ($successCount > 5 ? "\n... dan " . ($successCount - 5) . " lainnya" : ""))
+                                ->title(__('resource.table.actions.generate_all_qr.success_title'))
+                                ->body(__('resource.table.actions.generate_all_qr.success_body', ['count' => $successCount]))
                                 ->success()
-                                ->duration(8000)
-                                ->actions([
-                                    \Filament\Notifications\Actions\Action::make('viewTables')
-                                        ->label('View Tables')
-                                        ->url(route('filament.admin.resources.tables.index')),
-                                ])
                                 ->send();
                         })
                         ->requiresConfirmation()
-                        ->modalHeading('🎯 Generate QR Codes for Selected Tables')
-                        ->modalDescription(fn ($records) => "Generate QR codes untuk **" . count($records) . " tables** yang dipilih?\n\n📱 Setiap table akan mendapat QR code dengan URL yang sesuai format tenant.\n\n✨ QR codes dapat langsung digunakan untuk customer order.")
-                        ->modalSubmitActionLabel('🚀 Generate All QR Codes')
+                        ->modalHeading(__('resource.table.actions.generate_all_qr.heading'))
+                        ->modalDescription(fn ($records) => __('resource.table.actions.generate_all_qr.description', ['count' => count($records)]))
+                        ->modalSubmitActionLabel(__('resource.table.actions.generate_all_qr.label'))
                         ->modalIcon('heroicon-o-sparkles'),
                         
                     Tables\Actions\BulkAction::make('updateStatus')
-                        ->label('📝 Update Status')
+                        ->label(__('resource.table.actions.update_status.label'))
                         ->icon('heroicon-o-pencil-square')
                         ->color('warning')
                         ->form([
                             Forms\Components\Select::make('status')
-                                ->label('New Status')
+                                ->label(__('resource.table.actions.update_status.form_label'))
                                 ->options([
-                                    'available' => 'Available',
-                                    'occupied' => 'Occupied',
-                                    'reserved' => 'Reserved',
-                                    'maintenance' => 'Maintenance',
+                                    'available' => __('resource.table.statuses.available'),
+                                    'occupied' => __('resource.table.statuses.occupied'),
+                                    'reserved' => __('resource.table.statuses.reserved'),
+                                    'maintenance' => __('resource.table.statuses.maintenance'),
                                 ])
                                 ->required(),
                         ])
                         ->action(function ($records, array $data) {
-                            $count = 0;
                             foreach ($records as $record) {
                                 $record->update(['status' => $data['status']]);
-                                $count++;
                             }
                             
                             Notification::make()
-                                ->title('Status Updated! ✅')
-                                ->body("Status **{$count} tables** berhasil diubah menjadi: **{$data['status']}**")
+                                ->title('Status Updated!')
                                 ->success()
                                 ->send();
                         }),
                 ]),
             ])
-            ->emptyStateHeading('Belum ada Tables 🍽️')
-            ->emptyStateDescription('Buat table pertama untuk mulai menerima order!')
+            ->emptyStateHeading(__('resource.table.empty_state.heading'))
+            ->emptyStateDescription(__('resource.table.empty_state.description'))
             ->emptyStateIcon('heroicon-o-building-storefront');
     }
 

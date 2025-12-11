@@ -6,19 +6,19 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Tipe Laporan
+                        {{ __('report.type.label') }}
                     </label>
                     <select wire:model.live="reportType" 
                             class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="daily">Harian</option>
-                        <option value="period">Periode</option>
+                        <option value="daily">{{ __('report.type.daily') }}</option>
+                        <option value="period">{{ __('report.type.period') }}</option>
                     </select>
                 </div>
                 
                 @if($reportType === 'daily')
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tanggal
+                            {{ __('report.date.label') }}
                         </label>
                         <input type="date" wire:model.live="selectedDate"
                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
@@ -26,20 +26,20 @@
                     <div class="flex items-end">
                         <button wire:click="generateCache" 
                                 class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg">
-                            🔄 Generate Cache
+                            🔄 {{ __('report.actions.generate_cache') }}
                         </button>
                     </div>
                 @else
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tanggal Mulai
+                            {{ __('report.date.start_label') }}
                         </label>
                         <input type="date" wire:model.live="startDate"
                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tanggal Selesai
+                            {{ __('report.date.end_label') }}
                         </label>
                         <input type="date" wire:model.live="endDate"
                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
@@ -51,8 +51,8 @@
             <div class="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">📥 Ekspor Laporan</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Download laporan dalam format PDF atau Excel</p>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">📥 {{ __('report.export.title') }}</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ __('report.export.description') }}</p>
                     </div>
                 </div>
                 
@@ -71,7 +71,7 @@
                                 </div>
                                 <div class="flex-1 text-left">
                                     <h4 class="text-base font-bold text-red-900 dark:text-red-100 mb-1">
-                                        Export PDF
+                                        {{ __('report.export.pdf.title') }}
                                         <span wire:loading wire:target="exportPdf" class="ml-2 text-xs">
                                             <svg class="inline w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -80,7 +80,7 @@
                                         </span>
                                     </h4>
                                     <p class="text-xs text-red-700 dark:text-red-300 mb-2">
-                                        Format profesional untuk print & share
+                                        {{ __('report.export.pdf.description') }}
                                     </p>
                                     <div class="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +118,7 @@
                                 </div>
                                 <div class="flex-1 text-left">
                                     <h4 class="text-base font-bold text-green-900 dark:text-green-100 mb-1">
-                                        Export Excel
+                                        {{ __('report.export.excel.title') }}
                                         <span wire:loading wire:target="exportExcel" class="ml-2 text-xs">
                                             <svg class="inline w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -127,7 +127,7 @@
                                         </span>
                                     </h4>
                                     <p class="text-xs text-green-700 dark:text-green-300 mb-2">
-                                        Data terstruktur dalam 3 sheets
+                                        {{ __('report.export.excel.description') }}
                                     </p>
                                     <div class="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,10 +159,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <div class="text-xs text-blue-800 dark:text-blue-200">
-                            <p class="font-semibold mb-1">💡 Tips:</p>
+                            <p class="font-semibold mb-1">💡 {{ __('report.export.tips.title') }}</p>
                             <ul class="space-y-1 ml-4 list-disc">
-                                <li><strong>PDF</strong> - Cocok untuk print, presentasi, dan share via WhatsApp</li>
-                                <li><strong>Excel</strong> - Cocok untuk analisis lebih lanjut, pivot table, dan perhitungan</li>
+                                <li><strong>PDF</strong> - {{ __('report.export.tips.pdf') }}</li>
+                                <li><strong>Excel</strong> - {{ __('report.export.tips.excel') }}</li>
                             </ul>
                         </div>
                     </div>
@@ -175,30 +175,30 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {{-- Total Orders --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #3B82F6, #2563EB);">
-                    <div class="text-sm opacity-90">Total Order</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.total_orders') }}</div>
                     <div class="text-3xl font-bold mt-2">{{ $dailySummary['summary']['total_orders'] }}</div>
-                    <div class="text-xs opacity-75 mt-1">{{ $dailySummary['summary']['total_items'] }} items terjual</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.items_sold', ['count' => $dailySummary['summary']['total_items']]) }}</div>
                 </div>
 
                 {{-- Gross Sales --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #10B981, #059669);">
-                    <div class="text-sm opacity-90">Penjualan Kotor</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.gross_sales') }}</div>
                     <div class="text-2xl font-bold mt-2">Rp {{ number_format($dailySummary['summary']['gross_sales'], 0, ',', '.') }}</div>
-                    <div class="text-xs opacity-75 mt-1">Sebelum diskon</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.before_discount') }}</div>
                 </div>
 
                 {{-- Discount --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #F59E0B, #D97706);">
-                    <div class="text-sm opacity-90">Total Diskon</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.total_discount') }}</div>
                     <div class="text-2xl font-bold mt-2">Rp {{ number_format($dailySummary['summary']['total_discount'], 0, ',', '.') }}</div>
-                    <div class="text-xs opacity-75 mt-1">Potongan harga</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.discount_given') }}</div>
                 </div>
 
                 {{-- Net Sales --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #8B5CF6, #7C3AED);">
-                    <div class="text-sm opacity-90">Penjualan Bersih</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.net_sales') }}</div>
                     <div class="text-2xl font-bold mt-2">Rp {{ number_format($dailySummary['summary']['net_sales'], 0, ',', '.') }}</div>
-                    <div class="text-xs opacity-75 mt-1">Final amount</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.final_amount') }}</div>
                 </div>
             </div>
 
@@ -207,12 +207,12 @@
             <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg shadow-lg p-6 border-2 border-purple-200 dark:border-purple-700">
                 <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                     <span class="text-2xl">📊</span>
-                    <span>Perbandingan dengan Kemarin</span>
+                    <span>{{ __('report.comparison.title') }}</span>
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {{-- Revenue Comparison --}}
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 {{ $dailySummary['comparison']['changes']['revenue']['trend'] === 'up' ? 'border-green-500' : 'border-red-500' }}">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Penjualan Bersih</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ __('report.summary.net_sales') }}</div>
                         <div class="flex items-center gap-2">
                             <div class="text-2xl font-bold {{ $dailySummary['comparison']['changes']['revenue']['trend'] === 'up' ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $dailySummary['comparison']['changes']['revenue']['trend'] === 'up' ? '↑' : '↓' }}
@@ -220,13 +220,13 @@
                             </div>
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Kemarin: Rp {{ number_format($dailySummary['comparison']['yesterday']['net_sales'], 0, ',', '.') }}
+                            {{ __('report.comparison.yesterday', ['amount' => 'Rp ' . number_format($dailySummary['comparison']['yesterday']['net_sales'], 0, ',', '.')]) }}
                         </div>
                     </div>
 
                     {{-- Orders Comparison --}}
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 {{ $dailySummary['comparison']['changes']['orders']['trend'] === 'up' ? 'border-green-500' : 'border-red-500' }}">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Orders</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ __('report.summary.total_orders') }}</div>
                         <div class="flex items-center gap-2">
                             <div class="text-2xl font-bold {{ $dailySummary['comparison']['changes']['orders']['trend'] === 'up' ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $dailySummary['comparison']['changes']['orders']['trend'] === 'up' ? '↑' : '↓' }}
@@ -234,13 +234,13 @@
                             </div>
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Kemarin: {{ $dailySummary['comparison']['yesterday']['total_orders'] }} orders
+                            {{ __('report.comparison.yesterday', ['amount' => $dailySummary['comparison']['yesterday']['total_orders'] . ' orders']) }}
                         </div>
                     </div>
 
                     {{-- Average Comparison --}}
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 {{ $dailySummary['comparison']['changes']['average']['trend'] === 'up' ? 'border-green-500' : 'border-red-500' }}">
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rata-rata Transaksi</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ __('report.summary.average_transaction') }}</div>
                         <div class="flex items-center gap-2">
                             <div class="text-2xl font-bold {{ $dailySummary['comparison']['changes']['average']['trend'] === 'up' ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $dailySummary['comparison']['changes']['average']['trend'] === 'up' ? '↑' : '↓' }}
@@ -248,7 +248,7 @@
                             </div>
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Kemarin: Rp {{ number_format($dailySummary['comparison']['yesterday']['average_transaction'], 0, ',', '.') }}
+                            {{ __('report.comparison.yesterday', ['amount' => 'Rp ' . number_format($dailySummary['comparison']['yesterday']['average_transaction'], 0, ',', '.')]) }}
                         </div>
                     </div>
                 </div>
@@ -260,14 +260,14 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                     <span class="text-2xl">🕐</span>
-                    <span>Analisis Jam Sibuk</span>
+                    <span>{{ __('report.peak_hours.title') }}</span>
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-2 border-green-200 dark:border-green-700">
                         <div class="flex items-center gap-3">
                             <div class="text-4xl">🔥</div>
                             <div class="flex-1">
-                                <div class="text-sm text-green-700 dark:text-green-300 font-semibold">JAM TERSIBUK</div>
+                                <div class="text-sm text-green-700 dark:text-green-300 font-semibold">{{ __('report.peak_hours.busiest') }}</div>
                                 <div class="text-2xl font-bold text-green-900 dark:text-green-100">{{ $dailySummary['peak_hours']['busiest']['hour'] }}</div>
                                 <div class="text-sm text-green-600 dark:text-green-400">
                                     {{ $dailySummary['peak_hours']['busiest']['orders'] }} orders • Rp {{ number_format($dailySummary['peak_hours']['busiest']['revenue'], 0, ',', '.') }}
@@ -280,7 +280,7 @@
                         <div class="flex items-center gap-3">
                             <div class="text-4xl">😴</div>
                             <div class="flex-1">
-                                <div class="text-sm text-blue-700 dark:text-blue-300 font-semibold">JAM SEPI</div>
+                                <div class="text-sm text-blue-700 dark:text-blue-300 font-semibold">{{ __('report.peak_hours.slowest') }}</div>
                                 <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $dailySummary['peak_hours']['slowest']['hour'] }}</div>
                                 <div class="text-sm text-blue-600 dark:text-blue-400">
                                     {{ $dailySummary['peak_hours']['slowest']['orders'] }} orders • Rp {{ number_format($dailySummary['peak_hours']['slowest']['revenue'], 0, ',', '.') }}
@@ -293,7 +293,7 @@
                     <div class="flex items-start gap-2">
                         <span class="text-lg">💡</span>
                         <div class="text-sm text-yellow-800 dark:text-yellow-200">
-                            <strong>Rekomendasi:</strong> Tambah staff di jam {{ $dailySummary['peak_hours']['busiest']['hour'] }} untuk melayani lebih cepat!
+                            <strong>{{ __('report.peak_hours.recommendation') }}</strong> {{ __('report.peak_hours.staff_recommendation', ['hour' => $dailySummary['peak_hours']['busiest']['hour']]) }}
                         </div>
                     </div>
                 </div>
@@ -305,24 +305,24 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                     <span class="text-2xl">👥</span>
-                    <span>Customer Insights</span>
+                    <span>{{ __('report.customer_insights.title') }}</span>
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                         <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ $dailySummary['customer_insights']['unique_customers'] }}</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Unique Customers</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.unique_customers') }}</div>
                     </div>
                     <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                         <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{ $dailySummary['customer_insights']['repeat_customers'] }}</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Repeat ({{ $dailySummary['customer_insights']['repeat_percentage'] }}%)</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.repeat_customers', ['percentage' => $dailySummary['customer_insights']['repeat_percentage']]) }}</div>
                     </div>
                     <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ $dailySummary['customer_insights']['new_customers'] }}</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">New ({{ $dailySummary['customer_insights']['new_percentage'] }}%)</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.new_customers', ['percentage' => $dailySummary['customer_insights']['new_percentage']]) }}</div>
                     </div>
                     <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                         <div class="text-3xl font-bold text-orange-600 dark:text-orange-400">{{ $dailySummary['customer_insights']['avg_items_per_order'] }}</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avg Items/Order</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.avg_items') }}</div>
                     </div>
                 </div>
             </div>
@@ -330,33 +330,33 @@
 
             {{-- Revenue Breakdown --}}
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Rincian Pendapatan</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{{ __('report.breakdown.revenue') }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.breakdown.subtotal') }}</span>
                             <span class="font-semibold dark:text-white">Rp {{ number_format($dailySummary['summary']['subtotal'], 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Pajak (Tax)</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.breakdown.tax') }}</span>
                             <span class="font-semibold dark:text-white">Rp {{ number_format($dailySummary['summary']['total_tax'], 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Service Charge</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.breakdown.service_charge') }}</span>
                             <span class="font-semibold dark:text-white">Rp {{ number_format($dailySummary['summary']['total_service'], 0, ',', '.') }}</span>
                         </div>
                     </div>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Rata-rata Transaksi</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.summary.average_transaction') }}</span>
                             <span class="font-semibold dark:text-white">Rp {{ number_format($dailySummary['summary']['average_transaction'], 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Total Items</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.summary.total_items') }}</span>
                             <span class="font-semibold dark:text-white">{{ $dailySummary['summary']['total_items'] }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-2 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400">Total Customers</span>
+                            <span class="text-gray-600 dark:text-gray-400">{{ __('report.summary.total_customers') }}</span>
                             <span class="font-semibold dark:text-white">{{ $dailySummary['summary']['total_customers'] }}</span>
                         </div>
                     </div>
@@ -365,7 +365,7 @@
 
             {{-- Payment Breakdown --}}
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Metode Pembayaran</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{{ __('report.breakdown.payment_methods') }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @foreach($dailySummary['payment_breakdown'] as $payment)
                         <div class="border dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
@@ -377,12 +377,12 @@
                                 Rp {{ number_format($payment['amount'], 0, ',', '.') }}
                             </div>
                             <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                {{ $payment['count'] }} transaksi
+                                {{ $payment['count'] }} {{ __('report.breakdown.transaksi') ?? 'transaksi' }}
                             </div>
                             @if($payment['count'] > 0)
                             <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
                                 <div class="text-xs text-gray-600 dark:text-gray-400">
-                                    Avg: <span class="font-semibold text-purple-600 dark:text-purple-400">Rp {{ number_format($payment['amount'] / $payment['count'], 0, ',', '.') }}</span>/trans
+                                    Avg: <span class="font-semibold text-purple-600 dark:text-purple-400">Rp {{ number_format($payment['amount'] / $payment['count'], 0, ',', '.') }}</span>/{{ __('report.summary.per_transaction') }}
                                 </div>
                             </div>
                             @endif
@@ -395,29 +395,29 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {{-- Discount Breakdown --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 Rincian Diskon</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 {{ __('report.breakdown.discounts') }}</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center pb-3 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400 font-medium">Total Diskon Diberikan</span>
+                            <span class="text-gray-600 dark:text-gray-400 font-medium">{{ __('report.breakdown.total_discount_given') }}</span>
                             <span class="text-xl font-bold text-orange-600 dark:text-orange-400">
                                 Rp {{ number_format($dailySummary['summary']['total_discount'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Penjualan Kotor</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.summary.gross_sales') }}</span>
                             <span class="text-sm font-semibold dark:text-white">
                                 Rp {{ number_format($dailySummary['summary']['gross_sales'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Setelah Diskon</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.breakdown.after_discount') }}</span>
                             <span class="text-sm font-semibold dark:text-white">
                                 Rp {{ number_format($dailySummary['summary']['gross_sales'] - $dailySummary['summary']['total_discount'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="mt-3 pt-3 border-t dark:border-gray-700">
                             <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-600 dark:text-gray-400">Persentase Diskon</span>
+                                <span class="text-gray-600 dark:text-gray-400">{{ __('report.breakdown.discount_percentage') }}</span>
                                 <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full font-semibold">
                                     {{ $dailySummary['summary']['gross_sales'] > 0 ? number_format(($dailySummary['summary']['total_discount'] / $dailySummary['summary']['gross_sales']) * 100, 1) : 0 }}%
                                 </span>
@@ -428,11 +428,11 @@
                 
                 {{-- Tax & Service Breakdown --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🧾 Rincian Pajak & Biaya</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🧾 {{ __('report.breakdown.tax_and_fees') }}</h3>
                     <div class="space-y-3">
                         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">PPN (Tax)</span>
+                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">{{ __('report.breakdown.tax') }}</span>
                                 <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
                                     Rp {{ number_format($dailySummary['summary']['total_tax'], 0, ',', '.') }}
                                 </span>
@@ -444,7 +444,7 @@
                         
                         <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-green-800 dark:text-green-200">Service Charge</span>
+                                <span class="text-sm font-medium text-green-800 dark:text-green-200">{{ __('report.breakdown.service_charge') }}</span>
                                 <span class="text-lg font-bold text-green-600 dark:text-green-400">
                                     Rp {{ number_format($dailySummary['summary']['total_service'], 0, ',', '.') }}
                                 </span>
@@ -456,7 +456,7 @@
                         
                         <div class="mt-3 pt-3 border-t dark:border-gray-700">
                             <div class="flex justify-between items-center">
-                                <span class="font-medium text-gray-700 dark:text-gray-300">Total Biaya Tambahan</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('report.breakdown.total_fees') }}</span>
                                 <span class="text-xl font-bold text-purple-600 dark:text-purple-400">
                                     Rp {{ number_format($dailySummary['summary']['total_tax'] + $dailySummary['summary']['total_service'], 0, ',', '.') }}
                                 </span>
@@ -472,16 +472,16 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {{-- Total Orders --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #3B82F6, #2563EB);">
-                    <div class="text-sm opacity-90">Total Order</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.total_orders') }}</div>
                     <div class="text-3xl font-bold mt-2">{{ $periodSummary['summary']['total_orders'] }}</div>
-                    <div class="text-xs opacity-75 mt-1">{{ $periodSummary['period']['days'] }} hari</div>
+                    <div class="text-xs opacity-75 mt-1">{{ $periodSummary['period']['days'] }} {{ __('report.weekly_trend.day') }}</div>
                 </div>
 
                 {{-- Net Sales --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #10B981, #059669);">
-                    <div class="text-sm opacity-90">Penjualan Bersih</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.net_sales') }}</div>
                     <div class="text-2xl font-bold mt-2">Rp {{ number_format($periodSummary['summary']['net_sales'], 0, ',', '.') }}</div>
-                    <div class="text-xs opacity-75 mt-1">Total periode</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.total_items') }}</div>
                 </div>
 
                 {{-- Growth --}}
@@ -492,7 +492,7 @@
                         : 'background: linear-gradient(to bottom right, #EF4444, #DC2626);';
                 @endphp
                 <div class="rounded-lg shadow-lg p-6 text-white" style="{{ $growthGradient }}">
-                    <div class="text-sm opacity-90">Pertumbuhan</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.growth') }}</div>
                     <div class="text-3xl font-bold mt-2">
                         {{ $isGrowthUp ? '↑' : '↓' }}
                         {{ abs($periodSummary['comparison']['growth']['percentage']) }}%
@@ -502,18 +502,18 @@
 
                 {{-- Average Transaction --}}
                 <div class="rounded-lg shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, #8B5CF6, #7C3AED);">
-                    <div class="text-sm opacity-90">Rata-rata</div>
+                    <div class="text-sm opacity-90">{{ __('report.summary.average_transaction') }}</div>
                     <div class="text-2xl font-bold mt-2">Rp {{ number_format($periodSummary['summary']['average_transaction'], 0, ',', '.') }}</div>
-                    <div class="text-xs opacity-75 mt-1">Per transaksi</div>
+                    <div class="text-xs opacity-75 mt-1">{{ __('report.summary.per_transaction') }}</div>
                 </div>
             </div>
 
             {{-- Comparison --}}
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Perbandingan dengan Periode Sebelumnya</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{{ __('report.comparison.period_title') }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Periode Sekarang</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ __('report.comparison.current_period') }}</div>
                         <div class="text-xs text-gray-500 dark:text-gray-500 mb-1">
                             {{ \Carbon\Carbon::parse($periodSummary['period']['start'])->format('d M Y') }} - 
                             {{ \Carbon\Carbon::parse($periodSummary['period']['end'])->format('d M Y') }}
@@ -523,7 +523,7 @@
                         </div>
                     </div>
                     <div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Periode Sebelumnya</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ __('report.comparison.previous_period') }}</div>
                         <div class="text-xs text-gray-500 dark:text-gray-500 mb-1">
                             {{ \Carbon\Carbon::parse($periodSummary['comparison']['previous_period']['start'])->format('d M Y') }} - 
                             {{ \Carbon\Carbon::parse($periodSummary['comparison']['previous_period']['end'])->format('d M Y') }}
@@ -535,7 +535,7 @@
                 </div>
                 <div class="mt-4 pt-4 border-t dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Selisih</span>
+                        <span class="text-gray-600 dark:text-gray-400">{{ __('report.comparison.difference') }}</span>
                         <span class="text-xl font-bold {{ $periodSummary['comparison']['growth']['trend'] === 'up' ? 'text-green-600' : 'text-red-600' }}">
                             {{ $periodSummary['comparison']['growth']['trend'] === 'up' ? '+' : '' }}
                             Rp {{ number_format($periodSummary['comparison']['growth']['amount'], 0, ',', '.') }}
@@ -546,7 +546,7 @@
 
             {{-- Payment Breakdown --}}
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Metode Pembayaran</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">{{ __('report.breakdown.payment_methods') }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @foreach($periodSummary['payment_breakdown'] as $payment)
                         <div class="border dark:border-gray-700 rounded-lg p-4">
@@ -558,7 +558,7 @@
                                 Rp {{ number_format($payment['amount'], 0, ',', '.') }}
                             </div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ $payment['count'] }} transaksi
+                                {{ $payment['count'] }} {{ __('report.breakdown.transaksi') ?? 'transaksi' }}
                             </div>
                         </div>
                     @endforeach
@@ -569,29 +569,29 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {{-- Discount Breakdown --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 Rincian Diskon</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 {{ __('report.breakdown.discounts') }}</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center pb-3 border-b dark:border-gray-700">
-                            <span class="text-gray-600 dark:text-gray-400 font-medium">Total Diskon Diberikan</span>
+                            <span class="text-gray-600 dark:text-gray-400 font-medium">{{ __('report.breakdown.total_discount_given') }}</span>
                             <span class="text-xl font-bold text-orange-600 dark:text-orange-400">
                                 Rp {{ number_format($periodSummary['summary']['total_discount'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Penjualan Kotor</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.summary.gross_sales') }}</span>
                             <span class="text-sm font-semibold dark:text-white">
                                 Rp {{ number_format($periodSummary['summary']['gross_sales'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Setelah Diskon</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.breakdown.after_discount') }}</span>
                             <span class="text-sm font-semibold dark:text-white">
                                 Rp {{ number_format($periodSummary['summary']['gross_sales'] - $periodSummary['summary']['total_discount'], 0, ',', '.') }}
                             </span>
                         </div>
                         <div class="mt-3 pt-3 border-t dark:border-gray-700">
                             <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-600 dark:text-gray-400">Persentase Diskon</span>
+                                <span class="text-gray-600 dark:text-gray-400">{{ __('report.breakdown.discount_percentage') }}</span>
                                 <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full font-semibold">
                                     {{ $periodSummary['summary']['gross_sales'] > 0 ? number_format(($periodSummary['summary']['total_discount'] / $periodSummary['summary']['gross_sales']) * 100, 1) : 0 }}%
                                 </span>
@@ -602,11 +602,11 @@
                 
                 {{-- Tax & Service Breakdown --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🧾 Rincian Pajak & Biaya</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🧾 {{ __('report.breakdown.tax_and_fees') }}</h3>
                     <div class="space-y-3">
                         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">PPN (Tax)</span>
+                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">{{ __('report.breakdown.tax') }}</span>
                                 <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
                                     Rp {{ number_format($periodSummary['summary']['total_tax'], 0, ',', '.') }}
                                 </span>
@@ -618,7 +618,7 @@
                         
                         <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-green-800 dark:text-green-200">Service Charge</span>
+                                <span class="text-sm font-medium text-green-800 dark:text-green-200">{{ __('report.breakdown.service_charge') }}</span>
                                 <span class="text-lg font-bold text-green-600 dark:text-green-400">
                                     Rp {{ number_format($periodSummary['summary']['total_service'], 0, ',', '.') }}
                                 </span>
@@ -630,7 +630,7 @@
                         
                         <div class="mt-3 pt-3 border-t dark:border-gray-700">
                             <div class="flex justify-between items-center">
-                                <span class="font-medium text-gray-700 dark:text-gray-300">Total Biaya Tambahan</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ __('report.breakdown.total_fees') }}</span>
                                 <span class="text-xl font-bold text-purple-600 dark:text-purple-400">
                                     Rp {{ number_format($periodSummary['summary']['total_tax'] + $periodSummary['summary']['total_service'], 0, ',', '.') }}
                                 </span>
@@ -644,16 +644,16 @@
         {{-- TOP PRODUCTS --}}
         @if(count($topProducts) > 0)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 Produk Terlaris</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 {{ __('report.top_products.title') }}</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b dark:border-gray-700">
                                 <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">#</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Produk</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Kategori</th>
-                                <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Qty</th>
-                                <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Total</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('report.top_products.product') }}</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('report.top_products.category') }}</th>
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('report.top_products.qty') }}</th>
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('report.top_products.total') }}</th>
                                 <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">%</th>
                             </tr>
                         </thead>
@@ -683,32 +683,32 @@
             <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl shadow-md p-6 mb-6">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">📈</span>
-                    Trend Mingguan (7 Hari Terakhir)
+                    {{ __('report.weekly_trend.title') }}
                 </h3>
                 
                 {{-- Week Summary Cards --}}
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-indigo-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Total Revenue (7 Hari)</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.total_revenue') }}</div>
                         <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                             Rp {{ number_format($dailySummary['weekly_trend']['summary']['total_revenue'], 0, ',', '.') }}
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-purple-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Rata-rata/Hari</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.average_per_day') }}</div>
                         <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
                             Rp {{ number_format($dailySummary['weekly_trend']['summary']['average_per_day'], 0, ',', '.') }}
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-green-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Best Day</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.best_day') }}</div>
                         <div class="text-xl font-bold text-green-600 dark:text-green-400">
                             {{ $dailySummary['weekly_trend']['summary']['best_day']['day_short'] }} 
                             (Rp {{ number_format($dailySummary['weekly_trend']['summary']['best_day']['revenue'] / 1000, 0, ',', '.') }}K)
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-blue-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Pertumbuhan</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.growth') }}</div>
                         <div class="text-2xl font-bold {{ $dailySummary['weekly_trend']['growth']['trend'] === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                             {{ $dailySummary['weekly_trend']['growth']['trend'] === 'up' ? '↑' : '↓' }} 
                             {{ abs($dailySummary['weekly_trend']['growth']['percentage']) }}%
@@ -721,10 +721,10 @@
                     <table class="w-full text-sm">
                         <thead class="bg-indigo-600 dark:bg-indigo-800 text-white">
                             <tr>
-                                <th class="px-4 py-3 text-left">Hari</th>
-                                <th class="px-4 py-3 text-left">Tanggal</th>
-                                <th class="px-4 py-3 text-right">Orders</th>
-                                <th class="px-4 py-3 text-right">Revenue</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.day') }}</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.date') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.orders') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.revenue') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -751,25 +751,25 @@
             <div class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl shadow-md p-6 mb-6">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">⚠️</span>
-                    Stock Alerts (Peringatan Stok Rendah)
+                    {{ __('report.stock_alerts.title') }}
                 </h3>
                 
                 {{-- Alert Summary --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div class="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 rounded-lg p-4">
-                        <div class="text-sm text-red-700 dark:text-red-300 font-medium">🔴 Critical</div>
+                        <div class="text-sm text-red-700 dark:text-red-300 font-medium">🔴 {{ __('report.stock_alerts.critical') }}</div>
                         <div class="text-3xl font-bold text-red-600 dark:text-red-400">{{ $dailySummary['stock_alerts']['summary']['critical_count'] }}</div>
-                        <div class="text-xs text-red-600 dark:text-red-400">Reorder sekarang!</div>
+                        <div class="text-xs text-red-600 dark:text-red-400">{{ __('report.stock_alerts.reorder_now') }}</div>
                     </div>
                     <div class="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded-lg p-4">
-                        <div class="text-sm text-yellow-700 dark:text-yellow-300 font-medium">🟡 Warning</div>
+                        <div class="text-sm text-yellow-700 dark:text-yellow-300 font-medium">🟡 {{ __('report.stock_alerts.warning') }}</div>
                         <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{{ $dailySummary['stock_alerts']['summary']['warning_count'] }}</div>
-                        <div class="text-xs text-yellow-600 dark:text-yellow-400">Monitor ketat</div>
+                        <div class="text-xs text-yellow-600 dark:text-yellow-400">{{ __('report.stock_alerts.monitor_closely') }}</div>
                     </div>
                     <div class="bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-lg p-4">
-                        <div class="text-sm text-blue-700 dark:text-blue-300 font-medium">🔵 Watch</div>
+                        <div class="text-sm text-blue-700 dark:text-blue-300 font-medium">🔵 {{ __('report.stock_alerts.watch') }}</div>
                         <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ $dailySummary['stock_alerts']['summary']['watch_count'] }}</div>
-                        <div class="text-xs text-blue-600 dark:text-blue-400">Siap-siap reorder</div>
+                        <div class="text-xs text-blue-600 dark:text-blue-400">{{ __('report.stock_alerts.prepare_reorder') }}</div>
                     </div>
                 </div>
                 
@@ -778,11 +778,11 @@
                     <table class="w-full text-sm">
                         <thead class="bg-red-600 dark:bg-red-800 text-white">
                             <tr>
-                                <th class="px-4 py-3 text-left">Product</th>
-                                <th class="px-4 py-3 text-center">Stok</th>
-                                <th class="px-4 py-3 text-center">Terjual Hari Ini</th>
-                                <th class="px-4 py-3 text-center">Habis Dalam</th>
-                                <th class="px-4 py-3 text-left">Rekomendasi</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.product') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.stock') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.sold_today') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.out_in') }}</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.recommendation') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -827,21 +827,21 @@
             <div class="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl shadow-md p-6 mb-6">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">👨‍💼</span>
-                    Staff Performance (Kinerja Staff)
+                    {{ __('report.staff_performance.title') }}
                 </h3>
                 
                 {{-- Performance Summary --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-green-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Total Staff</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.staff_performance.total_staff') }}</div>
                         <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{ $dailySummary['staff_performance']['summary']['total_staff'] }}</div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-teal-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Avg Orders/Staff</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.staff_performance.avg_orders') }}</div>
                         <div class="text-3xl font-bold text-teal-600 dark:text-teal-400">{{ $dailySummary['staff_performance']['summary']['avg_orders_per_staff'] }}</div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-blue-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Avg Revenue/Staff</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.staff_performance.avg_revenue') }}</div>
                         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             Rp {{ number_format($dailySummary['staff_performance']['summary']['avg_revenue_per_staff'], 0, ',', '.') }}
                         </div>
@@ -853,11 +853,11 @@
                     <table class="w-full text-sm">
                         <thead class="bg-green-600 dark:bg-green-800 text-white">
                             <tr>
-                                <th class="px-4 py-3 text-left">Rank</th>
-                                <th class="px-4 py-3 text-left">Nama Staff</th>
-                                <th class="px-4 py-3 text-right">Orders</th>
-                                <th class="px-4 py-3 text-right">Revenue</th>
-                                <th class="px-4 py-3 text-center">Performance</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.staff_performance.rank') }}</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.staff_performance.name') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.staff_performance.orders') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.staff_performance.revenue') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.staff_performance.performance') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -896,36 +896,36 @@
             <div class="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl shadow-md p-6 mb-6">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">💰</span>
-                    Profit Analysis (Analisis Keuntungan)
+                    {{ __('report.profit_analysis.title') }}
                 </h3>
                 
                 {{-- Summary Cards --}}
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-blue-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Gross Revenue</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.gross_revenue') }}</div>
                         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             Rp {{ number_format($dailySummary['profit_analysis']['summary']['gross_revenue'], 0, ',', '.') }}
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-red-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Total COGS</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.total_cogs') }}</div>
                         <div class="text-2xl font-bold text-red-600 dark:text-red-400">
                             Rp {{ number_format($dailySummary['profit_analysis']['summary']['total_cogs'], 0, ',', '.') }}
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-green-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Net Profit</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.net_profit') }}</div>
                         <div class="text-2xl font-bold text-green-600 dark:text-green-400">
                             Rp {{ number_format($dailySummary['profit_analysis']['summary']['net_profit'], 0, ',', '.') }}
                         </div>
                     </div>
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border-l-4 border-yellow-500">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Profit Margin</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.profit_margin') }}</div>
                         <div class="text-2xl font-bold {{ $dailySummary['profit_analysis']['summary']['profit_margin'] >= $dailySummary['profit_analysis']['summary']['target_margin'] ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                             {{ $dailySummary['profit_analysis']['summary']['profit_margin'] }}%
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">
-                            Target: {{ $dailySummary['profit_analysis']['summary']['target_margin'] }}%
+                            {{ __('report.profit_analysis.target') }}: {{ $dailySummary['profit_analysis']['summary']['target_margin'] }}%
                             @if($dailySummary['profit_analysis']['summary']['margin_difference'] >= 0)
                                 <span class="text-green-600 dark:text-green-400">(+{{ $dailySummary['profit_analysis']['summary']['margin_difference'] }}%)</span>
                             @else
@@ -956,17 +956,17 @@
                 @if(!empty($dailySummary['profit_analysis']['products']))
                 <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
                     <div class="px-4 py-3 bg-yellow-600 dark:bg-yellow-800">
-                        <h4 class="font-bold text-white">Product Profitability (Top 10)</h4>
+                        <h4 class="font-bold text-white">{{ __('report.profit_analysis.product_profitability') }}</h4>
                     </div>
                     <table class="w-full text-sm">
                         <thead class="bg-yellow-100 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-300">
                             <tr>
-                                <th class="px-4 py-3 text-left">Product</th>
-                                <th class="px-4 py-3 text-center">Qty</th>
-                                <th class="px-4 py-3 text-right">Revenue</th>
-                                <th class="px-4 py-3 text-right">COGS</th>
-                                <th class="px-4 py-3 text-right">Profit</th>
-                                <th class="px-4 py-3 text-center">Margin</th>
+                                <th class="px-4 py-3 text-left">{{ __('report.profit_analysis.product') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.qty') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.revenue') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.cogs') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.profit') }}</th>
+                                <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.margin') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1000,10 +1000,10 @@
         @if($reportType === 'daily' && !$dailySummary)
             <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
                 <div class="text-yellow-800 dark:text-yellow-200 text-lg font-semibold mb-2">
-                    📊 Tidak ada data untuk tanggal ini
+                    📊 {{ __('report.notifications.no_data') }}
                 </div>
                 <div class="text-yellow-700 dark:text-yellow-300 text-sm">
-                    Silakan pilih tanggal lain atau pastikan ada transaksi pada tanggal yang dipilih.
+                    {{ __('report.notifications.no_data_daily') }}
                 </div>
             </div>
         @endif
@@ -1012,15 +1012,15 @@
         {{-- NEW: Top Products for Period --}}
         @if(isset($topProducts) && count($topProducts) > 0)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 Top Products</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 {{ __('report.top_products.title') }}</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase">#</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Product</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Qty</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Revenue</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ __('report.top_products.product') }}</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">{{ __('report.top_products.qty') }}</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">{{ __('report.top_products.total') }}</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase">%</th>
                             </tr>
                         </thead>
@@ -1053,24 +1053,24 @@
         {{-- NEW: Daily Trend Chart --}}
         @if(isset($periodSummary['daily_trend']))
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">📈 Daily Sales Trend</h3>
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">📈 {{ __('report.weekly_trend.daily_trend_title') }}</h3>
             <canvas id="periodTrendChart" height="80"></canvas>
             <div class="mt-4 grid grid-cols-3 gap-4 text-center">
                 <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded">
-                    <div class="text-xs text-gray-600 dark:text-gray-400">Best Day</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.best_day') }}</div>
                     <div class="text-lg font-bold text-green-600">
                         {{ $periodSummary['daily_trend']['best_day']['date'] }}
                     </div>
                     <div class="text-xs">Rp {{ number_format($periodSummary['daily_trend']['best_day']['amount'], 0, ',', '.') }}</div>
                 </div>
                 <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                    <div class="text-xs text-gray-600 dark:text-gray-400">Average/Day</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.average_per_day') }}</div>
                     <div class="text-lg font-bold text-blue-600">
                         Rp {{ number_format($periodSummary['daily_trend']['average'], 0, ',', '.') }}
                     </div>
                 </div>
                 <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded">
-                    <div class="text-xs text-gray-600 dark:text-gray-400">Worst Day</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">{{ __('report.weekly_trend.worst_day') }}</div>
                     <div class="text-lg font-bold text-orange-600">
                         {{ $periodSummary['daily_trend']['worst_day']['date'] }}
                     </div>
@@ -1083,29 +1083,29 @@
         {{-- NEW: Profit Analysis --}}
         @if(isset($periodSummary['profit_analysis']))
         <div class="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg shadow p-6 border border-yellow-200 dark:border-yellow-800 mb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 Profit Analysis</h3>
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">💰 {{ __('report.profit_analysis.title') }}</h3>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">Revenue</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.revenue') }}</div>
                     <div class="text-2xl font-bold text-blue-600">
                         Rp {{ number_format($periodSummary['profit_analysis']['total_revenue'], 0, ',', '.') }}
                     </div>
                 </div>
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">COGS</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.cogs') }}</div>
                     <div class="text-2xl font-bold text-red-600">
                         Rp {{ number_format($periodSummary['profit_analysis']['total_cogs'], 0, ',', '.') }}
                     </div>
                 </div>
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">Net Profit</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.net_profit') }}</div>
                     <div class="text-2xl font-bold text-green-600">
                         Rp {{ number_format($periodSummary['profit_analysis']['net_profit'], 0, ',', '.') }}
                     </div>
                 </div>
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">Margin</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{ __('report.profit_analysis.margin') }}</div>
                     <div class="text-2xl font-bold {{ $periodSummary['profit_analysis']['margin_percentage'] >= 35 ? 'text-green-600' : 'text-orange-600' }}">
                         {{ number_format($periodSummary['profit_analysis']['margin_percentage'], 1) }}%
                     </div>
@@ -1131,15 +1131,15 @@
         {{-- NEW: Staff Performance --}}
         @if(isset($periodSummary['staff_performance']) && count($periodSummary['staff_performance']['staff']) > 0)
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">👨‍💼 Staff Performance</h3>
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">👨‍💼 {{ __('report.staff_performance.title') }}</h3>
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Rank</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Name</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Orders</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Total Sales</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ __('report.staff_performance.rank') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ __('report.staff_performance.name') }}</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase">{{ __('report.staff_performance.orders') }}</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase">{{ __('report.top_products.total') }}</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Avg</th>
                         </tr>
                     </thead>
@@ -1170,14 +1170,14 @@
         {{-- NEW: Customer Insights --}}
         @if(isset($periodSummary['customer_insights']))
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">👥 Customer Insights</h3>
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">👥 {{ __('report.customer_insights.title') }}</h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div class="text-3xl font-bold text-blue-600">
                         {{ number_format($periodSummary['customer_insights']['total_customers'], 0) }}
                     </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Customers</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.total_customers') }}</div>
                     <div class="text-xs {{ $periodSummary['customer_insights']['growth']['trend'] == 'up' ? 'text-green-600' : 'text-red-600' }} mt-2">
                         {{ $periodSummary['customer_insights']['growth']['trend'] == 'up' ? '↗️' : '↘️' }}
                         {{ abs($periodSummary['customer_insights']['growth']['percentage']) }}% vs previous
@@ -1187,12 +1187,12 @@
                     <div class="text-3xl font-bold text-green-600">
                         Rp {{ number_format($periodSummary['customer_insights']['average_spend'], 0, ',', '.') }}
                     </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Average Spend</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('report.customer_insights.average_spend') }}</div>
                 </div>
             </div>
             
             @if(count($periodSummary['customer_insights']['top_customers']) > 0)
-            <h4 class="font-semibold mb-2">Top Customers</h4>
+            <h4 class="font-semibold mb-2">{{ __('report.customer_insights.top_customers') }}</h4>
             <div class="space-y-2">
                 @foreach($periodSummary['customer_insights']['top_customers'] as $customer)
                 <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
@@ -1221,7 +1221,7 @@
                     data: {
                         labels: @json($periodSummary['daily_trend']['labels']),
                         datasets: [{
-                            label: 'Sales (Rp)',
+                            label: '{{ __('report.widgets.sales_chart.sales_label') }}',
                             data: @json($periodSummary['daily_trend']['sales']),
                             borderColor: '#10B981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -1245,10 +1245,10 @@
         @if($reportType === 'period' && !$periodSummary)
             <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
                 <div class="text-yellow-800 dark:text-yellow-200 text-lg font-semibold mb-2">
-                    📊 Tidak ada data untuk periode ini
+                    📊 {{ __('report.notifications.no_data') }}
                 </div>
                 <div class="text-yellow-700 dark:text-yellow-300 text-sm">
-                    Silakan pilih periode lain atau pastikan ada transaksi pada periode yang dipilih.
+                    {{ __('report.notifications.no_data_period') }}
                 </div>
             </div>
         @endif

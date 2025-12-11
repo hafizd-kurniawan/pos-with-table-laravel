@@ -1,41 +1,40 @@
 <x-filament-panels::page>
     {{-- EXPORT BUTTONS - EXCEL ONLY (WORKING) --}}
     <div style="margin-bottom: 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: white;">📊 Export Complete Inventory Reports</h3>
+        <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 8px; color: white;">📊 {{ __('report.inventory.export.complete.title') }}</h3>
         <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 16px;">
-            ✅ Export all data to Excel: Stock Summary, Movements, Purchase Orders, Low Stock Alert & Inventory Value<br>
-            📑 All reports in one file with 5 organized sheets - Perfect for analysis!
+            {!! __('report.inventory.export.complete.desc') !!}
         </p>
         
         <button wire:click="exportAllExcel" 
             style="display: inline-block; padding: 16px 32px; background-color: white; color: #059669; border: none; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); transition: all 0.3s;">
-            📊 EXPORT ALL TO EXCEL (5 SHEETS)
+            📊 {{ __('report.inventory.export.complete.button') }}
         </button>
         
         <div style="margin-top: 12px; padding: 8px 12px; background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 12px; color: white;">
-            💡 Tip: Excel export works perfectly with Indonesian text and all special characters. Open in Excel, Google Sheets, or LibreOffice!
+            💡 {{ __('report.inventory.export.complete.tip') }}
         </div>
     </div>
 
     {{-- Stats Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <x-filament::card>
-            <div class="text-sm font-medium text-gray-500">Total Ingredients</div>
+            <div class="text-sm font-medium text-gray-500">{{ __('report.inventory.stats.total_ingredients') }}</div>
             <div class="text-2xl font-bold text-gray-900">{{ $this->getTotalIngredients() }}</div>
         </x-filament::card>
         
         <x-filament::card>
-            <div class="text-sm font-medium text-gray-500">Total Stock Value</div>
+            <div class="text-sm font-medium text-gray-500">{{ __('report.inventory.stats.total_stock_value') }}</div>
             <div class="text-2xl font-bold text-green-600">Rp {{ number_format($this->getTotalStockValue(), 0, ',', '.') }}</div>
         </x-filament::card>
         
         <x-filament::card>
-            <div class="text-sm font-medium text-gray-500">Low Stock Items</div>
+            <div class="text-sm font-medium text-gray-500">{{ __('report.inventory.stats.low_stock_items') }}</div>
             <div class="text-2xl font-bold text-yellow-600">{{ $this->getLowStockCount() }}</div>
         </x-filament::card>
         
         <x-filament::card>
-            <div class="text-sm font-medium text-gray-500">Out of Stock</div>
+            <div class="text-sm font-medium text-gray-500">{{ __('report.inventory.stats.out_of_stock') }}</div>
             <div class="text-2xl font-bold text-red-600">{{ $this->getOutOfStockCount() }}</div>
         </x-filament::card>
     </div>
@@ -49,31 +48,31 @@
                     <button @click="activeTab = 'stock-summary'" 
                         :class="activeTab === 'stock-summary' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
-                        📊 Stock Summary
+                        📊 {{ __('report.inventory.tabs.stock_summary') }}
                     </button>
                     
                     <button @click="activeTab = 'stock-movements'" 
                         :class="activeTab === 'stock-movements' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
-                        📦 Stock Movements
+                        📦 {{ __('report.inventory.tabs.stock_movements') }}
                     </button>
                     
                     <button @click="activeTab = 'purchase-orders'" 
                         :class="activeTab === 'purchase-orders' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
-                        📋 Purchase Orders
+                        📋 {{ __('report.inventory.tabs.purchase_orders') }}
                     </button>
                     
                     <button @click="activeTab = 'inventory-value'" 
                         :class="activeTab === 'inventory-value' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
-                        💰 Inventory Value
+                        💰 {{ __('report.inventory.tabs.inventory_value') }}
                     </button>
                     
                     <button @click="activeTab = 'low-stock'" 
                         :class="activeTab === 'low-stock' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
-                        ⚠️ Low Stock Alert
+                        ⚠️ {{ __('report.inventory.tabs.low_stock_alert') }}
                     </button>
                 </nav>
             </div>
@@ -85,8 +84,8 @@
             <x-filament::card>
                 <div class="mb-4 pb-3 border-b flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">📊 Stock Summary</h2>
-                        <p class="text-sm text-gray-600 mt-1">Overview of all ingredients with current stock levels and values</p>
+                        <h2 class="text-xl font-bold text-gray-900">📊 {{ __('report.inventory.stock_summary.heading') }}</h2>
+                        <p class="text-sm text-gray-600 mt-1">{{ __('report.inventory.stock_summary.description') }}</p>
                     </div>
                     <div class="flex gap-3">
                         <button wire:click="exportStockSummaryExcel" 
@@ -109,13 +108,13 @@
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
-                                <th class="text-left p-2">SKU</th>
-                                <th class="text-left p-2">Ingredient</th>
-                                <th class="text-left p-2">Category</th>
-                                <th class="text-right p-2">Stock</th>
-                                <th class="text-right p-2">Min Stock</th>
-                                <th class="text-right p-2">Value</th>
-                                <th class="text-center p-2">Status</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_summary.table.sku') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_summary.table.ingredient') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_summary.table.category') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_summary.table.stock') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_summary.table.min_stock') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_summary.table.value') }}</th>
+                                <th class="text-center p-2">{{ __('report.inventory.stock_summary.table.status') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -167,18 +166,18 @@
         <div x-show="activeTab === 'low-stock'" x-cloak style="display: none;">
             <x-filament::card>
                 <div class="mb-4">
-                    <h3 class="text-lg font-semibold text-red-600">⚠️ Low Stock Alert</h3>
-                    <p class="text-sm text-gray-600">Items that need restocking</p>
+                    <h3 class="text-lg font-semibold text-red-600">⚠️ {{ __('report.inventory.low_stock.heading') }}</h3>
+                    <p class="text-sm text-gray-600">{{ __('report.inventory.low_stock.description') }}</p>
                 </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
-                                <th class="text-left p-2">Ingredient</th>
-                                <th class="text-right p-2">Current Stock</th>
-                                <th class="text-right p-2">Min Stock</th>
-                                <th class="text-right p-2">Shortage</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_summary.table.ingredient') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_summary.table.stock') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_summary.table.min_stock') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.low_stock.table.shortage') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -198,7 +197,7 @@
                             @empty
                                 <tr>
                                     <td colspan="4" class="text-center p-4 text-green-600">
-                                        ✅ All ingredients have sufficient stock!
+                                        ✅ {{ __('report.inventory.low_stock.all_good') }}
                                     </td>
                                 </tr>
                             @endforelse
@@ -212,8 +211,8 @@
             <x-filament::card>
                 <div class="mb-4 pb-3 border-b flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">📦 Stock Movement History</h2>
-                        <p class="text-sm text-gray-600 mt-1">Track all inventory transactions - incoming, outgoing, and adjustments</p>
+                        <h2 class="text-xl font-bold text-gray-900">📦 {{ __('report.inventory.stock_movements.heading') }}</h2>
+                        <p class="text-sm text-gray-600 mt-1">{{ __('report.inventory.stock_movements.description') }}</p>
                     </div>
                     <div class="flex gap-3">
                         <button wire:click="exportStockMovementsExcel" 
@@ -235,20 +234,20 @@
                 {{-- Filters --}}
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Start Date</label>
+                        <label class="text-sm font-medium text-gray-700">{{ __('report.inventory.stock_movements.filters.start_date') }}</label>
                         <input type="date" wire:model="startDate" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-gray-700">End Date</label>
+                        <label class="text-sm font-medium text-gray-700">{{ __('report.inventory.stock_movements.filters.end_date') }}</label>
                         <input type="date" wire:model="endDate" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Movement Type</label>
+                        <label class="text-sm font-medium text-gray-700">{{ __('report.inventory.stock_movements.filters.type') }}</label>
                         <select wire:model="movementType" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                            <option value="">All Types</option>
+                            <option value="">{{ __('report.inventory.stock_movements.filters.all_types') }}</option>
                             <option value="in">In (Masuk)</option>
                             <option value="out">Out (Keluar)</option>
                             <option value="adjustment">Adjustment</option>
@@ -257,7 +256,7 @@
                     <div class="flex items-end">
                         <button wire:click="loadStockMovements" 
                             class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Apply Filters
+                            {{ __('report.inventory.stock_movements.filters.apply') }}
                         </button>
                     </div>
                 </div>
@@ -267,15 +266,15 @@
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
-                                <th class="text-left p-2">Date</th>
-                                <th class="text-left p-2">Ingredient</th>
-                                <th class="text-center p-2">Type</th>
-                                <th class="text-right p-2">Quantity</th>
-                                <th class="text-right p-2">Before</th>
-                                <th class="text-right p-2">After</th>
-                                <th class="text-left p-2">Reference</th>
-                                <th class="text-left p-2">User</th>
-                                <th class="text-left p-2">Notes</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_movements.table.date') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_summary.table.ingredient') }}</th>
+                                <th class="text-center p-2">{{ __('report.inventory.stock_movements.table.type') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_movements.table.quantity') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_movements.table.before') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.stock_movements.table.after') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_movements.table.reference') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_movements.table.user') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.stock_movements.table.notes') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -310,7 +309,7 @@
                             @empty
                                 <tr>
                                     <td colspan="9" class="text-center p-4 text-gray-500">
-                                        No stock movements found for selected period
+                                        {{ __('report.inventory.stock_movements.no_data') }}
                                     </td>
                                 </tr>
                             @endforelse
@@ -324,8 +323,8 @@
             <x-filament::card>
                 <div class="mb-4 pb-3 border-b flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900">📋 Purchase Orders Report</h2>
-                        <p class="text-sm text-gray-600 mt-1">Monitor all purchase orders with summary analytics and detailed breakdown</p>
+                        <h2 class="text-xl font-bold text-gray-900">📋 {{ __('report.inventory.purchase_orders.heading') }}</h2>
+                        <p class="text-sm text-gray-600 mt-1">{{ __('report.inventory.purchase_orders.description') }}</p>
                     </div>
                     <div class="flex gap-3">
                         <button wire:click="exportPurchaseOrdersExcel" 
@@ -348,19 +347,19 @@
                 {{-- Filters --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Start Date</label>
+                        <label class="text-sm font-medium text-gray-700">{{ __('report.inventory.stock_movements.filters.start_date') }}</label>
                         <input type="date" wire:model="startDate" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-gray-700">End Date</label>
+                        <label class="text-sm font-medium text-gray-700">{{ __('report.inventory.stock_movements.filters.end_date') }}</label>
                         <input type="date" wire:model="endDate" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
                     <div class="flex items-end">
                         <button wire:click="loadPurchaseOrders" 
                             class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Apply Filters
+                            {{ __('report.inventory.stock_movements.filters.apply') }}
                         </button>
                     </div>
                 </div>
@@ -368,23 +367,23 @@
                 {{-- Summary Cards --}}
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div class="bg-blue-50 p-4 rounded-lg">
-                        <div class="text-sm text-blue-600">Total POs</div>
+                        <div class="text-sm text-blue-600">{{ __('report.inventory.purchase_orders.stats.total_pos') }}</div>
                         <div class="text-2xl font-bold text-blue-900">{{ count($purchaseOrders) }}</div>
                     </div>
                     <div class="bg-green-50 p-4 rounded-lg">
-                        <div class="text-sm text-green-600">Received</div>
+                        <div class="text-sm text-green-600">{{ __('report.inventory.purchase_orders.stats.received') }}</div>
                         <div class="text-2xl font-bold text-green-900">
                             {{ collect($purchaseOrders)->where('status', 'received')->count() }}
                         </div>
                     </div>
                     <div class="bg-yellow-50 p-4 rounded-lg">
-                        <div class="text-sm text-yellow-600">Pending</div>
+                        <div class="text-sm text-yellow-600">{{ __('report.inventory.purchase_orders.stats.pending') }}</div>
                         <div class="text-2xl font-bold text-yellow-900">
                             {{ collect($purchaseOrders)->whereIn('status', ['draft', 'sent'])->count() }}
                         </div>
                     </div>
                     <div class="bg-purple-50 p-4 rounded-lg">
-                        <div class="text-sm text-purple-600">Total Value</div>
+                        <div class="text-sm text-purple-600">{{ __('report.inventory.purchase_orders.stats.total_value') }}</div>
                         <div class="text-xl font-bold text-purple-900">
                             Rp {{ number_format(collect($purchaseOrders)->sum('total_amount'), 0, ',', '.') }}
                         </div>
@@ -396,13 +395,13 @@
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
-                                <th class="text-left p-2">PO Number</th>
-                                <th class="text-left p-2">Supplier</th>
-                                <th class="text-left p-2">Order Date</th>
-                                <th class="text-center p-2">Status</th>
-                                <th class="text-center p-2">Items</th>
-                                <th class="text-right p-2">Total Amount</th>
-                                <th class="text-left p-2">Received Date</th>
+                                <th class="text-left p-2">{{ __('report.inventory.purchase_orders.table.po_number') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.purchase_orders.table.supplier') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.purchase_orders.table.order_date') }}</th>
+                                <th class="text-center p-2">{{ __('report.inventory.purchase_orders.table.status') }}</th>
+                                <th class="text-center p-2">{{ __('report.inventory.purchase_orders.table.items') }}</th>
+                                <th class="text-right p-2">{{ __('report.inventory.purchase_orders.table.total_amount') }}</th>
+                                <th class="text-left p-2">{{ __('report.inventory.purchase_orders.table.received_date') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -441,7 +440,7 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="text-center p-4 text-gray-500">
-                                        No purchase orders found for selected period
+                                        {{ __('report.inventory.purchase_orders.no_data') }}
                                     </td>
                                 </tr>
                             @endforelse
@@ -454,13 +453,13 @@
         <div x-show="activeTab === 'inventory-value'" x-cloak style="display: none;">
             <x-filament::card>
                 <div class="mb-6 pb-3 border-b">
-                    <h2 class="text-xl font-bold text-gray-900">💰 Inventory Value Analysis</h2>
-                    <p class="text-sm text-gray-600 mt-1">Total stock value grouped by ingredient category with percentage breakdown</p>
+                    <h2 class="text-xl font-bold text-gray-900">💰 {{ __('report.inventory.inventory_value.heading') }}</h2>
+                    <p class="text-sm text-gray-600 mt-1">{{ __('report.inventory.inventory_value.description') }}</p>
                 </div>
 
                 {{-- Total Value Card --}}
                 <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-6">
-                    <div class="text-sm opacity-90">Total Inventory Value</div>
+                    <div class="text-sm opacity-90">{{ __('report.inventory.inventory_value.total_value') }}</div>
                     <div class="text-4xl font-bold mt-2">
                         Rp {{ number_format($this->getTotalStockValue(), 0, ',', '.') }}
                     </div>
@@ -486,7 +485,7 @@
                                     <div class="text-3xl font-bold text-blue-600">
                                         {{ number_format($percentage, 1) }}%
                                     </div>
-                                    <div class="text-xs text-gray-500">of total</div>
+                                    <div class="text-xs text-gray-500">{{ __('report.inventory.inventory_value.of_total') }}</div>
                                 </div>
                             </div>
                             
@@ -498,7 +497,7 @@
                         </div>
                     @empty
                         <div class="col-span-2 text-center p-8 text-gray-500">
-                            No inventory data available
+                            {{ __('report.inventory.inventory_value.no_data') }}
                         </div>
                     @endforelse
                 </div>

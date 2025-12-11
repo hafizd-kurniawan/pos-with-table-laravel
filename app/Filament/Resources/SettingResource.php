@@ -20,15 +20,24 @@ class SettingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationLabel = 'System Settings';
-
-    protected static ?string $modelLabel = 'Setting';
-
-    protected static ?string $pluralModelLabel = 'Settings';
-
     protected static ?string $navigationGroup = 'Settings';
     
     protected static ?int $navigationSort = 3;
+
+    public static function getModelLabel(): string
+    {
+        return __('resource.setting.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.setting.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.setting.plural_label');
+    }
 
     // Authorization: Check permissions
     public static function canViewAny(): bool
@@ -55,44 +64,49 @@ class SettingResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Setting Details')
+                Forms\Components\Section::make(__('resource.setting.label') . ' Details')
                     ->schema([
                         Forms\Components\TextInput::make('key')
                             ->required()
                             ->maxLength(255)
-                            ->helperText('Key can be edited. Be careful as it is used throughout the system!'),
+                            ->label(__('resource.setting.key'))
+                            ->helperText(__('resource.setting.helpers.key')),
                         
                         Forms\Components\TextInput::make('label')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->label(__('resource.setting.label_field')),
                         
                         Forms\Components\Select::make('type')
                             ->required()
                             ->options([
-                                'text' => 'Text Input',
-                                'textarea' => 'Textarea',
-                                'boolean' => 'Boolean (Yes/No)',
-                                'select' => 'Select Dropdown',
-                                'color' => 'Color Picker',
-                                'file' => 'File Upload',
-                                'number' => 'Number',
-                                'email' => 'Email',
-                                'url' => 'URL',
+                                'text' => __('resource.setting.types.text'),
+                                'textarea' => __('resource.setting.types.textarea'),
+                                'boolean' => __('resource.setting.types.boolean'),
+                                'select' => __('resource.setting.types.select'),
+                                'color' => __('resource.setting.types.color'),
+                                'file' => __('resource.setting.types.file'),
+                                'number' => __('resource.setting.types.number'),
+                                'email' => __('resource.setting.types.email'),
+                                'url' => __('resource.setting.types.url'),
                             ])
-                            ->reactive(),
+                            ->reactive()
+                            ->label(__('resource.setting.type')),
                         
                         Forms\Components\Select::make('group')
                             ->required()
                             ->options([
-                                'general' => 'General',
-                                'order' => 'Order Settings',
-                                'appearance' => 'Appearance',
-                                'payment' => 'Payment',
-                                'notification' => 'Notification',
-                            ]),
+                                'general' => __('resource.setting.groups.general'),
+                                'order' => __('resource.setting.groups.order'),
+                                'appearance' => __('resource.setting.groups.appearance'),
+                                'payment' => __('resource.setting.groups.payment'),
+                                'notification' => __('resource.setting.groups.notification'),
+                            ])
+                            ->label(__('resource.setting.group')),
                         
                         Forms\Components\Textarea::make('description')
                             ->maxLength(500)
+                            ->label(__('resource.discount.description')) // Reusing description label
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -100,23 +114,23 @@ class SettingResource extends Resource
                 Forms\Components\Section::make('Value Configuration')
                     ->schema([
                         Forms\Components\Textarea::make('value_text')
-                            ->label('Setting Value')
+                            ->label(__('resource.setting.value'))
                             ->required()
                             ->columnSpanFull()
                             ->visible(fn ($get) => in_array($get('type'), ['text', 'textarea', 'email', 'url', 'number'])),
                         
                         Forms\Components\Toggle::make('value_boolean')
-                            ->label('Setting Value')
+                            ->label(__('resource.setting.value'))
                             ->visible(fn ($get) => $get('type') === 'boolean')
                             ->formatStateUsing(fn ($state) => filter_var($state, FILTER_VALIDATE_BOOLEAN))
                             ->dehydrateStateUsing(fn ($state) => $state ? '1' : '0'),
                         
                         Forms\Components\ColorPicker::make('value_color')
-                            ->label('Setting Value')
+                            ->label(__('resource.setting.value'))
                             ->visible(fn ($get) => $get('type') === 'color'),
                         
                         Forms\Components\FileUpload::make('value_file')
-                            ->label('Setting Value')
+                            ->label(__('resource.setting.value'))
                             ->image()
                             ->imageEditor()
                             ->imageEditorAspectRatios([
@@ -129,7 +143,7 @@ class SettingResource extends Resource
                             ->visible(fn ($get) => $get('type') === 'file'),
                         
                         Forms\Components\KeyValue::make('options')
-                            ->label('Select Options')
+                            ->label(__('resource.setting.options'))
                             ->keyLabel('Option Value')
                             ->valueLabel('Option Label')
                             ->visible(fn ($get) => $get('type') === 'select')
@@ -147,15 +161,18 @@ class SettingResource extends Resource
                 Tables\Columns\TextColumn::make('label')
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->label(__('resource.setting.label_field')),
                 
                 Tables\Columns\TextColumn::make('key')
                     ->searchable()
                     ->fontFamily('mono')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->label(__('resource.setting.key')),
                 
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
+                    ->label(__('resource.setting.value'))
                     ->formatStateUsing(function ($state, $record) {
                         if (is_array($state)) {
                             return json_encode($state);
@@ -179,23 +196,34 @@ class SettingResource extends Resource
                         'payment' => 'danger',
                         'notification' => 'info',
                         default => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'general' => __('resource.setting.groups.general'),
+                        'order' => __('resource.setting.groups.order'),
+                        'appearance' => __('resource.setting.groups.appearance'),
+                        'payment' => __('resource.setting.groups.payment'),
+                        'notification' => __('resource.setting.groups.notification'),
+                        default => $state,
+                    })
+                    ->label(__('resource.setting.group')),
                 
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
+                    ->label(__('resource.general.updated_at'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('group')
             ->filters([
                 Tables\Filters\SelectFilter::make('group')
                     ->options([
-                        'general' => 'General',
-                        'order' => 'Order Settings',
-                        'appearance' => 'Appearance',
-                        'payment' => 'Payment',
-                        'notification' => 'Notification',
-                    ]),
+                        'general' => __('resource.setting.groups.general'),
+                        'order' => __('resource.setting.groups.order'),
+                        'appearance' => __('resource.setting.groups.appearance'),
+                        'payment' => __('resource.setting.groups.payment'),
+                        'notification' => __('resource.setting.groups.notification'),
+                    ])
+                    ->label(__('resource.setting.group')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -205,8 +233,8 @@ class SettingResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->emptyStateHeading('No Settings Found')
-            ->emptyStateDescription('Create your first setting to configure the application.')
+            ->emptyStateHeading(__('resource.setting.empty_state.heading'))
+            ->emptyStateDescription(__('resource.setting.empty_state.description'))
             ->emptyStateIcon('heroicon-o-cog-6-tooth');
     }
 

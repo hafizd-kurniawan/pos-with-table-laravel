@@ -28,6 +28,21 @@ class ProductResource extends Resource
     
     protected static ?int $navigationSort = 2;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.product.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.product.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.product.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -54,43 +69,51 @@ class ProductResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label(__('resource.product.name'))
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Textarea::make('description')
+                    ->label(__('resource.product.description'))
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('price')
+                    ->label(__('resource.product.price'))
                     ->required()
                     ->numeric()
                     ->prefix('Rp')
-                    ->helperText('Harga jual ke customer'),
+                    ->helperText(__('resource.product.price') . ' jual ke customer'),
                 Forms\Components\TextInput::make('cost')
-                    ->label('Cost (COGS)')
+                    ->label(__('resource.product.cost'))
                     ->numeric()
                     ->prefix('Rp')
                     ->default(0)
                     ->step(1)
                     ->inputMode('decimal')
-                    ->helperText('Harga pokok/biaya bahan (untuk profit tracking)')
-                    ->hint('💡 Isi sesuai actual cost untuk profit analysis yang akurat'),
+                    ->helperText(__('resource.product.cost_helper'))
+                    ->hint(__('resource.product.cost_hint')),
                 Forms\Components\FileUpload::make('image')
+                    ->label(__('resource.product.image'))
                     ->image(),
                 Select::make('status')
+                    ->label(__('resource.product.status'))
                     ->required()
                     ->options([
-                        'available' => 'Available',
-                        'unavailable' => 'Unavailable',
+                        'available' => __('resource.product.available'),
+                        'unavailable' => __('resource.product.unavailable'),
                     ])
                     ->default('available'),
                 Select::make('category_id')
+                    ->label(__('resource.product.category'))
                     ->required()
                     ->relationship('category', 'name')
                     ->preload()
                     ->searchable(),
                 Forms\Components\TextInput::make('stock')
+                    ->label(__('resource.product.stock'))
                     ->required()
                     ->numeric()
                     ->default(0),
                 Forms\Components\Toggle::make('is_featured')
+                    ->label(__('resource.product.is_featured'))
                     ->required(),
             ]);
     }
@@ -100,27 +123,26 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(__('resource.product.name'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->label('Price')
+                    ->label(__('resource.product.price'))
                     ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable()
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('cost')
-                    ->label('COGS')
+                    ->label(__('resource.product.cost'))
                     ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable()
                     ->alignEnd()
                     ->toggleable()
-                    ->color(fn ($record) => $record->cost == 0 ? 'danger' : 'success')
-                    ->tooltip(fn ($record) => $record->cost == 0 ? 'Update COGS untuk profit tracking' : 'COGS sudah diset'),
+                    ->color(fn ($record) => $record->cost == 0 ? 'danger' : 'success'),
                 Tables\Columns\TextColumn::make('profit_margin')
-                    ->label('Margin')
+                    ->label(__('resource.product.margin'))
                     ->getStateUsing(function ($record) {
                         if ($record->price <= 0) return '0';
                         $margin = (($record->price - $record->cost) / $record->price) * 100;
-                        // Format: hapus .00 di belakang jika integer, keep 1 decimal jika ada
                         return $margin == floor($margin) ? number_format($margin, 0) : number_format($margin, 1);
                     })
                     ->suffix('%')
@@ -136,22 +158,25 @@ class ProductResource extends Resource
                     })
                     ->badge(),
                 ImageColumn::make('image')
+                    ->label(__('resource.product.image'))
                     ->square()
                     ->size(60),
                 Tables\Columns\BadgeColumn::make('status')
+                    ->label(__('resource.product.status'))
                     ->colors([
                         'success' => 'available',
                         'danger' => 'unavailable',
                     ])
                     ->formatStateUsing(fn (string $state): string => ucfirst($state)),
                 Tables\Columns\TextColumn::make('stock')
+                    ->label(__('resource.product.stock'))
                     ->numeric()
                     ->sortable()
                     ->color(fn ($record) => $record->stock <= 5 ? 'danger' : ($record->stock <= 10 ? 'warning' : 'success'))
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state . ' pcs'),
                 Tables\Columns\IconColumn::make('is_available')
-                    ->label('Available')
+                    ->label(__('resource.product.is_available'))
                     ->boolean()
                     ->getStateUsing(fn ($record) => $record->isAvailable())
                     ->trueIcon('heroicon-o-check-circle')
@@ -159,20 +184,23 @@ class ProductResource extends Resource
                     ->trueColor('success')
                     ->falseColor('danger'),
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label('Category')
+                    ->label(__('resource.product.category'))
                     ->sortable()
                     ->badge(),
                 Tables\Columns\IconColumn::make('is_featured')
+                    ->label(__('resource.product.is_featured'))
                     ->boolean()
                     ->trueIcon('heroicon-o-star')
                     ->falseIcon('heroicon-o-star')
                     ->trueColor('warning')
                     ->falseColor('gray'),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('resource.general.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -180,11 +208,13 @@ class ProductResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label(__('resource.product.status'))
                     ->options([
-                        'available' => 'Available',
-                        'unavailable' => 'Unavailable',
+                        'available' => __('resource.product.available'),
+                        'unavailable' => __('resource.product.unavailable'),
                     ]),
                 Tables\Filters\SelectFilter::make('category')
+                    ->label(__('resource.product.category'))
                     ->relationship('category', 'name'),
                 Tables\Filters\Filter::make('low_stock')
                     ->label('Low Stock (≤10)')
@@ -194,43 +224,13 @@ class ProductResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->where('stock', '<=', 0)),
             ])
             ->actions([
-                Tables\Actions\Action::make('toggle_status')
-                    ->label(fn ($record) => $record->status === 'available' ? 'Set Unavailable' : 'Set Available')
-                    ->icon(fn ($record) => $record->status === 'available' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->color(fn ($record) => $record->status === 'available' ? 'danger' : 'success')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => $record->status === 'available' ? 'unavailable' : 'available'
-                        ]);
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Change Product Status')
-                    ->modalDescription(fn ($record) => 
-                        'Are you sure you want to set this product as ' . 
-                        ($record->status === 'available' ? 'unavailable' : 'available') . '?'
-                    ),
-                Tables\Actions\Action::make('add_stock')
-                    ->label('Add Stock')
-                    ->icon('heroicon-o-plus')
-                    ->color('success')
-                    ->form([
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Quantity to Add')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1)
-                            ->default(1),
-                    ])
-                    ->action(function ($record, array $data) {
-                        $record->increaseStock($data['quantity']);
-                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('set_available')
-                        ->label('Set Available')
+                        ->label(__('resource.product.set_available'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(function ($records) {
@@ -238,7 +238,7 @@ class ProductResource extends Resource
                         })
                         ->requiresConfirmation(),
                     Tables\Actions\BulkAction::make('set_unavailable')
-                        ->label('Set Unavailable')
+                        ->label(__('resource.product.set_unavailable'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->action(function ($records) {

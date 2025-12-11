@@ -21,15 +21,24 @@ class Reports extends Page implements HasForms
     
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
     
-    protected static ?string $navigationLabel = 'Sales Reports';
-    
-    protected static ?string $navigationGroup = 'Reports';
-    
-    protected static ?string $title = 'Sales Reports';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('resource.general.navigation.reports');
+    }
     
     protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.reports';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('report.navigation_label');
+    }
+
+    public function getTitle(): string
+    {
+        return __('report.title');
+    }
 
     // Authorization
     public static function canAccess(): bool
@@ -135,12 +144,12 @@ class Reports extends Page implements HasForms
             $this->loadDailyReport();
             
             \Filament\Notifications\Notification::make()
-                ->title('Cache berhasil di-generate')
+                ->title(__('report.notifications.cache_generated'))
                 ->success()
                 ->send();
         } catch (\Exception $e) {
             \Filament\Notifications\Notification::make()
-                ->title('Gagal generate cache')
+                ->title(__('report.notifications.cache_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -234,8 +243,8 @@ class Reports extends Page implements HasForms
             
             if (!$data) {
                 Notification::make()
-                    ->title('Tidak ada data')
-                    ->body('Tidak ada data untuk diekspor.')
+                    ->title(__('report.notifications.no_data'))
+                    ->body(__('report.notifications.no_data_export'))
                     ->warning()
                     ->send();
                 return;
@@ -262,7 +271,7 @@ class Reports extends Page implements HasForms
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error')
-                ->body('Gagal membuat PDF: ' . $e->getMessage())
+                ->body(__('report.notifications.pdf_error', ['error' => $e->getMessage()]))
                 ->danger()
                 ->send();
         }
@@ -275,8 +284,8 @@ class Reports extends Page implements HasForms
             
             if (!$data) {
                 Notification::make()
-                    ->title('Tidak ada data')
-                    ->body('Tidak ada data untuk diekspor.')
+                    ->title(__('report.notifications.no_data'))
+                    ->body(__('report.notifications.no_data_export'))
                     ->warning()
                     ->send();
                 return;
@@ -292,7 +301,7 @@ class Reports extends Page implements HasForms
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error')
-                ->body('Gagal membuat Excel: ' . $e->getMessage())
+                ->body(__('report.notifications.excel_error', ['error' => $e->getMessage()]))
                 ->danger()
                 ->send();
         }

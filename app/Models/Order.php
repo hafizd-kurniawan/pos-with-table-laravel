@@ -34,6 +34,8 @@ class Order extends Model
         'expired_at',
         'order_type', // NEW: dine_in or takeaway
         'cashier_name', // NEW: Save cashier name
+        'payment_amount', // NEW
+        'change_amount', // NEW
     ];
 
     protected $casts = [

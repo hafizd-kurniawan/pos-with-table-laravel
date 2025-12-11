@@ -26,6 +26,21 @@ class CategoryResource extends Resource
     
     protected static ?int $navigationSort = 1;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.category.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.category.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.category.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -52,12 +67,15 @@ class CategoryResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label(__('resource.category.name'))
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('description')
+                    ->label(__('resource.product.description'))
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\FileUpload::make('image')
+                    ->label(__('resource.product.image'))
                     ->image(),
             ]);
     }
@@ -67,15 +85,20 @@ class CategoryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label(__('resource.category.name'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('description')
+                    ->label(__('resource.product.description'))
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('image'),
+                Tables\Columns\ImageColumn::make('image')
+                    ->label(__('resource.product.image')),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('resource.general.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('resource.general.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

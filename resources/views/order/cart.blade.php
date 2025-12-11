@@ -1,251 +1,233 @@
-<!DOCTYPE html>
-<html>
+@extends('layouts.order')
 
-<head>
-    <title>Order Cart Table {{ $table->name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        .cart-fixed {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
+@section('title', 'Keranjang - ' . $table->name)
 
-        .cart-scroll {
-            max-height: 64vh;
-            overflow-y: auto;
-        }
-
-        .note-box {
-            resize: none;
-            width: 100%;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            padding: 0.5em;
-        }
-    </style>
-</head>
-
-<body class="bg-gray-100">
-    <div class="max-w-md mx-auto bg-white shadow-lg min-h-screen flex flex-col relative pb-28">
-        <!-- Header -->
-        <div class="py-3 px-4 border-b font-medium text-center sticky top-0 bg-white z-10 flex items-center">
-            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="mr-2">&larr;</a>
-            <span class="flex-1">Order</span>
-        </div>
-        <!-- Ordered Items -->
-        <div class="px-4 py-2 border-b flex items-center justify-between">
-            <div class="font-semibold">Ordered Items ({{ count($cart) }})</div>
-            <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="text-xs text-blue-600 rounded py-1 px-2 border">+
-                Add Item</a>
-        </div>
-
-        <!-- Cart List -->
-        <div class="px-4 pt-2 cart-scroll">
-            @if (count($cart))
-                @foreach ($cart as $i => $item)
-                    <div class="border rounded mb-3 p-3 shadow-sm bg-white relative">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <div class="font-medium">{{ $item['name'] }}</div>
-                            </div>
-                            <!-- Tombol Hapus -->
-                            <form action="{{ route('order.removeCart', [$table->tenantIdentifier, $table->name, $item['product_id']]) }}" method="post">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-500 text-sm">Remove</button>
-                            </form>
-                        </div>
-
-                        <div class="flex items-center mt-2">
-                            <div class="font-bold text-lg flex-1">Rp{{ number_format($item['price']) }}</div>
-                            <!-- Tombol Minus -->
-                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
-                                <input type="hidden" name="qty" value="-1">
-                                <button type="submit" class="px-2 text-lg">-</button>
-                            </form>
-                            <span class="mx-2">{{ $item['qty'] }}</span>
-                            <!-- Tombol Plus -->
-                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
-                                <input type="hidden" name="qty" value="1">
-                                <button type="submit" class="px-2 text-lg">+</button>
-                            </form>
-                        </div>
-                    </div>
-                @endforeach
-
-
-                {{-- @foreach ($cart as $i => $item)
-                    <div class="border rounded mb-3 p-3 shadow-sm bg-white relative">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <div class="font-medium">{{ $item['name'] }}</div>
-                                @if (isset($item['variant']))
-                                    <div class="text-xs text-gray-500">{{ $item['variant'] }}</div>
-                                @endif
-                                @if (isset($item['side']))
-                                    <div class="text-xs text-gray-500">{{ $item['side'] }}</div>
-                                @endif --}}
-                                {{-- @if (!empty($item['note']))
-                                    <div class="text-xs mt-1 text-gray-400 flex"><svg xmlns="http://www.w3.org/2000/svg"
-                                            width="14" height="14" fill="none" viewBox="0 0 24 24"
-                                            class="mr-1">
-                                            <path
-                                                d="M2 21v-2a4 4 0 014-4h3v-2.48A7.94 7.94 0 012 5.13 7.97 7.97 0 017.63 2c2.12 0 4.22.83 5.85 2.45A7.94 7.94 0 0122 12.37c0 2.12-.83 4.22-2.45 5.85A7.94 7.94 0 0112.37 22h-2.48v-3a4 4 0 00-4-4H3.95A1.978 1.978 0 012 17.05V21zm8-8.48V17h-3a2 2 0 00-2 2v3.05c0 .55.45 1 1 1H7.95c.56 0 1.02-.45 1.02-1V19h3c.55 0 1-.45 1-1v-3h-2.48z"
-                                                fill="currentColor" />
-                                        </svg>
-                                        {{ $item['note'] }}</div>
-                                @else
-                                    <div class="text-xs text-gray-400 italic">No notes yet</div>
-                                @endif --}}
-                            {{-- </div>
-
-                        </div>
-                        <div class="flex items-center mt-2">
-                            <div class="font-bold text-lg flex-1">Rp{{ number_format($item['price']) }}</div>
-                            <!-- Qty controls -->
-                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
-                                <input type="hidden" name="qty" value="-1">
-                                <button type="submit" class="px-2 text-lg">-</button>
-                            </form>
-                            <span class="mx-2">{{ $item['qty'] }}</span>
-                            <form action="{{ route('order.addToCart', [$table->tenantIdentifier, $table->name]) }}" method="post" class="inline">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $item['product_id'] }}">
-                                <input type="hidden" name="qty" value="1">
-                                <button type="submit" class="px-2 text-lg">+</button>
-                            </form>
-                        </div>
-                    </div>
-                @endforeach --}}
-            @else
-                <div class="text-center text-gray-400 py-6">Empty Cart.</div>
-            @endif
-        </div>
-
-        <!-- Note box global -->
-        {{-- <div class="px-4 pt-2">
-            <form>
-                <textarea class="note-box" name="notes" rows="2" placeholder="Add notes"></textarea>
-            </form>
-        </div> --}}
-
-        <!-- Payment Details -->
-        <div class="p-4 mt-2">
-            @php
-                $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
-                $rounding = round($subtotal, -2) - $subtotal;
-
-                $total = $subtotal;
-            @endphp
-            <div class="border rounded-lg bg-gray-50 px-4 py-3">
-                <div class="font-semibold mb-1">Payment Details</div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Subtotal ({{ count($cart) }} menu)</span>
-                    <span>Rp{{ number_format($subtotal) }}</span>
-                </div>
-
-                <div class="flex justify-between font-bold mt-2 text-lg">
-                    <span>Total</span>
-                    <span>Rp{{ number_format($total) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sticky Checkout Bar -->
-        <div
-            class="cart-fixed bg-white border-t px-4 py-3 flex items-center justify-between max-w-md mx-auto shadow-xl">
-            <div class="font-normal text-base">
-                Total Payment
-                <div class="font-bold text-xl mt-1">Rp{{ number_format($total) }}</div>
-            </div>
-            <a href="{{ route('order.checkoutForm', [$table->tenantIdentifier, $table->name]) }}"
-                class="ml-3 bg-black text-white font-bold px-4 py-2 rounded shadow text-sm"
-                id="checkout-btn">
-                Continue to Payment
-            </a>
-        </div>
+@section('content')
+<div x-data="cartSystem()" class="pb-32">
+    <!-- Header -->
+    <div class="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3 flex items-center">
+        <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <h1 class="font-bold text-lg text-gray-900 ml-2">Keranjang Pesanan</h1>
     </div>
 
-    <!-- <script>
-        // Real-time cart validation
-        async function validateCart() {
-            try {
-                const cartData = @json($cart);
-                const response = await fetch('/api/cart/validate', {
+    <!-- Cart Items -->
+    <div class="px-4 py-4 space-y-4">
+        @if(count($cart) > 0)
+            <template x-for="(item, index) in cart" :key="item.product_id">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
+                    <!-- Item Info -->
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900" x-text="item.name"></h3>
+                        <p class="text-sm text-gray-500 mt-1" x-text="formatRupiah(item.price)"></p>
+                        
+                        <!-- Note Input -->
+                        <div class="mt-3">
+                            <input type="text" x-model="item.note" @change="updateNote(item.product_id, item.note)"
+                                   placeholder="Catatan (opsional)" 
+                                   class="w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-black transition">
+                        </div>
+                    </div>
+
+                    <!-- Qty Control -->
+                    <div class="flex flex-col justify-between items-end">
+                        <button @click="removeItem(item.product_id)" class="text-gray-400 hover:text-red-500 p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                        
+                        <div class="flex items-center bg-gray-100 rounded-lg p-1 mt-2">
+                            <button @click="updateQty(item.product_id, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-red-500 active:scale-95 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span class="w-8 text-center font-semibold text-sm" x-text="item.qty"></span>
+                            <button @click="updateQty(item.product_id, 1)" class="w-7 h-7 flex items-center justify-center bg-black rounded-md shadow-sm text-white hover:bg-gray-800 active:scale-95 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Estimated Details -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 mt-4 space-y-2">
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>Subtotal</span>
+                    <span class="font-medium" x-text="formatRupiah(cartSubtotal)"></span>
+                </div>
+                
+                @if($autoTax)
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>{{ $autoTax->name }} ({{ $autoTax->value }}%)</span>
+                    <span class="font-medium" x-text="formatRupiah(taxAmount)"></span>
+                </div>
+                @endif
+
+                @if($autoService)
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>{{ $autoService->name }} ({{ $autoService->value }}%)</span>
+                    <span class="font-medium" x-text="formatRupiah(serviceAmount)"></span>
+                </div>
+                @endif
+                
+                <div class="border-t border-dashed border-gray-300 my-2"></div>
+                
+                <div class="flex justify-between text-base font-bold text-gray-900">
+                    <span>Total Estimasi</span>
+                    <span x-text="formatRupiah(cartTotal)"></span>
+                </div>
+            </div>
+
+        @else
+            <div class="text-center py-12">
+                <div class="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                </div>
+                <h3 class="font-bold text-gray-900 text-lg">Keranjang Kosong</h3>
+                <p class="text-gray-500 mt-2 text-sm">Yuk pilih menu favoritmu dulu!</p>
+                <a href="{{ route('order.menu', [$table->tenantIdentifier, $table->name]) }}" class="inline-block mt-6 px-6 py-2 bg-black text-white rounded-full font-bold text-sm shadow-lg hover:bg-gray-800 transition">
+                    Lihat Menu
+                </a>
+            </div>
+        @endif
+    </div>
+
+    <!-- Sticky Bottom Bar -->
+    @if(count($cart) > 0)
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-40 max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-3">
+            <span class="text-gray-600 text-sm">Total Pembayaran</span>
+            <span class="font-bold text-lg text-gray-900" x-text="formatRupiah(cartTotal)"></span>
+        </div>
+        <a href="{{ route('order.checkoutForm', [$table->tenantIdentifier, $table->name]) }}" 
+           class="block w-full bg-black text-white text-center font-bold py-3.5 rounded-xl shadow-lg hover:bg-gray-800 active:scale-95 transition">
+            Lanjut Pembayaran
+        </a>
+    </div>
+    @endif
+</div>
+
+@push('scripts')
+<script>
+    function cartSystem() {
+        return {
+            cart: @json(array_values($cart)),
+            taxPercentage: {{ $autoTax ? $autoTax->value : 0 }},
+            servicePercentage: {{ $autoService ? $autoService->value : 0 }},
+
+            get cartSubtotal() {
+                return this.cart.reduce((total, item) => total + (item.price * item.qty), 0);
+            },
+
+            get taxAmount() {
+                return this.cartSubtotal * (this.taxPercentage / 100);
+            },
+
+            get serviceAmount() {
+                return this.cartSubtotal * (this.servicePercentage / 100);
+            },
+
+            get cartTotal() {
+                return this.cartSubtotal + this.taxAmount + this.serviceAmount;
+            },
+
+            async updateQty(productId, change) {
+                const itemIndex = this.cart.findIndex(i => i.product_id == productId);
+                if (itemIndex === -1) return;
+
+                const newQty = this.cart[itemIndex].qty + change;
+                
+                if (newQty <= 0) {
+                    if (confirm('Hapus item ini dari keranjang?')) {
+                        this.removeItem(productId);
+                    }
+                    return;
+                }
+
+                // Optimistic Update
+                this.cart[itemIndex].qty = newQty;
+
+                // Sync
+                await this.syncCart(productId, change);
+            },
+
+            async removeItem(productId) {
+                const itemIndex = this.cart.findIndex(i => i.product_id == productId);
+                if (itemIndex > -1) {
+                    this.cart.splice(itemIndex, 1);
+                    
+                    try {
+                        await fetch(`{{ url('order/' . $table->tenantIdentifier . '/' . $table->name . '/cart/remove') }}/${productId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (this.cart.length === 0) location.reload(); 
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            },
+
+            async updateNote(productId, note) {
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                formData.append('qty', 0); 
+                formData.append('note', note);
+                
+                await fetch('{{ route("order.addToCartAjax", [$table->tenantIdentifier, $table->name]) }}', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ cart: cartData })
+                    body: formData
                 });
-                
-                const result = await response.json();
-                const checkoutBtn = document.getElementById('checkout-btn');
-                
-                if (!result.is_valid) {
-                    // Show validation errors
-                    checkoutBtn.classList.add('bg-red-500');
-                    checkoutBtn.classList.remove('bg-black');
-                    checkoutBtn.textContent = 'Stock Issues Found';
-                    checkoutBtn.style.pointerEvents = 'none';
-                    
-                    // Show error message
-                    showValidationErrors(result.errors);
-                } else {
-                    // Cart is valid
-                    checkoutBtn.classList.add('bg-green-500');
-                    checkoutBtn.classList.remove('bg-black', 'bg-red-500');
-                    checkoutBtn.textContent = 'Continue to Payment ✓';
-                    checkoutBtn.style.pointerEvents = 'auto';
-                }
-            } catch (error) {
-                console.error('Validation error:', error);
-            }
-        }
-        
-        function showValidationErrors(errors) {
-            // Remove existing error messages
-            document.querySelectorAll('.stock-error').forEach(el => el.remove());
-            
-            // Add error message at top
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'stock-error bg-red-50 border border-red-200 rounded p-3 mx-4 mt-2';
-            errorDiv.innerHTML = `
-                <div class="text-red-600 font-medium mb-1">⚠️ Stock Issues:</div>
-                <div class="text-sm text-red-500">
-                    ${errors.map(error => `• ${error}`).join('<br>')}
-                </div>
-            `;
-            
-            // Insert after header
-            const header = document.querySelector('.border-b');
-            header.insertAdjacentElement('afterend', errorDiv);
-        }
-        
-        // Validate cart on page load
-        document.addEventListener('DOMContentLoaded', validateCart);
-        
-        // Auto-validate every 10 seconds
-        setInterval(validateCart, 10000);
-        
-        // Validate before checkout
-        document.getElementById('checkout-btn').addEventListener('click', function(e) {
-            if (this.style.pointerEvents === 'none') {
-                e.preventDefault();
-                alert('Please resolve stock issues before proceeding to checkout.');
-            }
-        });
-    </script> -->
-</body>
+            },
 
-</html>
+            async syncCart(productId, qtyChange) {
+                const formData = new FormData();
+                formData.append('product_id', productId);
+                formData.append('qty', qtyChange);
+                
+                try {
+                    const response = await fetch('{{ route("order.addToCartAjax", [$table->tenantIdentifier, $table->name]) }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    if (!result.success) {
+                        alert(result.message);
+                        location.reload();
+                    }
+                } catch (error) {
+                    console.error('Sync error:', error);
+                }
+            },
+
+            formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            }
+        }
+    }
+</script>
+@endpush
+@endsection

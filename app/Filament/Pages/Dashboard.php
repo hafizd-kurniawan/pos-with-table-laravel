@@ -7,7 +7,11 @@ use Filament\Pages\Dashboard as BaseDashboard;
 class Dashboard extends BaseDashboard
 {
     protected static ?string $navigationIcon = 'heroicon-o-home';
-    protected static ?string $navigationLabel = 'Dashboard';
+    
+    public static function getNavigationLabel(): string
+    {
+        return __('report.dashboard.title');
+    }
     protected static ?int $navigationSort = -10;
     protected static string $view = 'filament.pages.dashboard-styles';
 
@@ -45,19 +49,19 @@ class Dashboard extends BaseDashboard
     public function getHeading(): string
     {
         $tenant = auth()->user()->tenant ?? null;
-        return ($tenant ? $tenant->business_name . ' - ' : '') . 'Dashboard';
+        return ($tenant ? $tenant->business_name . ' - ' : '') . __('report.dashboard.title');
     }
 
     public function getSubheading(): ?string
     {
-        return 'Last updated: ' . now()->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB';
+        return __('report.dashboard.last_updated', ['time' => now()->timezone('Asia/Jakarta')->format('d M Y, H:i')]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             \Filament\Actions\Action::make('refresh')
-                ->label('Refresh')
+                ->label(__('report.dashboard.refresh'))
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
                     $service = new \App\Services\DashboardService();
@@ -66,7 +70,7 @@ class Dashboard extends BaseDashboard
                     $this->dispatch('$refresh');
                     
                     \Filament\Notifications\Notification::make()
-                        ->title('Dashboard refreshed')
+                        ->title(__('report.dashboard.refreshed'))
                         ->success()
                         ->send();
                 }),

@@ -25,6 +25,21 @@ class RoleResource extends Resource
     
     protected static ?int $navigationSort = 2;
 
+    public static function getModelLabel(): string
+    {
+        return __('resource.role.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('resource.role.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('resource.role.plural_label');
+    }
+
     // Authorization
     public static function canViewAny(): bool
     {
@@ -50,13 +65,14 @@ class RoleResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Role Information')
+                Forms\Components\Section::make(__('resource.role.label') . ' Information')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug($state)))
+                            ->label(__('resource.role.name'))
                             ->columnSpan(1),
                         
                         Forms\Components\TextInput::make('slug')
@@ -68,25 +84,26 @@ class RoleResource extends Resource
                             ->columnSpan(1),
                         
                         Forms\Components\Textarea::make('description')
+                            ->label(__('resource.role.description'))
                             ->rows(3)
                             ->columnSpanFull(),
                         
                         Forms\Components\Toggle::make('is_default')
-                            ->label('Default Role')
-                            ->helperText('Automatically assign this role to new users')
+                            ->label(__('resource.role.is_default'))
+                            ->helperText(__('resource.role.helpers.is_default'))
                             ->disabled(fn (string $operation) => $operation === 'edit')
                             ->columnSpan(1),
                         
                         Forms\Components\Toggle::make('is_system')
-                            ->label('System Role')
-                            ->helperText('System roles cannot be deleted')
+                            ->label(__('resource.role.is_system'))
+                            ->helperText(__('resource.role.helpers.is_system'))
                             ->disabled()
                             ->columnSpan(1),
                     ])
                     ->columns(2),
                 
-                Forms\Components\Section::make('Permissions')
-                    ->description('Select which permissions this role should have')
+                Forms\Components\Section::make(__('resource.role.permissions'))
+                    ->description(__('resource.role.helpers.permissions'))
                     ->schema([
                         Forms\Components\CheckboxList::make('permissions')
                             ->label('')
@@ -122,36 +139,38 @@ class RoleResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
+                    ->label(__('resource.role.name'))
                     ->icon('heroicon-o-shield-check'),
                 
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
                     ->searchable()
+                    ->label(__('resource.role.description'))
                     ->toggleable(),
                 
                 Tables\Columns\TextColumn::make('users_count')
-                    ->label('Users')
+                    ->label(__('resource.user.plural_label'))
                     ->counts('users')
                     ->badge()
                     ->color('success')
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('permissions_count')
-                    ->label('Permissions')
+                    ->label(__('resource.role.permissions'))
                     ->counts('permissions')
                     ->badge()
                     ->color('info')
                     ->sortable(),
                 
                 Tables\Columns\IconColumn::make('is_default')
-                    ->label('Default')
+                    ->label(__('resource.role.is_default'))
                     ->boolean()
                     ->trueIcon('heroicon-o-check-badge')
                     ->falseIcon('heroicon-o-x-circle')
                     ->sortable(),
                 
                 Tables\Columns\IconColumn::make('is_system')
-                    ->label('System')
+                    ->label(__('resource.role.is_system'))
                     ->boolean()
                     ->trueIcon('heroicon-o-lock-closed')
                     ->falseIcon('heroicon-o-lock-open')
@@ -160,17 +179,18 @@ class RoleResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
+                    ->label(__('resource.general.created_at'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_default')
-                    ->label('Default Role')
+                    ->label(__('resource.role.is_default'))
                     ->placeholder('All roles')
                     ->trueLabel('Default roles only')
                     ->falseLabel('Non-default roles'),
                 
                 Tables\Filters\TernaryFilter::make('is_system')
-                    ->label('System Role')
+                    ->label(__('resource.role.is_system'))
                     ->placeholder('All roles')
                     ->trueLabel('System roles only')
                     ->falseLabel('Custom roles'),
@@ -184,7 +204,7 @@ class RoleResource extends Resource
                             \Filament\Notifications\Notification::make()
                                 ->danger()
                                 ->title('Cannot Delete System Role')
-                                ->body('System roles are protected and cannot be deleted.')
+                                ->body(__('resource.role.messages.cannot_delete_system'))
                                 ->send();
                             
                             $action->cancel();
@@ -194,7 +214,7 @@ class RoleResource extends Resource
                             \Filament\Notifications\Notification::make()
                                 ->warning()
                                 ->title('Role Has Users')
-                                ->body("This role is assigned to {$record->users()->count()} user(s). Please reassign them first.")
+                                ->body(__('resource.role.messages.has_users', ['count' => $record->users()->count()]))
                                 ->send();
                             
                             $action->cancel();
@@ -210,7 +230,7 @@ class RoleResource extends Resource
                                 \Filament\Notifications\Notification::make()
                                     ->danger()
                                     ->title('Cannot Delete System Roles')
-                                    ->body('System roles are protected and cannot be deleted.')
+                                    ->body(__('resource.role.messages.cannot_delete_system'))
                                     ->send();
                                 
                                 $action->cancel();
