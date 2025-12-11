@@ -131,18 +131,14 @@ class Login extends BaseLogin
     /**
      * Override form to remove remember me checkbox
      */
-    protected function getForms(): array
+    public function form(\Filament\Forms\Form $form): \Filament\Forms\Form
     {
-        return [
-            'form' => $this->form(
-                $this->makeForm()
-                    ->schema([
-                        $this->getEmailFormComponent(),
-                        $this->getPasswordFormComponent(),
-                        // Removed: $this->getRememberFormComponent()
-                    ])
-                    ->statePath('data'),
-            ),
-        ];
+        return $form
+            ->schema([
+                $this->getEmailFormComponent(),
+                $this->getPasswordFormComponent(),
+                // Removed: $this->getRememberFormComponent()
+            ])
+            ->statePath('data');
     }
 }

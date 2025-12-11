@@ -90,6 +90,7 @@ class AuthController extends Controller
                 'email' => $tenant->email,
                 'status' => $tenant->status,
                 'status_label' => $tenant->status_label ?? ucfirst($tenant->status),
+                'trial_ends_at' => $tenant->trial_ends_at,
             ],
         ]);
     }

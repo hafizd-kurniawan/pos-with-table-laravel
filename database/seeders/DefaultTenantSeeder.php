@@ -61,9 +61,14 @@ class DefaultTenantSeeder extends Seeder
         $totalUpdated = 0;
         
         foreach ($tables as $table) {
-            $count = DB::table($table)
-                ->whereNull('tenant_id')
-                ->update(['tenant_id' => $tenant->id]);
+            $query = DB::table($table)->whereNull('tenant_id');
+            
+            // Exclude Super Admin from users update
+            if ($table === 'users') {
+                $query->where('email', '!=', 'admin@possaas.com');
+            }
+            
+            $count = $query->update(['tenant_id' => $tenant->id]);
             
             if ($count > 0) {
                 $this->command->info("   ✓ {$table}: {$count} records assigned");

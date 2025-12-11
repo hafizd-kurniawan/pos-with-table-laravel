@@ -83,6 +83,10 @@ Route::prefix('tenant/admin')->name('tenantadmin.')->group(function () {
     });
 });
 
+// Registration Routes
+Route::get('/register', [\App\Http\Controllers\Auth\RegisterTenantController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [\App\Http\Controllers\Auth\RegisterTenantController::class, 'register'])->name('register.submit');
+
 Route::get('/', function () {
     // Show landing page
     return view('landing');
