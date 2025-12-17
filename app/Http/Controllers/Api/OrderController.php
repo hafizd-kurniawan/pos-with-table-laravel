@@ -657,7 +657,12 @@ class OrderController extends Controller
     public function saveOrder(Request $request)
     {
         try {
+            $user = $request->user();
+            $tenantId = $user->tenant_id;
+
             Log::info('📱 Flutter POS - Save Order Request', [
+                'tenant_id' => $tenantId,
+                'user_id' => $user->id,
                 'data' => $request->all()
             ]);
 
@@ -667,7 +672,7 @@ class OrderController extends Controller
                 'sub_total' => 'required|numeric',
                 'tax' => 'required|numeric',
                 'discount' => 'required|numeric',
-                'discount_amount' => 'nullable|numeric', // NEW: Validate discount_amount
+                'discount_amount' => 'nullable|numeric',
                 'service_charge' => 'required|numeric',
                 'total' => 'required|numeric',
                 'payment_method' => 'required|string',
@@ -676,18 +681,121 @@ class OrderController extends Controller
                 'order_items' => 'required|array',
                 'order_items.*.product_id' => 'required|integer',
                 'order_items.*.quantity' => 'required|integer|min:1',
-                'order_items.*.price' => 'required|numeric',
+                'discount_id' => 'nullable|integer',
+                'tax_percentage' => 'nullable|numeric',
+                'service_charge_percentage' => 'nullable|numeric',
+                'table_number' => 'nullable',
+                'status' => 'nullable|string',
+                'customer_name' => 'nullable|string',
+                'customer_phone' => 'nullable|string',
+                'customer_email' => 'nullable|string',
+                'notes' => 'nullable|string',
+                'order_type' => 'nullable|string',
+                'payment_status' => 'nullable|string',
+                'cashier_name' => 'nullable|string',
             ]);
 
-            return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $validatedData) {
-
-
-                // Get table_number and handle 0 or null
-                $tableNumber = $request->input('table_number', 0);
-                $tableId = ($tableNumber && $tableNumber > 0) ? $tableNumber : 1; // Default to table 1 if 0 or null
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $validatedData, $tenantId) {
                 
-                // Create order
-                $order = Order::create([
+                // 1. Fetch Products with Lock (Prevent Race Condition)
+                $items = collect($request->order_items);
+                $productIds = $items->pluck('product_id');
+                
+                $products = \App\Models\Product::whereIn('id', $productIds)
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                // 2. Validate Products & Stock & Calculate Subtotal
+                $cartItems = [];
+                $serverSubtotal = 0;
+
+                foreach ($items as $item) {
+                    $product = $products->get($item['product_id']);
+                    
+                    if (!$product) {
+                        throw new \Exception("Product ID {$item['product_id']} not found.");
+                    }
+                    
+                    if ($product->stock < $item['quantity']) {
+                        throw new \Exception("Insufficient stock for {$product->name}. Available: {$product->stock}");
+                    }
+
+                    // SECURITY: Use Server Price, ignore client price
+                    $price = $product->price; 
+                    $total = $price * $item['quantity'];
+                    $serverSubtotal += $total;
+
+                    $cartItems[] = [
+                        'product_id' => $product->id,
+                        'quantity' => $item['quantity'],
+                        'price' => $price,
+                        'total' => $total,
+                        'notes' => $item['notes'] ?? '',
+                        'product' => $product // Keep reference for decrement
+                    ];
+                }
+
+                // 3. Calculate Discount
+                $discountAmount = 0;
+                // Fix: Ensure discount_id is null if 0
+                $discountId = ($request->discount_id && $request->discount_id > 0) ? $request->discount_id : null;
+                
+                if ($discountId) {
+                    $discount = \App\Models\Discount::where('id', $discountId)
+                        ->where('tenant_id', $tenantId)
+                        ->first();
+                        
+                    if ($discount) {
+                        if ($discount->type === 'percentage') {
+                            $discountAmount = $serverSubtotal * ($discount->value / 100);
+                        } else {
+                            $discountAmount = min($discount->value, $serverSubtotal);
+                        }
+                    }
+                } elseif ($request->discount_amount > 0) {
+                    // Manual Discount fallback (Cap at subtotal)
+                    $discountAmount = min($request->discount_amount, $serverSubtotal);
+                }
+                
+                $discountAmount = round($discountAmount);
+                $subtotalAfterDiscount = max(0, $serverSubtotal - $discountAmount);
+
+                // 4. Calculate Tax & Service (Fetch from DB for security)
+                // Fix: Match database types 'pajak' and 'layanan'
+                $tax = \App\Models\Tax::where('tenant_id', $tenantId)
+                    ->where(function($q) {
+                        $q->where('type', 'tax')->orWhere('type', 'pajak');
+                    })->first();
+                    
+                $service = \App\Models\Tax::where('tenant_id', $tenantId)
+                    ->where(function($q) {
+                        $q->where('type', 'service')->orWhere('type', 'layanan');
+                    })->first();
+
+                $taxAmount = 0;
+                $taxPercentage = 0;
+                if ($tax) {
+                    $taxPercentage = $tax->value;
+                    $taxAmount = round($subtotalAfterDiscount * ($taxPercentage / 100));
+                }
+
+                $serviceAmount = 0;
+                $servicePercentage = 0;
+                if ($service) {
+                    $servicePercentage = $service->value;
+                    $serviceAmount = round($subtotalAfterDiscount * ($servicePercentage / 100));
+                }
+
+                $serverTotal = $subtotalAfterDiscount + $taxAmount + $serviceAmount;
+
+                // 5. Create Order
+                $tableNumber = $request->input('table_number', 0);
+                $tableId = ($tableNumber && $tableNumber > 0) ? $tableNumber : 1;
+
+                $order = \App\Models\Order::create([
+                    'tenant_id' => $tenantId,
                     'code' => 'POS-' . strtoupper(uniqid()),
                     'status' => $request->input('status', 'paid'),
                     'placed_at' => $request->input('transaction_time', now()),
@@ -697,54 +805,47 @@ class OrderController extends Controller
                     'customer_email' => $request->input('customer_email', ''),
                     'notes' => $request->input('notes', ''),
                     'table_id' => $tableId,
-                    'order_type' => $request->input('order_type', 'dine_in'), // NEW: Save order type
-                    'total_amount' => $validatedData['total'],
+                    'order_type' => $request->input('order_type', 'dine_in'),
                     'payment_method' => $validatedData['payment_method'],
                     'payment_status' => $request->input('payment_status', 'paid'),
-                    'tax_amount' => $validatedData['tax'],
-                    'tax_percentage' => $request->input('tax_percentage', 0),
-                    'discount_amount' => $request->input('discount_amount', $validatedData['discount']), // Prioritize discount_amount, fallback to discount
-                    'service_charge_amount' => $validatedData['service_charge'],
-                    'service_charge_percentage' => $request->input('service_charge_percentage', 0),
-                    'subtotal' => $validatedData['sub_total'],
-                    'cashier_name' => $request->input('cashier_name'), // NEW: Save cashier name
-                    'payment_amount' => $validatedData['payment_amount'], // NEW: Save payment amount
-                    'change_amount' => $validatedData['payment_amount'] - $validatedData['total'], // NEW: Calculate and save change
+                    'cashier_name' => $request->input('cashier_name'),
+                    
+                    // Financials (Server Calculated)
+                    'subtotal' => $serverSubtotal,
+                    'discount_id' => $discountId,
+                    'discount_amount' => $discountAmount,
+                    'tax_percentage' => $taxPercentage,
+                    'tax_amount' => $taxAmount,
+                    'service_charge_percentage' => $servicePercentage,
+                    'service_charge_amount' => $serviceAmount,
+                    'total_amount' => $serverTotal,
+                    'payment_amount' => $validatedData['payment_amount'],
+                    'change_amount' => $validatedData['payment_amount'] - $serverTotal,
                 ]);
 
-                Log::info('✅ Order created', [
-                    'order_id' => $order->id,
-                    'order_code' => $order->code,
-                    'total' => $order->total_amount,
-                ]);
-
-                // Optimize: Fetch all products at once to avoid N+1
-                $productIds = collect($validatedData['order_items'])->pluck('product_id');
-                $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
-
-                // Create order items
-                foreach ($validatedData['order_items'] as $item) {
-                    $order->orderItems()->create([
+                // 6. Create Items & Decrement Stock
+                foreach ($cartItems as $item) {
+                    \App\Models\OrderItem::create([
+                        'tenant_id' => $tenantId,
+                        'order_id' => $order->id,
                         'product_id' => $item['product_id'],
                         'quantity' => $item['quantity'],
                         'price' => $item['price'],
-                        'total' => $item['price'] * $item['quantity'],
-                        'notes' => $item['notes'] ?? '',
+                        'total' => $item['total'],
+                        'notes' => $item['notes'],
                     ]);
 
-                    // Decrease stock if payment is completed
-                    if ($request->input('payment_status') === 'paid') {
-                        $product = $products->get($item['product_id']);
-                        if ($product) {
-                            $product->decrement('stock', $item['quantity']);
-                            Log::info('📦 Stock decreased', [
-                                'product' => $product->name,
-                                'quantity' => $item['quantity'],
-                                'remaining' => $product->stock,
-                            ]);
-                        }
-                    }
+                    // Decrement Stock (Safe because we locked rows)
+                    $item['product']->decrement('stock', $item['quantity']);
+                    
+                    Log::info('📦 Stock decreased', [
+                        'product' => $item['product']->name,
+                        'quantity' => $item['quantity'],
+                        'remaining' => $item['product']->stock,
+                    ]);
                 }
+
+                Log::info('✅ Order created securely', ['id' => $order->id, 'total' => $serverTotal]);
 
                 return response()->json([
                     'success' => true,
@@ -752,7 +853,11 @@ class OrderController extends Controller
                     'data' => [
                         'order_id' => $order->id,
                         'order_code' => $order->code,
-                        'total_amount' => $order->total_amount,
+                        'total_amount' => $serverTotal,
+                        'subtotal' => $serverSubtotal,
+                        'discount_amount' => $discountAmount,
+                        'tax_amount' => $taxAmount,
+                        'service_charge_amount' => $serviceAmount,
                     ]
                 ], 201);
             });
