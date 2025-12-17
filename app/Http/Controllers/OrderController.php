@@ -1642,37 +1642,6 @@ class OrderController extends Controller
             $cartItems = $request->cart_items;
             $customerName = $request->customer_name;
             $originalTableNumber = $tableNumber; // Capture original input
-            
-            // Handle default/missing table (Flutter sends "0" for Takeaway)
-            if ($tableNumber === '0' || empty($tableNumber)) {
-                // Find or Create "Takeaway" table
-                $table = Table::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $tenantId)
-                    ->where('name', 'Takeaway')
-                    ->first();
-                
-                if (!$table) {
-                    $table = Table::create([
-                        'tenant_id' => $tenantId,
-                        'name' => 'Takeaway',
-                        'status' => 'available', // Takeaway table is always available
-                        'location' => 'counter'
-                    ]);
-                }
-            } else {
-                // Get Specific Table
-                $table = Table::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $tenantId)
-                    ->where('name', $tableNumber)
-                    ->first();
-                    
-                // Fallback: If specific table not found, get ANY table (to prevent crash)
-                if (!$table) {
-                    $table = Table::withoutGlobalScope('tenant')
-                        ->where('tenant_id', $tenantId)
-                        ->firstOrFail();
-                }
-            }
 
             // Calculate Subtotal
             $subTotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['qty']);
@@ -1688,55 +1657,104 @@ class OrderController extends Controller
             // Determine Order Type
             $orderType = $request->order_type ?? 'dine_in';
             
-            // Create Order
-            $order = Order::create([
-                'table_id' => $table->id,
-                'tenant_id' => $tenantId,
-                'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::withoutGlobalScope('tenant')->whereDate('created_at', now())->count() + 1, 4, '0'),
-                'total_amount' => $totalAmount,
-                'status' => 'pending',
-                'placed_at' => now(),
-                'payment_method' => 'qris',
-                'customer_name' => $customerName,
-                'notes' => $request->notes, // Save notes
-                'cashier_name' => $request->cashier_name, // Save cashier name
-                'order_type' => $orderType, // Save correct order type
+            // Gunakan database transaction
+            $order = DB::transaction(function () use ($request, $tenantId, $tableNumber, $cartItems, $customerName, $originalTableNumber, $subTotal, $taxAmount, $serviceChargeAmount, $discountAmount, $totalAmount, $orderType) {
                 
-                // Save Financial Details
-                'subtotal' => $subTotal, 
-                'discount_id' => null,
-                'discount_amount' => $discountAmount,
-                'tax_percentage' => ($subTotal > 0) ? ($taxAmount / $subTotal) * 100 : 0,
-                'tax_amount' => $taxAmount,
-                'service_charge_percentage' => ($subTotal > 0) ? ($serviceChargeAmount / $subTotal) * 100 : 0,
-                'service_charge_amount' => $serviceChargeAmount,
-            ]);
-
-            // Create Order Items
-            foreach ($cartItems as $item) {
-                OrderItem::create([
-                    'tenant_id' => $tenantId,
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['qty'],
-                    'price' => $item['price'],
-                    'total' => $item['price'] * $item['qty'],
-                ]);
-                
-                // Reserve Stock
-                $product = Product::withoutGlobalScope('tenant')->find($item['product_id']);
-                if ($product) {
-                    $product->decrement('stock', $item['qty']);
+                // Handle default/missing table (Flutter sends "0" for Takeaway)
+                if ($tableNumber === '0' || empty($tableNumber)) {
+                    // Find or Create "Takeaway" table
+                    $table = Table::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $tenantId)
+                        ->where('name', 'Takeaway')
+                        ->first();
+                    
+                    if (!$table) {
+                        $table = Table::create([
+                            'tenant_id' => $tenantId,
+                            'name' => 'Takeaway',
+                            'status' => 'available', // Takeaway table is always available
+                            'location' => 'counter'
+                        ]);
+                    }
+                } else {
+                    // Get Specific Table with TENANT ISOLATION
+                    $table = Table::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $tenantId)
+                        ->where('name', $tableNumber)
+                        ->first();
+                        
+                    // Fallback: If specific table not found, get ANY table (to prevent crash) but still scoped to tenant
+                    if (!$table) {
+                        $table = Table::withoutGlobalScope('tenant')
+                            ->where('tenant_id', $tenantId)
+                            ->firstOrFail();
+                    }
                 }
-            }
-            
-            // Update Table Status ONLY if it's a real table (not Takeaway/0)
-            if ($originalTableNumber !== '0') {
-                $table->status = 'occupied';
-                $table->customer_name = $customerName;
-                $table->occupied_at = now();
-                $table->save();
-            }
+                
+                // Create Order
+                $order = Order::create([
+                    'table_id' => $table->id,
+                    'tenant_id' => $tenantId,
+                    'code' => 'JG-' . now()->format('ymd-') . Str::padLeft(Order::withoutGlobalScope('tenant')->whereDate('created_at', now())->count() + 1, 4, '0'),
+                    'total_amount' => $totalAmount,
+                    'status' => 'pending',
+                    'placed_at' => now(),
+                    'payment_method' => 'qris',
+                    'customer_name' => $customerName,
+                    'notes' => $request->notes, // Save notes
+                    'cashier_name' => $request->cashier_name, // Save cashier name
+                    'order_type' => $orderType, // Save correct order type
+                    
+                    // Save Financial Details
+                    'subtotal' => $subTotal, 
+                    'discount_id' => null,
+                    'discount_amount' => $discountAmount,
+                    'tax_percentage' => ($subTotal > 0) ? ($taxAmount / $subTotal) * 100 : 0,
+                    'tax_amount' => $taxAmount,
+                    'service_charge_percentage' => ($subTotal > 0) ? ($serviceChargeAmount / $subTotal) * 100 : 0,
+                    'service_charge_amount' => $serviceChargeAmount,
+                ]);
+
+                // Lock products for stock validation
+                $productIds = collect($cartItems)->pluck('product_id');
+                $products = Product::withoutGlobalScope('tenant')
+                    ->whereIn('id', $productIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                // Create Order Items
+                foreach ($cartItems as $item) {
+                    OrderItem::create([
+                        'tenant_id' => $tenantId,
+                        'order_id' => $order->id,
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['qty'],
+                        'price' => $item['price'],
+                        'total' => $item['price'] * $item['qty'],
+                        'notes' => $item['note'] ?? null, // FIXED: Added item notes
+                    ]);
+                    
+                    // Reserve Stock with validation
+                    $product = $products->get($item['product_id']);
+                    if ($product) {
+                        if ($product->stock < $item['qty']) {
+                            throw new \Exception("Insufficient stock for {$product->name}");
+                        }
+                        $product->decrement('stock', $item['qty']);
+                    }
+                }
+                
+                // Update Table Status ONLY if it's a real table (not Takeaway/0)
+                if ($originalTableNumber !== '0') {
+                    $table->status = 'occupied';
+                    $table->customer_name = $customerName;
+                    $table->occupied_at = now();
+                    $table->save();
+                }
+
+                return $order;
+            });
 
             // Configure Midtrans
             $this->configureMidtrans($tenantId);
