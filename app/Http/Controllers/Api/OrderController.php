@@ -667,6 +667,7 @@ class OrderController extends Controller
                 'sub_total' => 'required|numeric',
                 'tax' => 'required|numeric',
                 'discount' => 'required|numeric',
+                'discount_amount' => 'nullable|numeric', // NEW: Validate discount_amount
                 'service_charge' => 'required|numeric',
                 'total' => 'required|numeric',
                 'payment_method' => 'required|string',
@@ -702,7 +703,7 @@ class OrderController extends Controller
                     'payment_status' => $request->input('payment_status', 'paid'),
                     'tax_amount' => $validatedData['tax'],
                     'tax_percentage' => $request->input('tax_percentage', 0),
-                    'discount_amount' => $validatedData['discount'], // Use validated discount
+                    'discount_amount' => $request->input('discount_amount', $validatedData['discount']), // Prioritize discount_amount, fallback to discount
                     'service_charge_amount' => $validatedData['service_charge'],
                     'service_charge_percentage' => $request->input('service_charge_percentage', 0),
                     'subtotal' => $validatedData['sub_total'],

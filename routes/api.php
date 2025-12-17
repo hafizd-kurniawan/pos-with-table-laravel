@@ -87,7 +87,7 @@ Route::get('images/{filename}', [App\Http\Controllers\ImageController::class, 's
 // QRIS Order endpoints for Flutter (Public)
 // QRIS Order endpoints for Flutter (Public)
 // Use Web OrderController because logic is there
-Route::post('order/create-qris', [\App\Http\Controllers\OrderController::class, 'createQrisOrder']);
+Route::middleware('throttle:10,1')->post('order/create-qris', [\App\Http\Controllers\OrderController::class, 'createQrisOrder']);
 Route::get('order/{orderCode}/status', [\App\Http\Controllers\OrderController::class, 'checkOrderStatus']);
 
 // ========================================

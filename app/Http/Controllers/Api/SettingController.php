@@ -15,9 +15,27 @@ class SettingController extends Controller
             $keys = $request->query('keys');
             $group = $request->query('group');
             
+            // BLACKLIST: Sensitive keys that should NEVER be returned to frontend
+            $blacklist = [
+                'midtrans_server_key',
+                'firebase_fcm_token', 
+                'n8n_webhook_url',
+                'smtp_password',
+                'mail_password'
+            ];
+
+            // Helper to filter sensitive keys
+            $filterSensitive = function($k) use ($blacklist) {
+                return in_array($k, $blacklist);
+            };
+            
             // Jika ada parameter 'keys' - ambil multiple settings
             if ($keys) {
                 $keysArray = explode(',', $keys);
+                
+                // Filter requested keys against blacklist
+                $keysArray = array_filter($keysArray, fn($k) => !$filterSensitive($k));
+                
                 $settings = Setting::whereIn('key', $keysArray)->get()->keyBy('key');
                 
                 $result = [];
@@ -36,6 +54,7 @@ class SettingController extends Controller
                 
                 $result = [];
                 foreach ($settings as $setting) {
+                    if ($filterSensitive($setting->key)) continue; // Skip sensitive
                     $result[$setting->key] = $setting->value;
                 }
                 
@@ -46,6 +65,10 @@ class SettingController extends Controller
             
             // Jika ada parameter 'key' - ambil single setting
             if ($key) {
+                if ($filterSensitive($key)) {
+                    return response()->json(['message' => 'Access denied to this setting'], 403);
+                }
+
                 $setting = Setting::where('key', $key)->first();
                 
                 if (!$setting) {
@@ -60,9 +83,6 @@ class SettingController extends Controller
             }
             
             // Jika tidak ada parameter - ambil semua settings
-            // Use DB facade to avoid potential Model recursion issues
-            // But we need tenant_id. Try to get it safely.
-            
             try {
                 // Try standard way first
                 $settings = Setting::all();
@@ -88,6 +108,7 @@ class SettingController extends Controller
             
             $result = [];
             foreach ($settings as $setting) {
+                if ($filterSensitive($setting->key)) continue; // Skip sensitive
                 $result[$setting->key] = $setting->value;
             }
             

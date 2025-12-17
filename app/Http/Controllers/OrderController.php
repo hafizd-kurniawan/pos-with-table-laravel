@@ -1340,7 +1340,7 @@ class OrderController extends Controller
     /**
      * Calculate order totals with discount, tax, and service charge
      */
-    private function calculateOrderTotals($cart, $discountId = null, $taxId = null, $serviceId = null)
+    private function calculateOrderTotals($cart, $discountId = null, $taxId = null, $serviceId = null, $explicitDiscountAmount = null)
     {
         $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
         
@@ -1348,7 +1348,13 @@ class OrderController extends Controller
         $discountAmount = 0;
         $discount = null;
         
-        if ($discountId) {
+        if ($explicitDiscountAmount !== null) {
+            $discountAmount = $explicitDiscountAmount;
+            // Try to find discount model just for ID reference if needed
+            if ($discountId) {
+                $discount = \App\Models\Discount::withoutGlobalScope('tenant')->find($discountId);
+            }
+        } elseif ($discountId) {
             $discount = \App\Models\Discount::withoutGlobalScope('tenant')->find($discountId);
             if ($discount) {
                 if ($discount->type === 'percentage') {
@@ -1635,15 +1641,41 @@ class OrderController extends Controller
                 'table_number' => 'required',
                 'cart_items' => 'required|array',
                 'customer_name' => 'required',
+                'discount_amount' => 'nullable|numeric', // NEW: Validate discount amount
             ]);
 
             $tenantId = $request->tenant_id;
             $tableNumber = $request->table_number;
-            $cartItems = $request->cart_items;
+            $rawCartItems = $request->cart_items;
             $customerName = $request->customer_name;
             $originalTableNumber = $tableNumber; // Capture original input
 
-            // Calculate Subtotal
+            // --- SECURITY FIX: Fetch prices from DB ---
+            $productIds = collect($rawCartItems)->pluck('product_id');
+            $products = Product::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->whereIn('id', $productIds)
+                ->get()
+                ->keyBy('id');
+
+            // Rebuild cart items with TRUSTED prices
+            $cartItems = [];
+            foreach ($rawCartItems as $item) {
+                $product = $products->get($item['product_id']);
+                if (!$product) {
+                    throw new \Exception("Product ID {$item['product_id']} not found or not available.");
+                }
+                
+                $cartItems[] = [
+                    'product_id' => $item['product_id'],
+                    'qty' => $item['qty'],
+                    'price' => $product->price, // TRUSTED PRICE FROM DB
+                    'name' => $product->name,
+                    'note' => $item['note'] ?? null,
+                ];
+            }
+
+            // Calculate Subtotal with trusted prices
             $subTotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['qty']);
             
             // --- SECURE CALCULATION START ---
@@ -1682,12 +1714,12 @@ class OrderController extends Controller
             }
 
             // Calculate totals using the shared helper method
-            // Note: createQrisOrder doesn't support discount_id yet, so we pass null or handle it if needed
             $totals = $this->calculateOrderTotals(
                 $cartItems, 
-                null, // discount_id
+                $request->discount_id, // Pass discount_id from request
                 $taxId,
-                $serviceId
+                $serviceId,
+                $request->discount_amount // NEW: Pass explicit discount amount
             );
 
             $taxAmount = $totals['tax_amount'];
@@ -1700,7 +1732,7 @@ class OrderController extends Controller
             $orderType = $request->order_type ?? 'dine_in';
             
             // Gunakan database transaction
-            $order = DB::transaction(function () use ($request, $tenantId, $tableNumber, $cartItems, $customerName, $originalTableNumber, $subTotal, $taxAmount, $serviceChargeAmount, $discountAmount, $totalAmount, $orderType) {
+            $order = DB::transaction(function () use ($request, $tenantId, $tableNumber, $cartItems, $customerName, $originalTableNumber, $subTotal, $taxAmount, $serviceChargeAmount, $discountAmount, $totalAmount, $orderType, $totals) {
                 
                 // Handle default/missing table (Flutter sends "0" for Takeaway)
                 if ($tableNumber === '0' || empty($tableNumber)) {
@@ -1741,7 +1773,7 @@ class OrderController extends Controller
                     'total_amount' => $totalAmount,
                     'status' => 'pending',
                     'placed_at' => now(),
-                    'payment_method' => 'qris',
+                    'payment_method' => 'Qris', // FIXED: Capitalized Qris
                     'customer_name' => $customerName,
                     'notes' => $request->notes, // Save notes
                     'cashier_name' => $request->cashier_name, // Save cashier name
@@ -1749,11 +1781,11 @@ class OrderController extends Controller
                     
                     // Save Financial Details
                     'subtotal' => $subTotal, 
-                    'discount_id' => null,
+                    'discount_id' => $request->discount_id, // Save discount_id
                     'discount_amount' => $discountAmount,
-                    'tax_percentage' => ($subTotal > 0) ? ($taxAmount / $subTotal) * 100 : 0,
+                    'tax_percentage' => $totals['tax_percentage'], // FIXED: Use percentage from totals
                     'tax_amount' => $taxAmount,
-                    'service_charge_percentage' => ($subTotal > 0) ? ($serviceChargeAmount / $subTotal) * 100 : 0,
+                    'service_charge_percentage' => $totals['service_charge_percentage'], // FIXED: Use percentage from totals
                     'service_charge_amount' => $serviceChargeAmount,
                 ]);
 
