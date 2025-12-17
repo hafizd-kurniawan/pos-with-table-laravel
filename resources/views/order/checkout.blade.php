@@ -114,6 +114,17 @@
             </div>
         </div>
 
+        <!-- Order Notes -->
+        <div class="px-4 py-6 border-b border-gray-100 bg-white">
+            <h2 class="font-bold text-gray-800 mb-4">Catatan Pesanan</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Catatan (Opsional)</label>
+                <textarea name="notes" rows="2"
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-transparent transition"
+                          placeholder="Contoh: Jangan terlalu pedas, minta sendok plastik..."></textarea>
+            </div>
+        </div>
+
         <!-- Payment Method -->
         <div class="px-4 py-6 bg-white mb-20">
             <h2 class="font-bold text-gray-800 mb-4">Metode Pembayaran</h2>

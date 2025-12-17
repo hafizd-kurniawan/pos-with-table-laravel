@@ -220,6 +220,10 @@ class OrderController extends Controller
 
             if ($foundIndex !== null) {
                 $cart[$foundIndex]['qty'] = $newTotalQty;
+                // Update note if provided
+                if ($request->has('note')) {
+                    $cart[$foundIndex]['note'] = $request->input('note');
+                }
                 if ($cart[$foundIndex]['qty'] <= 0) {
                     unset($cart[$foundIndex]);
                 }
@@ -704,7 +708,7 @@ class OrderController extends Controller
                         'quantity' => $item['qty'],
                         'price' => $item['price'],
                         'total' => $item['price'] * $item['qty'],
-                        'note' => $item['note'] ?? null,
+                        'notes' => $item['note'] ?? null,
                     ]);
                 }
 
