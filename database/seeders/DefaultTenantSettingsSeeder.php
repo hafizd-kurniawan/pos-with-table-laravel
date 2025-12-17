@@ -78,6 +78,19 @@ class DefaultTenantSettingsSeeder extends Seeder
                 'label' => 'Website Restoran',
                 'description' => 'Website restoran yang akan ditampilkan di struk'
             ],
+            [
+                'key' => 'timezone',
+                'value' => '7',
+                'type' => 'select',
+                'group' => 'general',
+                'label' => 'Zona Waktu',
+                'description' => 'Zona waktu untuk tampilan jam di aplikasi',
+                'options' => [
+                    '7' => 'WIB (UTC+7)',
+                    '8' => 'WITA (UTC+8)',
+                    '9' => 'WIT (UTC+9)',
+                ]
+            ],
 
             // Appearance Settings
             [
@@ -196,6 +209,7 @@ class DefaultTenantSettingsSeeder extends Seeder
                     'group' => $setting['group'],
                     'label' => $setting['label'],
                     'description' => $setting['description'],
+                    'options' => $setting['options'] ?? null, // Add options here
                 ]
             );
         }

@@ -141,6 +141,26 @@ class SettingResource extends Resource
                             ->directory('settings')
                             ->visibility('public')
                             ->visible(fn ($get) => $get('type') === 'file'),
+
+                        Forms\Components\Select::make('value_select')
+                            ->label(__('resource.setting.value'))
+                            ->visible(fn ($get) => $get('type') === 'select')
+                            ->options(function ($get, $record) {
+                                // Try to get options from form state first (if editing options)
+                                $options = $get('options');
+                                
+                                // If not in state, try to get from record
+                                if (empty($options) && $record) {
+                                    $options = $record->options;
+                                }
+                                
+                                // If options is string (JSON), decode it
+                                if (is_string($options)) {
+                                    $options = json_decode($options, true);
+                                }
+                                
+                                return is_array($options) ? $options : [];
+                            }),
                         
                         Forms\Components\KeyValue::make('options')
                             ->label(__('resource.setting.options'))

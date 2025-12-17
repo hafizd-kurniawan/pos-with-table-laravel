@@ -717,6 +717,10 @@ class OrderController extends Controller
                     'total' => $order->total_amount,
                 ]);
 
+                // Optimize: Fetch all products at once to avoid N+1
+                $productIds = collect($validatedData['order_items'])->pluck('product_id');
+                $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+
                 // Create order items
                 foreach ($validatedData['order_items'] as $item) {
                     $order->orderItems()->create([
@@ -729,7 +733,7 @@ class OrderController extends Controller
 
                     // Decrease stock if payment is completed
                     if ($request->input('payment_status') === 'paid') {
-                        $product = \App\Models\Product::find($item['product_id']);
+                        $product = $products->get($item['product_id']);
                         if ($product) {
                             $product->decrement('stock', $item['quantity']);
                             Log::info('📦 Stock decreased', [

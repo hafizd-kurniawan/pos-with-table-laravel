@@ -1646,13 +1646,55 @@ class OrderController extends Controller
             // Calculate Subtotal
             $subTotal = collect($cartItems)->sum(fn($item) => $item['price'] * $item['qty']);
             
-            // Get Additional Costs from Request
-            $taxAmount = $request->tax_amount ?? 0;
-            $serviceChargeAmount = $request->service_charge_amount ?? 0;
-            $discountAmount = $request->discount_amount ?? 0;
-            
-            // Calculate Final Total
-            $totalAmount = $subTotal + $taxAmount + $serviceChargeAmount - $discountAmount;
+            // --- SECURE CALCULATION START ---
+            // Fetch default Tax & Service settings for the tenant
+            $taxId = null;
+            $serviceId = null;
+
+            // Get selected tax IDs from settings
+            $taxIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->where('key', 'selected_tax_ids')
+                ->value('value') ?? '[]', true);
+                
+            if (!empty($taxIds)) {
+                $taxId = \App\Models\Tax::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'active')
+                    ->where('type', 'pajak')
+                    ->whereIn('id', $taxIds)
+                    ->value('id');
+            }
+
+            // Get selected service IDs from settings
+            $serviceIds = json_decode(\App\Models\Setting::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->where('key', 'selected_service_ids')
+                ->value('value') ?? '[]', true);
+                
+            if (!empty($serviceIds)) {
+                $serviceId = \App\Models\Tax::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'active')
+                    ->where('type', 'layanan')
+                    ->whereIn('id', $serviceIds)
+                    ->value('id');
+            }
+
+            // Calculate totals using the shared helper method
+            // Note: createQrisOrder doesn't support discount_id yet, so we pass null or handle it if needed
+            $totals = $this->calculateOrderTotals(
+                $cartItems, 
+                null, // discount_id
+                $taxId,
+                $serviceId
+            );
+
+            $taxAmount = $totals['tax_amount'];
+            $serviceChargeAmount = $totals['service_charge_amount'];
+            $discountAmount = $totals['discount_amount'];
+            $totalAmount = $totals['total_amount'];
+            // --- SECURE CALCULATION END ---
             
             // Determine Order Type
             $orderType = $request->order_type ?? 'dine_in';

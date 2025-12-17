@@ -48,6 +48,7 @@ class EditSettingSimple extends EditRecord
         $data['value_boolean'] = $data['value'];
         $data['value_color'] = $data['value'];
         $data['value_file'] = $data['value'];
+        $data['value_select'] = $data['value'];
         
         return $data;
     }
@@ -64,9 +65,11 @@ class EditSettingSimple extends EditRecord
             $data['value'] = $data['value_color'];
         } elseif ($type === 'file') {
             $data['value'] = $data['value_file'];
+        } elseif ($type === 'select') {
+            $data['value'] = $data['value_select'];
         }
         
-        unset($data['value_text'], $data['value_boolean'], $data['value_color'], $data['value_file']);
+        unset($data['value_text'], $data['value_boolean'], $data['value_color'], $data['value_file'], $data['value_select']);
         
         return $data;
     }
