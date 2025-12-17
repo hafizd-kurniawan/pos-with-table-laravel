@@ -1781,7 +1781,7 @@ class OrderController extends Controller
                     
                     // Save Financial Details
                     'subtotal' => $subTotal, 
-                    'discount_id' => $request->discount_id, // Save discount_id
+                    'discount_id' => ($request->discount_id && $request->discount_id > 0) ? $request->discount_id : null, // FIXED: Ensure null if 0
                     'discount_amount' => $discountAmount,
                     'tax_percentage' => $totals['tax_percentage'], // FIXED: Use percentage from totals
                     'tax_amount' => $taxAmount,
