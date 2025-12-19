@@ -26,7 +26,7 @@ class ReportService
         // Check if already exists
         $existing = DailySummary::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('summary_date', $dateObj->format('Y-m-d'))
+            ->where('date', $dateObj->format('Y-m-d'))
             ->first();
         
         if ($existing && !$force) {
@@ -43,7 +43,7 @@ class ReportService
         }
         
         $summary['tenant_id'] = $tenantId;
-        $summary['summary_date'] = $dateObj->format('Y-m-d');
+        $summary['date'] = $dateObj->format('Y-m-d');
         
         return DailySummary::create($summary);
     }
@@ -116,7 +116,7 @@ class ReportService
         // Try to get from cache
         $cached = DailySummary::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('summary_date', $dateObj->format('Y-m-d'))
+            ->where('date', $dateObj->format('Y-m-d'))
             ->first();
         
         if ($cached) {
@@ -136,7 +136,7 @@ class ReportService
         
         // Calculate on-the-fly
         $summary = $this->calculateDailySummary($tenantId, $dateObj);
-        $summary['summary_date'] = $dateObj->format('Y-m-d');
+        $summary['date'] = $dateObj->format('Y-m-d');
         
         $formatted = $this->formatSummaryArray($summary, $dateObj);
         
@@ -310,7 +310,7 @@ class ReportService
     protected function formatDailySummary(DailySummary $summary): array
     {
         return [
-            'date' => $summary->summary_date->format('Y-m-d'),
+            'date' => $summary->date->format('Y-m-d'),
             'summary' => [
                 'total_orders' => $summary->total_orders,
                 'total_items' => $summary->total_items,
@@ -992,7 +992,7 @@ class ReportService
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$startOfDay, $endOfDay])
             ->whereIn('status', ['paid', 'cooking', 'complete'])
-            ->with('orderItems.product')
+            ->with(['orderItems.product', 'orderItems.addons'])
             ->get();
         
         if ($orders->isEmpty()) {
@@ -1022,8 +1022,22 @@ class ReportService
                 $product = $item->product;
                 if (!$product) continue;
                 
-                $productCost = $product->cost * $item->quantity;
-                $productRevenue = $item->price * $item->quantity;
+                // Use snapshot cost if available, otherwise fallback to current product cost
+                $itemCost = $item->cost ?? $product->cost;
+                $productCost = $itemCost * $item->quantity;
+                
+                // Add addon costs
+                foreach ($item->addons as $addon) {
+                    $addonCost = $addon->cost ?? 0; // Snapshot cost of addon
+                    $productCost += $addonCost; // Addon quantity is usually 1 per item, but if logic changes, multiply by qty
+                }
+
+                $productRevenue = $item->price * $item->quantity; // Item price already includes addons in some logic, but let's be careful. 
+                // Wait, order_items.price is usually unit price of product. Addons are separate?
+                // In OrderController: $unitPrice = $product->price + $addonPrice;
+                // So order_items.price INCLUDES addons.
+                // So Revenue is correct. Cost needs to include addons.
+                
                 $productProfit = $productRevenue - $productCost;
                 $productMargin = $productRevenue > 0 ? ($productProfit / $productRevenue) * 100 : 0;
                 

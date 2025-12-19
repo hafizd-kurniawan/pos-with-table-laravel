@@ -11,7 +11,9 @@ class ProductController extends Controller
     public function index()
     {
         // Hanya tampilkan produk yang available dan ada stock
-        $products = \App\Models\Product::with('category')
+        $products = \App\Models\Product::with(['category', 'addons' => function($query) {
+                $query->where('is_available', 1);
+            }])
             ->available() // menggunakan scope available
             ->get();
             
@@ -28,6 +30,7 @@ class ProductController extends Controller
                 'is_available' => $product->isAvailable(),
                 'category_id' => $product->category_id,
                 'category' => $product->category,
+                'addons' => $product->addons, // NEW
                 'is_featured' => $product->is_featured,
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
@@ -55,6 +58,20 @@ class ProductController extends Controller
         foreach ($request->items as $item) {
             $product = \App\Models\Product::find($item['product_id']);
             
+            if (!$product) {
+                $result[] = [
+                    'product_id' => $item['product_id'],
+                    'product_name' => 'Unknown Product',
+                    'requested_quantity' => $item['quantity'],
+                    'available_stock' => 0,
+                    'status' => 'unavailable',
+                    'is_available' => false,
+                    'message' => 'Product not found'
+                ];
+                $allAvailable = false;
+                continue;
+            }
+
             $isAvailable = $product->isAvailable() && $product->stock >= $item['quantity'];
             
             if (!$isAvailable) {
@@ -85,7 +102,9 @@ class ProductController extends Controller
     // Get single product with stock info
     public function show($id)
     {
-        $product = \App\Models\Product::with('category')->find($id);
+        $product = \App\Models\Product::with(['category', 'addons' => function($query) {
+            $query->where('is_available', 1);
+        }])->find($id);
         
         if (!$product) {
             return response()->json([
@@ -106,6 +125,7 @@ class ProductController extends Controller
                 'is_available' => $product->isAvailable(),
                 'category_id' => $product->category_id,
                 'category' => $product->category,
+                'addons' => $product->addons, // NEW
                 'is_featured' => $product->is_featured,
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,

@@ -26,7 +26,7 @@ class TodaySalesWidget extends BaseWidget
 
         return [
             // Sales Today
-            Stat::make('💰 Sales Today', 'Rp ' . number_format($data['total_sales'], 0, ',', '.'))
+            Stat::make('💰 Sales Today', \App\Helpers\FormatHelper::formatCurrency($data['total_sales']))
                 ->description(
                     ($change >= 0 ? '↗️ +' : '↘️ ') . 
                     number_format(abs($change), 1) . '% vs yesterday'
@@ -36,19 +36,19 @@ class TodaySalesWidget extends BaseWidget
                 ->color($salesColor),
             
             // Total Orders Today
-            Stat::make('🧾 Orders Today', number_format($data['total_orders'], 0))
+            Stat::make('🧾 Orders Today', \App\Helpers\FormatHelper::formatNumber($data['total_orders'], 0))
                 ->description('Total transactions')
                 ->descriptionIcon('heroicon-m-shopping-cart')
                 ->color('info'),
             
             // Average Order Value
-            Stat::make('📊 Avg Order Value', 'Rp ' . number_format($data['avg_order'], 0, ',', '.'))
+            Stat::make('📊 Avg Order Value', \App\Helpers\FormatHelper::formatCurrency($data['avg_order']))
                 ->description('Per transaction')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('warning'),
             
             // Yesterday Sales (for comparison)
-            Stat::make('📅 Yesterday', 'Rp ' . number_format($data['yesterday_sales'], 0, ',', '.'))
+            Stat::make('📅 Yesterday', \App\Helpers\FormatHelper::formatCurrency($data['yesterday_sales']))
                 ->description('Previous day sales')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('gray'),

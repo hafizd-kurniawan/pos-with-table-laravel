@@ -113,7 +113,7 @@ class SalesChartWidget extends ChartWidget
 
         if ($peakData) {
             $peakHour = sprintf('%02d:00', $peakData->hour);
-            $peakSales = number_format($peakData->total, 0, ',', '.');
+            $peakSales = \App\Helpers\FormatHelper::formatCurrency($peakData->total, false);
             return __('report.widgets.sales_chart.peak_label', ['hour' => $peakHour, 'amount' => $peakSales]);
         }
 

@@ -30,16 +30,34 @@
             </button>
             
             <div x-show="showSummary" x-collapse class="mt-4 space-y-3">
-                <template x-for="item in cart" :key="item.product_id">
-                    <div class="flex justify-between items-start">
-                        <div class="flex gap-3">
-                            <div class="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600" x-text="item.qty + 'x'"></div>
-                            <div>
+                <template x-for="(item, index) in cart" :key="index">
+                    <div class="flex justify-between items-start py-2 border-b border-gray-50 last:border-0">
+                        <div class="flex gap-3 flex-1">
+                            <div class="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600 shrink-0" x-text="item.qty + 'x'"></div>
+                            <div class="flex-1">
                                 <p class="text-sm font-medium text-gray-800" x-text="item.name"></p>
-                                <p x-show="item.note" class="text-xs text-gray-500 italic" x-text="'Catatan: ' + item.note"></p>
+                                
+                                <!-- Base Price (Calculated) -->
+                                <p class="text-xs text-gray-500" 
+                                   x-text="formatRupiah(Number(item.price) - (item.addons ? item.addons.reduce((sum, a) => sum + Number(a.price), 0) : 0))">
+                                </p>
+
+                                <!-- Addons Detail List -->
+                                <template x-if="item.addons && item.addons.length > 0">
+                                    <div class="mt-1 space-y-0.5">
+                                        <template x-for="(addon, addonIndex) in item.addons" :key="addonIndex">
+                                            <div class="flex justify-between text-xs text-gray-500 pl-2 border-l-2 border-gray-200">
+                                                <span x-text="addon.name"></span>
+                                                <span x-text="'+ ' + formatRupiah(addon.price)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <p x-show="item.note" class="text-xs text-gray-500 italic mt-1" x-text="'Catatan: ' + item.note"></p>
                             </div>
                         </div>
-                        <p class="text-sm font-semibold text-gray-900" x-text="formatRupiah(item.price * item.qty)"></p>
+                        <p class="text-sm font-semibold text-gray-900 ml-2" x-text="formatRupiah(item.price * item.qty)"></p>
                     </div>
                 </template>
 

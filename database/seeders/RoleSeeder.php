@@ -68,7 +68,7 @@ class RoleSeeder extends Seeder
                 'view_roles', // Can view but not modify roles
                 'view_settings', 'edit_settings',
                 'process_payments', 'view_payment_history',
-                'view_inventory', 'manage_inventory', 'view_stock_reports',
+                'view_inventory', 'manage_inventory', 'view_stock_reports', 'manage_units',
                 'manage_discounts', 'manage_taxes', 'manage_service_charges',
                 'view_printers', 'create_printers', 'edit_printers', 'delete_printers',
                 'view_kds', 'manage_kds_status',

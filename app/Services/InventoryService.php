@@ -65,16 +65,21 @@ class InventoryService
      */
     public function deductStockForOrder(int $orderId): array
     {
-        $order = Order::with('items.product.recipes.ingredient')->findOrFail($orderId);
+        $order = Order::with('orderItems.product.recipes.ingredient')->findOrFail($orderId);
         
         return DB::transaction(function() use ($order) {
             $deductions = [];
             $lowStockIngredients = [];
             $insufficientStock = [];
             
-            foreach ($order->items as $orderItem) {
+            foreach ($order->orderItems as $orderItem) {
                 $product = $orderItem->product;
                 
+                // Ensure recipes are loaded
+                if (!$product->relationLoaded('recipes')) {
+                    $product->load('recipes.ingredient');
+                }
+
                 // Skip if product has no recipes
                 if ($product->recipes->isEmpty()) {
                     continue;
@@ -102,17 +107,24 @@ class InventoryService
                     $ingredient->updateStock($newStock);
                     
                     // Create movement record
+                    // Handle null user_id (e.g. Self Order)
+                    $userId = $order->user_id;
+                    if (!$userId) {
+                        // Fallback: Use first user of the tenant (usually admin)
+                        $userId = \App\Models\User::where('tenant_id', $order->tenant_id)->value('id');
+                    }
+
                     StockMovement::create([
                         'tenant_id' => $order->tenant_id,
                         'ingredient_id' => $ingredient->id,
                         'type' => StockMovement::TYPE_OUT,
                         'quantity' => $needed,
-                        'stock_before' => $oldStock,
+                        'stock_before' => $oldStock, // Kept $oldStock as it's the correct variable in this context
                         'stock_after' => $newStock,
                         'reference_type' => 'order',
                         'reference_id' => $order->id,
-                        'user_id' => $order->user_id,
-                        'notes' => "Used for Order #{$order->order_number} - {$product->name} x{$orderItem->quantity}",
+                        'user_id' => $userId, // Fixed: Cannot be null
+                        'notes' => "Used for Order #{$order->order_number} - {$product->name} x{$orderItem->quantity}", // Kept original variable names
                         'moved_at' => now(),
                     ]);
                     
@@ -128,6 +140,74 @@ class InventoryService
                     if ($ingredient->fresh()->isLowStock()) {
                         $lowStockIngredients[] = $ingredient->fresh();
                         event(new \App\Events\LowStockDetected($ingredient->fresh()));
+                    }
+                }
+
+
+                // Process Addons Stock Deduction
+                if ($orderItem->addons && $orderItem->addons->count() > 0) {
+                    foreach ($orderItem->addons as $itemAddon) {
+                        $productAddon = \App\Models\ProductAddon::find($itemAddon->product_addon_id);
+                        
+                        if ($productAddon && $productAddon->ingredient_id && $productAddon->quantity_needed > 0) {
+                            $ingredient = $productAddon->ingredient;
+                            
+                            if ($ingredient) {
+                                $needed = $productAddon->quantity_needed * $orderItem->quantity;
+                                
+                                // Check if enough stock
+                                if ($ingredient->current_stock < $needed) {
+                                    $insufficientStock[] = [
+                                        'ingredient' => $ingredient->name,
+                                        'needed' => $needed,
+                                        'available' => $ingredient->current_stock,
+                                        'product' => $product->name . ' (Addon: ' . $productAddon->name . ')',
+                                    ];
+                                    continue;
+                                }
+
+                                $oldStock = $ingredient->current_stock;
+                                $newStock = $oldStock - $needed;
+                                
+                                // Update stock
+                                $ingredient->updateStock($newStock);
+                                
+                                // Create movement record
+                                // Handle null user_id (e.g. Self Order)
+                                $userId = $order->user_id;
+                                if (!$userId) {
+                                    $userId = \App\Models\User::where('tenant_id', $order->tenant_id)->value('id');
+                                }
+
+                                StockMovement::create([
+                                    'tenant_id' => $order->tenant_id,
+                                    'ingredient_id' => $ingredient->id,
+                                    'type' => StockMovement::TYPE_OUT,
+                                    'quantity' => $needed,
+                                    'stock_before' => $oldStock,
+                                    'stock_after' => $newStock,
+                                    'reference_type' => 'order',
+                                    'reference_id' => $order->id,
+                                    'user_id' => $userId,
+                                    'notes' => "Used for Order #{$order->order_number} - {$product->name} (Addon: {$productAddon->name}) x{$orderItem->quantity}",
+                                    'moved_at' => now(),
+                                ]);
+                                
+                                $deductions[] = [
+                                    'ingredient' => $ingredient->name,
+                                    'quantity' => $needed,
+                                    'unit' => $ingredient->unit,
+                                    'old_stock' => $oldStock,
+                                    'new_stock' => $newStock,
+                                ];
+                                
+                                // Check low stock
+                                if ($ingredient->fresh()->isLowStock()) {
+                                    $lowStockIngredients[] = $ingredient->fresh();
+                                    event(new \App\Events\LowStockDetected($ingredient->fresh()));
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -147,6 +227,79 @@ class InventoryService
                 'deductions' => $deductions,
                 'low_stock_alerts' => $lowStockIngredients,
                 'insufficient_stock' => $insufficientStock,
+            ];
+        });
+    }
+
+    /**
+     * Restore stock when order is cancelled (recipe-based)
+     */
+    public function restoreStockForOrder(int $orderId): array
+    {
+        $order = Order::with('orderItems.product.recipes.ingredient')->findOrFail($orderId);
+        
+        return DB::transaction(function() use ($order) {
+            $restorations = [];
+            
+            foreach ($order->orderItems as $orderItem) {
+                $product = $orderItem->product;
+                
+                // Ensure recipes are loaded
+                if (!$product->relationLoaded('recipes')) {
+                    $product->load('recipes.ingredient');
+                }
+
+                // Skip if product has no recipes
+                if ($product->recipes->isEmpty()) {
+                    continue;
+                }
+                
+                foreach ($product->recipes as $recipe) {
+                    $needed = $recipe->quantity_needed * $orderItem->quantity;
+                    $ingredient = $recipe->ingredient;
+                    
+                    $oldStock = $ingredient->current_stock;
+                    $newStock = $oldStock + $needed;
+                    
+                    // Update stock
+                    $ingredient->updateStock($newStock);
+                    
+                    // Create movement record
+                    // Handle null user_id (e.g. Self Order)
+                    $userId = $order->user_id;
+                    if (!$userId) {
+                        // Fallback: Use first user of the tenant (usually admin)
+                        $userId = \App\Models\User::where('tenant_id', $order->tenant_id)->value('id');
+                    }
+
+                    StockMovement::create([
+                        'tenant_id' => $order->tenant_id,
+                        'ingredient_id' => $ingredient->id,
+                        'type' => StockMovement::TYPE_IN, // Restocking
+                        'quantity' => $needed,
+                        'stock_before' => $oldStock,
+                        'stock_after' => $newStock,
+                        'reference_type' => 'order_cancellation',
+                        'reference_id' => $order->id,
+                        'user_id' => $userId, // Fixed: Cannot be null
+                        'notes' => "Restored from Order #{$order->order_number} - {$product->name} x{$orderItem->quantity}",
+                        'moved_at' => now(),
+                    ]);
+                    
+                    $restorations[] = [
+                        'ingredient' => $ingredient->name,
+                        'quantity' => $needed,
+                        'unit' => $ingredient->unit,
+                        'old_stock' => $oldStock,
+                        'new_stock' => $newStock,
+                    ];
+                }
+            }
+            
+            return [
+                'success' => true,
+                'order_id' => $order->id,
+                'restorations' => $restorations,
             ];
         });
     }
@@ -265,7 +418,7 @@ class InventoryService
         $canFulfill = true;
         $issues = [];
         
-        foreach ($order->items as $orderItem) {
+        foreach ($order->orderItems as $orderItem) {
             $product = $orderItem->product;
             
             if ($product->recipes->isEmpty()) {

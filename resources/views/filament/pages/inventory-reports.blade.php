@@ -74,6 +74,12 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
                         ⚠️ {{ __('report.inventory.tabs.low_stock_alert') }}
                     </button>
+                    
+                    <button @click="activeTab = 'variance-analysis'" 
+                        :class="activeTab === 'variance-analysis' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
+                        📉 Variance Analysis
+                    </button>
                 </nav>
             </div>
         </div>
@@ -502,6 +508,80 @@
                     @endforelse
                 </div>
             </x-filament::card>
+        <div x-show="activeTab === 'variance-analysis'" x-cloak style="display: none;">
+            <x-filament::card>
+                <div class="mb-6 pb-3 border-b">
+                    <h2 class="text-xl font-bold text-gray-900">📉 Variance Analysis</h2>
+                    <p class="text-sm text-gray-600 mt-1">Track stock discrepancies and value loss from Stock Opnames.</p>
+                </div>
+
+                {{-- Summary Cards --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-red-50 p-4 rounded-lg">
+                        <div class="text-sm text-red-600">Total Variance Loss</div>
+                        <div class="text-2xl font-bold text-red-900">
+                            Rp {{ number_format(collect($varianceAnalysis)->where('total_variance_value', '<', 0)->sum('total_variance_value'), 0, ',', '.') }}
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="text-sm text-green-600">Total Variance Gain</div>
+                        <div class="text-2xl font-bold text-green-900">
+                            Rp {{ number_format(collect($varianceAnalysis)->where('total_variance_value', '>', 0)->sum('total_variance_value'), 0, ',', '.') }}
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-sm text-blue-600">Net Variance</div>
+                        <div class="text-2xl font-bold text-blue-900">
+                            Rp {{ number_format(collect($varianceAnalysis)->sum('total_variance_value'), 0, ',', '.') }}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Table --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left p-2">Date</th>
+                                <th class="text-left p-2">Opname Number</th>
+                                <th class="text-center p-2">Items Count</th>
+                                <th class="text-right p-2">Variance Value</th>
+                                <th class="text-center p-2">Status</th>
+                                <th class="text-left p-2">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($varianceAnalysis as $opname)
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-2 text-sm">{{ $opname['date'] }}</td>
+                                    <td class="p-2 font-medium">
+                                        <span class="px-2 py-1 bg-gray-100 rounded text-xs font-mono">
+                                            {{ $opname['opname_number'] }}
+                                        </span>
+                                    </td>
+                                    <td class="p-2 text-center">{{ $opname['items_count'] }}</td>
+                                    <td class="p-2 text-right font-bold {{ $opname['total_variance_value'] < 0 ? 'text-red-600' : ($opname['total_variance_value'] > 0 ? 'text-green-600' : 'text-gray-600') }}">
+                                        Rp {{ number_format($opname['total_variance_value'], 0, ',', '.') }}
+                                    </td>
+                                    <td class="p-2 text-center">
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                            {{ ucfirst($opname['status']) }}
+                                        </span>
+                                    </td>
+                                    <td class="p-2 text-sm text-gray-600">{{ $opname['notes'] ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center p-4 text-gray-500">
+                                        No Stock Opname data found for this period.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </x-filament::card>
+        </div>
         </div>
         </div>
     </div>

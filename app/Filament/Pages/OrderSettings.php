@@ -75,7 +75,7 @@ class OrderSettings extends Page implements HasForms
                                     ->get()
                                     ->mapWithKeys(function ($discount) {
                                         $type = $discount->type === 'percentage' ? '%' : 'Rp';
-                                        $value = number_format($discount->value, 0, ',', '.');
+                                        $value = \App\Helpers\FormatHelper::formatNumber($discount->value, 0);
                                         return [$discount->id => "{$discount->name} ({$value}{$type})"];
                                     })
                                     ->toArray();
@@ -107,7 +107,7 @@ class OrderSettings extends Page implements HasForms
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($tax) {
-                                        $value = number_format($tax->value, 0, ',', '.');
+                                        $value = \App\Helpers\FormatHelper::formatNumber($tax->value, 0);
                                         return [$tax->id => "{$tax->name} ({$value}%)"];
                                     })
                                     ->toArray();
@@ -136,7 +136,7 @@ class OrderSettings extends Page implements HasForms
                                     ->orderBy('name')
                                     ->get()
                                     ->mapWithKeys(function ($service) {
-                                        $value = number_format($service->value, 0, ',', '.');
+                                        $value = \App\Helpers\FormatHelper::formatNumber($service->value, 0);
                                         return [$service->id => "{$service->name} ({$value}%)"];
                                     })
                                     ->toArray();

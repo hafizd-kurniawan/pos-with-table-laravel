@@ -27,8 +27,8 @@ class TotalOrdersWidget extends BaseWidget
         $avgOrder = $data['avg_order'];
 
         return [
-            Stat::make('📦 Orders', number_format($data['total_orders']))
-                ->description('Avg: Rp ' . number_format($avgOrder, 0, ',', '.'))
+            Stat::make('📦 Orders', \App\Helpers\FormatHelper::formatNumber($data['total_orders'], 0))
+                ->description('Avg: ' . \App\Helpers\FormatHelper::formatCurrency($avgOrder))
                 ->color('primary')
                 ->chart(array_fill(0, 7, max(1, $data['total_orders'] / 7))),
         ];

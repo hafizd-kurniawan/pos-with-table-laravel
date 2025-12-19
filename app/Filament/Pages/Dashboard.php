@@ -31,6 +31,10 @@ class Dashboard extends BaseDashboard
             
             // Row 4: Recent Activity (Full Width)
             \App\Filament\Widgets\RecentOrdersWidget::class,
+
+            // Row 5: Variance Analysis
+            \App\Filament\Widgets\VarianceStatsWidget::class,
+            \App\Filament\Widgets\TopVarianceIngredientsWidget::class,
         ];
     }
 

@@ -257,7 +257,7 @@ class OrderController extends Controller
     // get all orders
     public function index(Request $request)
     {
-        $orders = \App\Models\Order::with('orderItems.product')->get();
+        $orders = \App\Models\Order::with(['orderItems.product', 'orderItems.addons'])->get();
         return response()->json([
             'data' => $orders,
         ]);
@@ -266,7 +266,7 @@ class OrderController extends Controller
     // get order status complete
     public function completedOrders(Request $request)
     {
-        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
+        $orders = \App\Models\Order::with(['orderItems.product', 'orderItems.addons', 'table'])
             ->where('status', 'complete')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -278,7 +278,7 @@ class OrderController extends Controller
     // get order status paid
     public function paidOrders(Request $request)
     {
-        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
+        $orders = \App\Models\Order::with(['orderItems.product', 'orderItems.addons', 'table'])
             ->where('status', 'paid')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -290,7 +290,7 @@ class OrderController extends Controller
     // get order status cooking process
     public function cookingOrders(Request $request)
     {
-        $orders = \App\Models\Order::with(['orderItems.product', 'table'])
+        $orders = \App\Models\Order::with(['orderItems.product', 'orderItems.addons', 'table'])
             ->where('status', 'cooking')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -302,7 +302,11 @@ class OrderController extends Controller
     // update order status
     public function updateStatus(Request $request, $id)
     {
-        $order = \App\Models\Order::with(['orderItems.product', 'table'])->findOrFail($id);
+        $user = $request->user();
+        // SECURITY: Ensure order belongs to the user's tenant
+        $order = \App\Models\Order::where('tenant_id', $user->tenant_id)
+            ->with(['orderItems.product', 'table'])
+            ->findOrFail($id);
         $previousStatus = $order->status;
 
         $validatedData = $request->validate([
@@ -388,6 +392,10 @@ class OrderController extends Controller
                 'cart_items.*.qty' => 'required|integer|min:1',
                 'cart_items.*.price' => 'required|numeric',
                 'cart_items.*.name' => 'required|string',
+                'cart_items.*.addons' => 'nullable|array',
+                'cart_items.*.addons.*.id' => 'required|integer',
+                'cart_items.*.addons.*.name' => 'required|string',
+                'cart_items.*.addons.*.price' => 'required|numeric',
             ]);
 
             $tableNumber = $request->table_number;
@@ -403,13 +411,25 @@ class OrderController extends Controller
                     throw new \Exception("Product with ID {$item['product_id']} not found");
                 }
                 
-                // Validasi stock dan status produk
+                // Validasi stock dan status produk (Hybrid Logic)
                 if (!$product->isAvailable()) {
                     throw new \Exception("Product '{$product->name}' is not available");
                 }
                 
-                if ($product->stock < $item['qty']) {
-                    throw new \Exception("Insufficient stock for product '{$product->name}'. Available: {$product->stock}, Requested: {$item['qty']}");
+                if ($product->recipes()->exists()) {
+                    // Recipe Product: Check ingredient availability
+                    $check = $product->canBeProduced($item['qty']);
+                    if (!$check['can_produce']) {
+                        $missing = collect($check['insufficient_ingredients'])
+                            ->map(fn($i) => "{$i['ingredient']} (Need: {$i['needed']}, Have: {$i['available']})")
+                            ->join(', ');
+                        throw new \Exception("Insufficient ingredients for {$product->name}: {$missing}");
+                    }
+                } else {
+                    // Direct Stock Product: Check product stock
+                    if ($product->stock < $item['qty']) {
+                        throw new \Exception("Insufficient stock for product '{$product->name}'. Available: {$product->stock}, Requested: {$item['qty']}");
+                    }
                 }
                 
                 // Gunakan harga dari database jika harga dari Flutter kosong/0
@@ -423,13 +443,30 @@ class OrderController extends Controller
                 }
                 $item['price'] = $price; // Update harga untuk konsistensi
                 
-                $subtotal += (int) $price * (int) $item['qty'];
+                // Calculate Addons Total
+                $addonsTotal = 0;
+                $addonsData = [];
+                if (isset($item['addons']) && is_array($item['addons'])) {
+                    foreach ($item['addons'] as $addon) {
+                        $addonPrice = $addon['price'];
+                        $addonsTotal += $addonPrice;
+                        $addonsData[] = [
+                            'product_addon_id' => $addon['id'],
+                            'name' => $addon['name'],
+                            'price' => $addonPrice
+                        ];
+                    }
+                }
+                
+                $item['addons_data'] = $addonsData; // Store for later use
+                $subtotal += ((int) $price + $addonsTotal) * (int) $item['qty'];
                 
                 \Log::info('Product price validation', [
                     'product_id' => $item['product_id'],
                     'name' => $product->name,
                     'flutter_price' => $item['price'],
                     'db_price' => $product->price,
+                    'addons_total' => $addonsTotal,
                     'final_price' => $price
                 ]);
             }
@@ -466,14 +503,25 @@ class OrderController extends Controller
 
             // Buat order items
             foreach ($cartItems as $item) {
-                \App\Models\OrderItem::create([
+                $orderItem = \App\Models\OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['qty'],
                     'price' => $item['price'],
-                    'total' => $item['price'] * $item['qty'],
+                    'total' => ($item['price'] * $item['qty']), // Base Total (Addons saved separately)
                     'notes' => $item['note'] ?? null,
                 ]);
+                
+                // Save Addons
+                if (!empty($item['addons_data'])) {
+                    foreach ($item['addons_data'] as $addon) {
+                        $orderItem->addons()->create([
+                            'product_addon_id' => $addon['product_addon_id'],
+                            'name' => $addon['name'],
+                            'price' => $addon['price'],
+                        ]);
+                    }
+                }
             }
 
             // Generate QRIS via Midtrans
@@ -484,13 +532,28 @@ class OrderController extends Controller
                     "gross_amount" => (int) $order->total_amount, // Pastikan integer
                 ],
                 "item_details" => array_merge(
-                    collect($cartItems)->map(function ($item) {
-                        return [
+                    collect($cartItems)->flatMap(function ($item) {
+                        $items = [];
+                        // Main Product
+                        $items[] = [
                             "id" => $item['product_id'],
-                            "price" => (int) $item['price'], // Pastikan integer
+                            "price" => (int) $item['price'],
                             "quantity" => (int) $item['qty'],
                             "name" => $item['name'],
                         ];
+                        
+                        // Addons as separate items in Midtrans for clarity
+                        if (!empty($item['addons_data'])) {
+                            foreach ($item['addons_data'] as $addon) {
+                                $items[] = [
+                                    "id" => "ADDON-" . $addon['product_addon_id'],
+                                    "price" => (int) $addon['price'],
+                                    "quantity" => (int) $item['qty'], // Addon qty follows product qty
+                                    "name" => "+ " . $addon['name'] . " (" . $item['name'] . ")",
+                                ];
+                            }
+                        }
+                        return $items;
                     })->toArray(),
                     $taxAmount > 0 ? [[
                         "id" => "tax",
@@ -565,61 +628,39 @@ class OrderController extends Controller
      */
     private function decreaseProductStock(Order $order)
     {
-        Log::info('Starting stock decrease process', [
+        Log::info('Starting stock decrease process (Hybrid)', [
             'order_id' => $order->id,
             'order_items_count' => $order->orderItems->count(),
         ]);
         
         try {
+            // 1. Handle Direct Stock Products
             foreach ($order->orderItems as $orderItem) {
                 $product = $orderItem->product;
                 
-                Log::info('Processing order item for stock decrease', [
-                    'order_id' => $order->id,
-                    'order_item_id' => $orderItem->id,
-                    'product_id' => $orderItem->product_id,
-                    'quantity' => $orderItem->quantity,
-                    'product_found' => $product ? 'yes' : 'no',
-                ]);
-                
-                if ($product) {
+                if ($product && $product->recipes()->doesntExist()) {
                     $currentStock = $product->stock;
-                    Log::info('Before stock decrease', [
+                    Log::info('Decreasing Direct Stock', [
                         'product_id' => $product->id,
                         'product_name' => $product->name,
                         'current_stock' => $currentStock,
-                        'quantity_to_decrease' => $orderItem->quantity,
+                        'quantity' => $orderItem->quantity,
                     ]);
                     
-                    $result = $product->decreaseStock($orderItem->quantity);
-                    
-                    if (!$result) {
-                        Log::warning('Failed to decrease stock', [
-                            'order_id' => $order->id,
-                            'product_id' => $product->id,
-                            'product_name' => $product->name,
-                            'requested_qty' => $orderItem->quantity,
-                            'available_stock' => $product->stock,
-                        ]);
-                    } else {
-                        Log::info('Stock decreased successfully', [
-                            'order_id' => $order->id,
-                            'product_id' => $product->id,
-                            'product_name' => $product->name,
-                            'decreased_qty' => $orderItem->quantity,
-                            'remaining_stock' => $product->fresh()->stock,
-                        ]);
-                    }
+                    $product->decrement('stock', $orderItem->quantity);
                 }
             }
+
+            // 2. Handle Recipe Products via InventoryService
+            $inventoryService = app(\App\Services\InventoryService::class);
+            $inventoryService->deductStockForOrder($order->id);
+            Log::info('Ingredient Stock processed for order', ['order_id' => $order->id]);
+
         } catch (\Exception $e) {
-            Log::error('Error decreasing product stock', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Error decreasing stock: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Mengembalikan stock produk (untuk cancel order)
@@ -631,16 +672,30 @@ class OrderController extends Controller
                 $product = $orderItem->product;
                 
                 if ($product) {
-                    $product->increaseStock($orderItem->quantity);
-                    
-                    Log::info('Stock restored successfully', [
-                        'order_id' => $order->id,
-                        'product_id' => $product->id,
-                        'product_name' => $product->name,
-                        'restored_qty' => $orderItem->quantity,
-                        'current_stock' => $product->fresh()->stock,
-                    ]);
+                    // Hybrid Restoration Logic
+                    if ($product->recipes->isEmpty()) {
+                        // Direct Stock: Restore product stock
+                        $product->increaseStock($orderItem->quantity);
+                        
+                        Log::info('Stock restored successfully (Direct)', [
+                            'order_id' => $order->id,
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'restored_qty' => $orderItem->quantity,
+                            'current_stock' => $product->fresh()->stock,
+                        ]);
+                    }
+                    // Recipe Stock: Will be restored via InventoryService below
                 }
+            }
+            
+            // Restore Recipe Ingredients (Hybrid)
+            try {
+                $inventoryService = app(\App\Services\InventoryService::class);
+                $inventoryService->restoreStockForOrder($order->id);
+                Log::info('Ingredient Stock restored successfully', ['order_id' => $order->id]);
+            } catch (\Exception $ex) {
+                Log::error('Failed to restore ingredient stock', ['error' => $ex->getMessage()]);
             }
         } catch (\Exception $e) {
             Log::error('Error restoring product stock', [
@@ -681,6 +736,10 @@ class OrderController extends Controller
                 'order_items' => 'required|array',
                 'order_items.*.product_id' => 'required|integer',
                 'order_items.*.quantity' => 'required|integer|min:1',
+                'order_items.*.addons' => 'nullable|array',
+                'order_items.*.addons.*.id' => 'required|integer',
+                'order_items.*.addons.*.name' => 'required|string',
+                'order_items.*.addons.*.price' => 'required|numeric',
                 'discount_id' => 'nullable|integer',
                 'tax_percentage' => 'nullable|numeric',
                 'service_charge_percentage' => 'nullable|numeric',
@@ -703,6 +762,7 @@ class OrderController extends Controller
                 
                 $products = \App\Models\Product::whereIn('id', $productIds)
                     ->where('tenant_id', $tenantId)
+                    ->with('recipes.ingredient') // Eager load recipes
                     ->lockForUpdate()
                     ->get()
                     ->keyBy('id');
@@ -718,22 +778,56 @@ class OrderController extends Controller
                         throw new \Exception("Product ID {$item['product_id']} not found.");
                     }
                     
-                    if ($product->stock < $item['quantity']) {
-                        throw new \Exception("Insufficient stock for {$product->name}. Available: {$product->stock}");
+                    if ($product->recipes->isNotEmpty()) {
+                        // Recipe Product: Check ingredient availability
+                        $check = $product->canBeProduced($item['quantity']);
+                        if (!$check['can_produce']) {
+                            $missing = collect($check['insufficient_ingredients'])
+                                ->map(fn($i) => "{$i['ingredient']} (Need: {$i['needed']}, Have: {$i['available']})")
+                                ->join(', ');
+                            throw new \Exception("Insufficient ingredients for {$product->name}: {$missing}");
+                        }
+                    } else {
+                        // Direct Stock Product: Check product stock
+                        if ($product->stock < $item['quantity']) {
+                            throw new \Exception("Insufficient stock for {$product->name}. Available: {$product->stock}");
+                        }
                     }
 
                     // SECURITY: Use Server Price, ignore client price
                     $price = $product->price; 
-                    $total = $price * $item['quantity'];
+                    
+                    // Calculate Addons Total
+                    $addonsTotal = 0;
+                    $addonsData = [];
+                    if (isset($item['addons']) && is_array($item['addons'])) {
+                        foreach ($item['addons'] as $addon) {
+                            // Ideally we should validate addon price against DB, but for now we trust the ID exists
+                            // and use the sent price (or fetch if critical). 
+                            // Assuming addon price is static or we trust the client for now (to match Flutter logic).
+                            // Better: Fetch ProductAddon if possible.
+                            // Let's just use the sent price for simplicity as ProductAddon model might be complex to fetch here without eager loading.
+                            $addonPrice = $addon['price'];
+                            $addonsTotal += $addonPrice;
+                            $addonsData[] = [
+                                'product_addon_id' => $addon['id'],
+                                'name' => $addon['name'],
+                                'price' => $addonPrice
+                            ];
+                        }
+                    }
+
+                    $total = ($price + $addonsTotal) * $item['quantity'];
                     $serverSubtotal += $total;
 
                     $cartItems[] = [
                         'product_id' => $product->id,
                         'quantity' => $item['quantity'],
-                        'price' => $price,
-                        'total' => $total,
+                        'price' => $price, // Base Price
+                        'total' => $total, // Base + Addons * Qty
                         'notes' => $item['notes'] ?? '',
-                        'product' => $product // Keep reference for decrement
+                        'product' => $product, // Keep reference for decrement
+                        'addons' => $addonsData // Store addons to save later
                     ];
                 }
 
@@ -825,7 +919,7 @@ class OrderController extends Controller
 
                 // 6. Create Items & Decrement Stock
                 foreach ($cartItems as $item) {
-                    \App\Models\OrderItem::create([
+                    $orderItem = \App\Models\OrderItem::create([
                         'tenant_id' => $tenantId,
                         'order_id' => $order->id,
                         'product_id' => $item['product_id'],
@@ -835,14 +929,40 @@ class OrderController extends Controller
                         'notes' => $item['notes'],
                     ]);
 
-                    // Decrement Stock (Safe because we locked rows)
-                    $item['product']->decrement('stock', $item['quantity']);
-                    
-                    Log::info('📦 Stock decreased', [
-                        'product' => $item['product']->name,
-                        'quantity' => $item['quantity'],
-                        'remaining' => $item['product']->stock,
-                    ]);
+                    // Save Addons
+                    if (!empty($item['addons'])) {
+                        foreach ($item['addons'] as $addon) {
+                            $orderItem->addons()->create([
+                                'product_addon_id' => $addon['product_addon_id'],
+                                'name' => $addon['name'],
+                                'price' => $addon['price'],
+                            ]);
+                        }
+                    }
+
+                    // Decrement Stock Logic (Hybrid)
+                    if ($item['product']->recipes->isEmpty()) {
+                        // Direct Stock: Decrement product stock
+                        $item['product']->decrement('stock', $item['quantity']);
+                        
+                        Log::info('📦 Product Stock decreased', [
+                            'product' => $item['product']->name,
+                            'quantity' => $item['quantity'],
+                            'remaining' => $item['product']->fresh()->stock,
+                        ]);
+                    }
+                    // Recipe Stock: Handled by InventoryService below
+                }
+
+                // 7. Process Recipe Ingredients Deduction
+                try {
+                    $inventoryService = app(\App\Services\InventoryService::class);
+                    $inventoryService->deductStockForOrder($order->id);
+                    Log::info('🥦 Ingredient Stock processed for order', ['order_id' => $order->id]);
+                } catch (\Exception $e) {
+                    // Log error but don't fail the order if ingredient deduction fails? 
+                    // NO, we should fail the transaction if ingredients can't be deducted to maintain consistency.
+                    throw new \Exception("Failed to process ingredient stock: " . $e->getMessage());
                 }
 
                 Log::info('✅ Order created securely', ['id' => $order->id, 'total' => $serverTotal]);

@@ -191,7 +191,7 @@ class IdentifyTenant
                 'slug' => $plan->slug,
                 'price' => $plan->price,
                 'duration' => $plan->duration_label,
-                'savings' => $plan->savings > 0 ? "Hemat Rp " . number_format($plan->savings, 0, ',', '.') : null,
+                'savings' => $plan->savings > 0 ? "Hemat " . \App\Helpers\FormatHelper::formatCurrency($plan->savings) : null,
             ])
             ->toArray();
     }

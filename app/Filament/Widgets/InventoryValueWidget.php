@@ -46,7 +46,7 @@ class InventoryValueWidget extends BaseWidget
         $health = $data['health_status'];
 
         return [
-            Stat::make('📊 Inventory', 'Rp ' . number_format($data['total_value'], 0, ',', '.'))
+            Stat::make('📊 Inventory', \App\Helpers\FormatHelper::formatCurrency($data['total_value']))
                 ->description(
                     $data['total_items'] . ' items • ' . $healthLabels[$health]
                 )

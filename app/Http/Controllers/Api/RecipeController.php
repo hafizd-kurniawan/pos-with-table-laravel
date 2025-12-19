@@ -65,7 +65,12 @@ class RecipeController extends Controller
         $product = Product::where('tenant_id', $tenantId)->findOrFail($productId);
         
         $validated = $request->validate([
-            'ingredient_id' => 'required|exists:ingredients,id',
+            'ingredient_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('ingredients', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'quantity_needed' => 'required|numeric|min:0.001',
             'notes' => 'nullable|string',
         ]);

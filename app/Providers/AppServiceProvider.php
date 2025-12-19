@@ -14,6 +14,12 @@ use App\Models\Order;
 use App\Observers\OrderObserver;
 use App\Events\LowStockDetected;
 use App\Listeners\SendLowStockNotification;
+use App\Models\Ingredient;
+use App\Observers\IngredientObserver;
+use App\Models\Recipe;
+use App\Observers\RecipeObserver;
+use App\Models\ProductAddon;
+use App\Observers\ProductAddonObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -50,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         Reservation::observe(ReservationObserver::class);
         PurchaseOrder::observe(PurchaseOrderObserver::class);
         Order::observe(OrderObserver::class);
+        Ingredient::observe(IngredientObserver::class);
+        Recipe::observe(RecipeObserver::class);
+        ProductAddon::observe(ProductAddonObserver::class);
 
         // Register Event Listeners
         Event::listen(

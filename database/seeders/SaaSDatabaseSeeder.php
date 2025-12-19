@@ -59,6 +59,7 @@ class SaaSDatabaseSeeder extends Seeder
 
         $this->call([
             RoleSeeder::class,
+            UnitSeeder::class,
             DefaultTenantSettingsSeeder::class,
             OrderSettingsSeeder::class,
             TakeawayTableSeeder::class,

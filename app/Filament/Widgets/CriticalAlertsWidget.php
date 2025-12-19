@@ -43,13 +43,13 @@ class CriticalAlertsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('current_stock')
                     ->label('Stock')
                     ->sortable()
-                    ->formatStateUsing(fn ($state, $record) => number_format($state, 0, ',', '.') . ' ' . $record->unit)
+                    ->formatStateUsing(fn ($state, $record) => \App\Helpers\FormatHelper::formatStock($state) . ' ' . $record->unit)
                     ->color(fn ($record) => $record->current_stock <= 0 ? 'danger' : 'warning'),
                 
                 Tables\Columns\TextColumn::make('min_stock')
                     ->label('Min')
                     ->sortable()
-                    ->formatStateUsing(fn ($state, $record) => number_format($state, 0, ',', '.') . ' ' . $record->unit),
+                    ->formatStateUsing(fn ($state, $record) => \App\Helpers\FormatHelper::formatStock($state) . ' ' . $record->unit),
                 
                 Tables\Columns\BadgeColumn::make('status_label')
                     ->label('Status')

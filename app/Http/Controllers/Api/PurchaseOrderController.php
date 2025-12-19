@@ -43,7 +43,7 @@ class PurchaseOrderController extends Controller
                     'expected_delivery_date' => $po->expected_delivery_date?->format('Y-m-d'),
                     'status' => $po->status,
                     'total_amount' => $po->total_amount,
-                    'total_amount_formatted' => 'Rp ' . number_format($po->total_amount, 0, ',', '.'),
+                    'total_amount_formatted' => \App\Helpers\FormatHelper::formatCurrency($po->total_amount),
                     'supplier' => [
                         'id' => $po->supplier->id,
                         'name' => $po->supplier->name,
@@ -112,7 +112,12 @@ class PurchaseOrderController extends Controller
         $tenantId = Auth::user()->tenant_id;
         
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('suppliers', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'order_date' => 'required|date',
             'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
             'tax' => 'nullable|numeric|min:0',
@@ -120,7 +125,12 @@ class PurchaseOrderController extends Controller
             'shipping_cost' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.ingredient_id' => 'required|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('ingredients', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.notes' => 'nullable|string',
@@ -188,7 +198,12 @@ class PurchaseOrderController extends Controller
         }
         
         $validated = $request->validate([
-            'supplier_id' => 'sometimes|exists:suppliers,id',
+            'supplier_id' => [
+                'sometimes',
+                \Illuminate\Validation\Rule::exists('suppliers', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'order_date' => 'sometimes|date',
             'expected_delivery_date' => 'nullable|date',
             'tax' => 'nullable|numeric|min:0',
@@ -196,7 +211,12 @@ class PurchaseOrderController extends Controller
             'shipping_cost' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'items' => 'sometimes|array|min:1',
-            'items.*.ingredient_id' => 'required|exists:ingredients,id',
+            'items.*.ingredient_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('ingredients', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'items.*.quantity' => 'required|numeric|min:0.001',
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);

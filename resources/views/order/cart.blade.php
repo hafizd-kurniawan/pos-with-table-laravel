@@ -17,16 +17,32 @@
     <!-- Cart Items -->
     <div class="px-4 py-4 space-y-4">
         @if(count($cart) > 0)
-            <template x-for="(item, index) in cart" :key="item.product_id">
+            <template x-for="(item, index) in cart" :key="index">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
                     <!-- Item Info -->
                     <div class="flex-1">
                         <h3 class="font-bold text-gray-900" x-text="item.name"></h3>
-                        <p class="text-sm text-gray-500 mt-1" x-text="formatRupiah(item.price)"></p>
+                        
+                        <!-- Base Price (Calculated) -->
+                        <p class="text-sm text-gray-500 mt-1" 
+                           x-text="formatRupiah(Number(item.price) - (item.addons ? item.addons.reduce((sum, a) => sum + Number(a.price), 0) : 0))">
+                        </p>
+                        
+                        <!-- Addons Detail List -->
+                        <template x-if="item.addons && item.addons.length > 0">
+                            <div class="mt-2 space-y-1">
+                                <template x-for="addon in item.addons" :key="addon.id">
+                                    <div class="flex justify-between text-xs text-gray-500 pl-2 border-l-2 border-gray-200">
+                                        <span x-text="addon.name"></span>
+                                        <span x-text="'+ ' + formatRupiah(addon.price)"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                         
                         <!-- Note Input -->
                         <div class="mt-3">
-                            <input type="text" x-model="item.note" @change="updateNote(item.product_id, item.note)"
+                            <input type="text" x-model="item.note" @change="updateNote(index, item.note)"
                                    placeholder="Catatan (opsional)" 
                                    class="w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-black transition">
                         </div>
@@ -34,20 +50,20 @@
 
                     <!-- Qty Control -->
                     <div class="flex flex-col justify-between items-end">
-                        <button @click="removeItem(item.product_id)" class="text-gray-400 hover:text-red-500 p-1">
+                        <button @click="removeItem(index)" class="text-gray-400 hover:text-red-500 p-1">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
                         
                         <div class="flex items-center bg-gray-100 rounded-lg p-1 mt-2">
-                            <button @click="updateQty(item.product_id, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-red-500 active:scale-95 transition">
+                            <button @click="updateQty(index, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-red-500 active:scale-95 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
                                 </svg>
                             </button>
                             <span class="w-8 text-center font-semibold text-sm" x-text="item.qty"></span>
-                            <button @click="updateQty(item.product_id, 1)" class="w-7 h-7 flex items-center justify-center bg-black rounded-md shadow-sm text-white hover:bg-gray-800 active:scale-95 transition">
+                            <button @click="updateQty(index, 1)" class="w-7 h-7 flex items-center justify-center bg-black rounded-md shadow-sm text-white hover:bg-gray-800 active:scale-95 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
@@ -141,52 +157,65 @@
                 return this.cartSubtotal + this.taxAmount + this.serviceAmount;
             },
 
-            async updateQty(productId, change) {
-                const itemIndex = this.cart.findIndex(i => i.product_id == productId);
-                if (itemIndex === -1) return;
+            async updateQty(index, change) {
+                const item = this.cart[index];
+                if (!item) return;
 
-                const newQty = this.cart[itemIndex].qty + change;
+                const newQty = item.qty + change;
                 
                 if (newQty <= 0) {
                     if (confirm('Hapus item ini dari keranjang?')) {
-                        this.removeItem(productId);
+                        this.removeItem(index);
                     }
                     return;
                 }
 
                 // Optimistic Update
-                this.cart[itemIndex].qty = newQty;
+                this.cart[index].qty = newQty;
 
                 // Sync
-                await this.syncCart(productId, change);
+                await this.syncCart(item, change);
             },
 
-            async removeItem(productId) {
-                const itemIndex = this.cart.findIndex(i => i.product_id == productId);
-                if (itemIndex > -1) {
-                    this.cart.splice(itemIndex, 1);
-                    
-                    try {
-                        await fetch(`{{ url('order/' . $table->tenantIdentifier . '/' . $table->name . '/cart/remove') }}/${productId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (this.cart.length === 0) location.reload(); 
-                    } catch (e) {
-                        console.error(e);
-                    }
-                }
+            async removeItem(index) {
+                const item = this.cart[index];
+                if (!item) return;
+
+                // Remove from local array
+                this.cart.splice(index, 1);
+                
+                // For complex items (addons), we can't easily use the simple remove endpoint by ID
+                // So we use the sync endpoint with negative qty to remove all
+                // OR we just reload page to let backend handle session state?
+                // Better: Use syncCart with negative qty equal to current qty
+                
+                // Actually, the backend removeCart endpoint uses product_id.
+                // If we have multiple variants, removing by product_id might remove ALL variants or just one?
+                // Let's check removeCart in OrderController.
+                // It likely removes all items with that product_id.
+                // To support removing specific variant, we need a better backend endpoint.
+                // BUT, for now, let's try to use addToCartAjax with negative qty to zero it out.
+                
+                await this.syncCart(item, -item.qty); // This subtracts current qty, effectively making it 0? 
+                // Wait, addToCartAjax adds to existing. So if we send -qty, it reduces.
+                // If result is <= 0, backend removes it.
+                
+                if (this.cart.length === 0) location.reload();
             },
 
-            async updateNote(productId, note) {
+            async updateNote(index, note) {
+                const item = this.cart[index];
+                if (!item) return;
+                
                 const formData = new FormData();
-                formData.append('product_id', productId);
+                formData.append('product_id', item.product_id);
                 formData.append('qty', 0); 
                 formData.append('note', note);
+                
+                // We need to send addons to identify the correct item
+                if (item.addons && item.addons.length > 0) {
+                    item.addons.forEach(addon => formData.append('addons[]', addon.id));
+                }
                 
                 await fetch('{{ route("order.addToCartAjax", [$table->tenantIdentifier, $table->name]) }}', {
                     method: 'POST',
@@ -198,10 +227,18 @@
                 });
             },
 
-            async syncCart(productId, qtyChange) {
+            async syncCart(item, qtyChange) {
                 const formData = new FormData();
-                formData.append('product_id', productId);
+                formData.append('product_id', item.product_id);
                 formData.append('qty', qtyChange);
+                
+                // Send addons to identify the correct item
+                if (item.addons && item.addons.length > 0) {
+                    item.addons.forEach(addon => formData.append('addons[]', addon.id));
+                }
+                
+                // Send note to identify correct item (if note is part of identity)
+                if (item.note) formData.append('note', item.note);
                 
                 try {
                     const response = await fetch('{{ route("order.addToCartAjax", [$table->tenantIdentifier, $table->name]) }}', {

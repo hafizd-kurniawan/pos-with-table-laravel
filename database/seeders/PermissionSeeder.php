@@ -79,6 +79,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'View Inventory', 'slug' => 'view_inventory', 'group' => 'inventory', 'description' => 'View inventory/stock'],
             ['name' => 'Manage Inventory', 'slug' => 'manage_inventory', 'group' => 'inventory', 'description' => 'Manage inventory/stock levels'],
             ['name' => 'View Stock Reports', 'slug' => 'view_stock_reports', 'group' => 'inventory', 'description' => 'View stock/inventory reports'],
+            ['name' => 'Manage Units', 'slug' => 'manage_units', 'group' => 'inventory', 'description' => 'Manage measurement units'],
 
             // Discounts & Taxes Group
             ['name' => 'Manage Discounts', 'slug' => 'manage_discounts', 'group' => 'pricing', 'description' => 'Manage discount rules'],

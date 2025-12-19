@@ -193,6 +193,23 @@
                         <textarea x-model="productNote" rows="2" placeholder="Contoh: Pedas, Tanpa Bawang..." 
                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-transparent"></textarea>
                     </div>
+
+                    <!-- Addons Selection -->
+                    <div class="mt-6" x-show="activeProduct?.addons && activeProduct.addons.length > 0">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tambahan (Opsional)</label>
+                        <div class="space-y-2">
+                            <template x-for="addon in activeProduct?.addons" :key="addon.id">
+                                <label class="flex items-center justify-between p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                       :class="selectedAddons.includes(addon.id) ? 'border-black bg-gray-50' : ''">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" :value="addon.id" x-model="selectedAddons" class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black">
+                                        <span class="text-sm font-medium text-gray-900" x-text="addon.name"></span>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-900" x-text="'+ ' + formatRupiah(addon.price)"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -218,7 +235,15 @@
                     <button @click="addToCartFromModal()" 
                             class="flex-1 bg-black text-white font-bold py-3 rounded-xl shadow-lg hover:bg-gray-800 active:scale-95 transition flex justify-between px-6">
                         <span>Tambah Pesanan</span>
-                        <span x-text="formatRupiah((activeProduct?.price || 0) * modalQty)"></span>
+                        <span x-text="formatRupiah(modalTotalPrice)"></span>
+                    </button>
+                </div>
+                
+                <!-- Secondary Action: Add without Extras (if addons exist but none selected) -->
+                <div class="mt-3" x-show="activeProduct?.addons && activeProduct.addons.length > 0 && selectedAddons.length === 0">
+                    <button @click="addToCartFromModal()" 
+                            class="w-full py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-black hover:text-black transition">
+                        Tambah Tanpa Tambahan
                     </button>
                 </div>
             </div>
@@ -242,6 +267,7 @@
             activeProduct: null,
             modalQty: 1,
             productNote: '',
+            selectedAddons: [], // Array of addon IDs
             
             // Computed
             get cartTotalQty() {
@@ -250,6 +276,19 @@
             
             get cartTotalPrice() {
                 return this.cart.reduce((total, item) => total + (item.price * item.qty), 0);
+            },
+
+            get modalTotalPrice() {
+                if (!this.activeProduct) return 0;
+                let basePrice = this.activeProduct.price;
+                let addonsPrice = 0;
+                
+                this.selectedAddons.forEach(addonId => {
+                    const addon = this.activeProduct.addons.find(a => a.id == addonId);
+                    if (addon) addonsPrice += parseFloat(addon.price);
+                });
+                
+                return (basePrice + addonsPrice) * this.modalQty;
             },
 
             initSystem() {
@@ -263,7 +302,8 @@
                             stock: prod.stock,
                             image_url: prod.image ? '/storage/' + prod.image : null,
                             description: prod.description,
-                            category_id: cat.id
+                            category_id: cat.id,
+                            addons: prod.addons || [] // Ensure addons exist
                         });
                     });
                 });
@@ -307,8 +347,8 @@
 
             // Cart Logic
             getCartQty(productId) {
-                const item = this.cart.find(i => i.product_id == productId);
-                return item ? item.qty : 0;
+                // Sum qty of all items with this product_id (regardless of variants)
+                return this.cart.filter(i => i.product_id == productId).reduce((sum, i) => sum + i.qty, 0);
             },
 
             getStock(productId, initialStock) {
@@ -318,30 +358,78 @@
                 return Math.max(0, initialStock - inCart);
             },
 
-            async updateCart(productId, change, note = null) {
-                const currentQty = this.getCartQty(productId);
-                const newQty = currentQty + change;
-                
-                if (newQty < 0) return;
+            async updateCart(productId, change, note = null, addons = [], skipModal = false) {
+                // If product has addons and we are adding (change > 0) without specifying addons, OPEN MODAL
+                // BUT, if called from modal (addons specified) or removing, proceed.
+                // Simplified: If adding from list view and product has addons, open modal.
+                if (change > 0 && addons.length === 0 && !skipModal) {
+                    const product = this.products.find(p => p.id == productId);
+                    if (!product) {
+                        console.error('Product not found for ID:', productId);
+                        return;
+                    }
+                    if (product && product.addons && product.addons.length > 0) {
+                        this.openProductModal(productId);
+                        return;
+                    }
+                }
 
-                // Optimistic UI Update
-                const existingItemIndex = this.cart.findIndex(i => i.product_id == productId);
+                // Proceed with update
+                // Note: For products with addons, each unique combination is a separate cart item.
+                // This simple updateCart logic needs to be smarter or we rely on backend to merge?
+                // For now, let's assume backend handles "add new item" vs "update existing".
+                // But wait, updateCart logic below assumes merging by product_id only.
                 
+                // REFACTOR: If we have addons, we ALWAYS add a new item or find exact match.
+                // Current logic:
+                // const existingItemIndex = this.cart.findIndex(i => i.product_id == productId);
+                
+                // We need to match addons too.
+                // Let's assume addons is array of IDs.
+                
+                const addonsKey = addons.sort().join(',');
+                
+                const existingItemIndex = this.cart.findIndex(i => 
+                    i.product_id == productId && 
+                    (i.addons || []).sort().join(',') === addonsKey &&
+                    (i.note || '') === (note || '')
+                );
+
+                let newQty = 0;
                 if (existingItemIndex > -1) {
-                    if (newQty === 0) {
+                    newQty = this.cart[existingItemIndex].qty + change;
+                    if (newQty <= 0) {
                         this.cart.splice(existingItemIndex, 1);
                     } else {
                         this.cart[existingItemIndex].qty = newQty;
-                        if (note !== null) this.cart[existingItemIndex].note = note;
                     }
-                } else if (newQty > 0) {
+                } else if (change > 0) {
                     const product = this.products.find(p => p.id == productId);
+                    
+                    if (!product) {
+                        console.error('Product not found for ID:', productId);
+                        return;
+                    }
+
+                    // Calculate price with addons
+                    let finalPrice = product.price;
+                    addons.forEach(addonId => {
+                        const addon = product.addons.find(a => a.id == addonId);
+                        if (addon) finalPrice += parseFloat(addon.price);
+                    });
+
                     this.cart.push({
                         product_id: productId,
                         name: product.name,
-                        price: product.price,
-                        qty: newQty,
-                        note: note || ''
+                        price: finalPrice,
+                        qty: change,
+                        note: note || '',
+                        addons: addons,
+                        // Helper for display
+                        addon_names: addons.map(id => {
+                            const a = product.addons.find(x => x.id == id);
+                            return a ? `${a.name} (+${this.formatRupiah(a.price)})` : '';
+                        }).join(', ')
                     });
                 }
 
@@ -351,6 +439,17 @@
                     formData.append('product_id', productId);
                     formData.append('qty', change); // Send delta
                     if (note) formData.append('note', note);
+                    if (addons.length > 0) {
+                        addons.forEach(id => formData.append('addons[]', id));
+                    }
+                    
+                    // If we are updating specific item (e.g. removing), we might need more info?
+                    // For now, backend `addToCart` handles "add". 
+                    // But "remove" (-1) is tricky if we don't specify WHICH item to remove.
+                    // If change is -1, we should probably pass the cart_index or similar?
+                    // Or just disable -1 from list view for complex items?
+                    // For simplicity: List view +/- only works for simple items.
+                    // Complex items must be managed in Cart page.
                     
                     const response = await fetch('{{ route("order.addToCartAjax", [$table->tenantIdentifier, $table->name]) }}', {
                         method: 'POST',
@@ -363,13 +462,12 @@
 
                     const result = await response.json();
                     if (!result.success) {
-                        // Revert on failure
                         alert(result.message);
                         location.reload(); 
                     }
                 } catch (error) {
                     console.error('Cart sync error:', error);
-                    // Revert logic could be added here
+                    alert('Gagal menambahkan ke keranjang. Silakan coba lagi. Error: ' + error.message);
                 }
             },
 
@@ -378,6 +476,7 @@
                 this.activeProduct = this.products.find(p => p.id == productId);
                 this.modalQty = 1;
                 this.productNote = '';
+                this.selectedAddons = [];
                 this.isModalOpen = true;
                 document.body.style.overflow = 'hidden'; // Prevent background scroll
             },
@@ -393,10 +492,9 @@
             addToCartFromModal() {
                 if (!this.activeProduct) return;
                 
-                this.updateCart(this.activeProduct.id, this.modalQty, this.productNote);
+                // Pass true for skipModal to prevent re-opening modal
+                this.updateCart(this.activeProduct.id, this.modalQty, this.productNote, this.selectedAddons, true);
                 this.closeModal();
-                
-                // Optional: Show success toast
             },
 
             // Utilities

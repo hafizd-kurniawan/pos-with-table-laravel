@@ -143,7 +143,7 @@ class DiscountResource extends Resource
                     ->formatStateUsing(fn ($record) => 
                         $record->type === 'percentage' 
                             ? $record->value . '%' 
-                            : 'Rp ' . number_format($record->value, 0, ',', '.')
+                            : \App\Helpers\FormatHelper::formatCurrency($record->value)
                     ),
 
                 Tables\Columns\BadgeColumn::make('status')

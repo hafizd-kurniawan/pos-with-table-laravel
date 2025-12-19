@@ -88,8 +88,9 @@ class ProductResource extends Resource
                     ->default(0)
                     ->step(1)
                     ->inputMode('decimal')
-                    ->helperText(__('resource.product.cost_helper'))
-                    ->hint(__('resource.product.cost_hint')),
+                    ->helperText(fn ($record) => $record && $record->recipes()->exists() ? 'Calculated automatically from recipes' : __('resource.product.cost_helper'))
+                    ->hint(fn ($record) => $record && $record->recipes()->exists() ? 'Auto-sync active' : __('resource.product.cost_hint'))
+                    ->readOnly(fn ($record) => $record && $record->recipes()->exists()),
                 Forms\Components\FileUpload::make('image')
                     ->label(__('resource.product.image'))
                     ->image(),
@@ -111,7 +112,9 @@ class ProductResource extends Resource
                     ->label(__('resource.product.stock'))
                     ->required()
                     ->numeric()
-                    ->default(0),
+                    ->default(0)
+                    ->helperText(fn ($record) => $record && $record->recipes()->exists() ? 'Calculated automatically from ingredients' : null)
+                    ->readOnly(fn ($record) => $record && $record->recipes()->exists()),
                 Forms\Components\Toggle::make('is_featured')
                     ->label(__('resource.product.is_featured'))
                     ->required(),
@@ -143,7 +146,7 @@ class ProductResource extends Resource
                     ->getStateUsing(function ($record) {
                         if ($record->price <= 0) return '0';
                         $margin = (($record->price - $record->cost) / $record->price) * 100;
-                        return $margin == floor($margin) ? number_format($margin, 0) : number_format($margin, 1);
+                        return $margin == floor($margin) ? \App\Helpers\FormatHelper::formatNumber($margin, 0) : \App\Helpers\FormatHelper::formatNumber($margin, 1);
                     })
                     ->suffix('%')
                     ->sortable(query: function ($query, $direction) {
@@ -253,7 +256,8 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\RecipesRelationManager::class,
+            RelationManagers\AddonsRelationManager::class,
         ];
     }
 

@@ -24,22 +24,45 @@ class SendLowStockNotification
             'tenant_id' => $ingredient->tenant_id,
         ]);
         
-        // Send FCM notifications to admin users IN THIS TENANT ONLY
+        // Get admin users in THIS tenant only
+        $adminUsers = \App\Models\User::where('tenant_id', $ingredient->tenant_id)
+            ->whereHas('role', function($query) {
+                $query->where('slug', 'admin');
+            })
+            ->get();
+            
+        // 1. Send Filament Database Notification (Web Bell Icon)
+        foreach ($adminUsers as $user) {
+            \Filament\Notifications\Notification::make()
+                ->title('⚠️ Low Stock Alert')
+                ->body("{$ingredient->name} is running low ({$ingredient->current_stock} {$ingredient->unit})")
+                ->warning()
+                ->actions([
+                    \Filament\Notifications\Actions\Action::make('view')
+                        ->button()
+                        ->url("/admin/ingredients")
+                        ->markAsRead(),
+                ])
+                ->sendToDatabase($user);
+                
+            // 2. Send Email Notification
+            try {
+                $user->notify(new \App\Notifications\LowStockEmail($ingredient));
+            } catch (\Exception $e) {
+                Log::error("Failed to send low stock email to user {$user->id}: " . $e->getMessage());
+            }
+        }
+        
+        // 3. Send FCM notifications (Mobile App)
         try {
             $notificationService = app(\App\Services\NotificationService::class);
             
-            // Get admin users in THIS tenant only
-            $adminUsers = \App\Models\User::where('tenant_id', $ingredient->tenant_id)
-                ->whereHas('role', function($query) {
-                    $query->where('slug', 'admin');
-                })
-                ->whereNotNull('fcm_token')
-                ->get();
+            $fcmUsers = $adminUsers->whereNotNull('fcm_token');
             
             $successCount = 0;
             $failedCount = 0;
             
-            foreach ($adminUsers as $user) {
+            foreach ($fcmUsers as $user) {
                 if ($notificationService->sendLowStockNotification($user, $ingredient)) {
                     $successCount++;
                 } else {
@@ -50,12 +73,12 @@ class SendLowStockNotification
             Log::info("Low stock notifications sent", [
                 'tenant_id' => $ingredient->tenant_id,
                 'admins_count' => $adminUsers->count(),
-                'success' => $successCount,
-                'failed' => $failedCount,
+                'fcm_sent' => $successCount,
+                'fcm_failed' => $failedCount,
             ]);
             
         } catch (\Exception $e) {
-            Log::error("Failed to send low stock notifications: " . $e->getMessage());
+            Log::error("Failed to send FCM low stock notifications: " . $e->getMessage());
         }
     }
 }

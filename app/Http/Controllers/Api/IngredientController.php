@@ -66,7 +66,7 @@ class IngredientController extends Controller
                     'max_stock' => $ingredient->max_stock,
                     'cost_per_unit' => $ingredient->cost_per_unit,
                     'stock_value' => $ingredient->stock_value,
-                    'stock_value_formatted' => 'Rp ' . number_format($ingredient->stock_value, 0, ',', '.'),
+                    'stock_value_formatted' => \App\Helpers\FormatHelper::formatCurrency($ingredient->stock_value),
                     'category' => $ingredient->category,
                     'status' => $ingredient->status,
                     'is_low_stock' => $ingredient->is_low_stock,
@@ -140,7 +140,12 @@ class IngredientController extends Controller
             'min_stock' => 'required|numeric|min:0',
             'max_stock' => 'nullable|numeric|min:0',
             'cost_per_unit' => 'required|numeric|min:0',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_id' => [
+                'nullable',
+                \Illuminate\Validation\Rule::exists('suppliers', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'category' => 'nullable|string|max:100',
             'description' => 'nullable|string',
         ]);
@@ -174,7 +179,12 @@ class IngredientController extends Controller
             'min_stock' => 'sometimes|numeric|min:0',
             'max_stock' => 'nullable|numeric|min:0',
             'cost_per_unit' => 'sometimes|numeric|min:0',
-            'supplier_id' => 'nullable|exists:suppliers,id',
+            'supplier_id' => [
+                'nullable',
+                \Illuminate\Validation\Rule::exists('suppliers', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'category' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'status' => 'sometimes|in:active,inactive',

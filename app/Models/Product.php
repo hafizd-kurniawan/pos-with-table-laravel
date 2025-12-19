@@ -135,6 +135,12 @@ class Product extends Model
         return $this->hasMany(Recipe::class);
     }
 
+    // Relationship dengan Addons
+    public function addons()
+    {
+        return $this->hasMany(ProductAddon::class);
+    }
+
     /**
      * Calculate COGS based on recipes
      */
@@ -157,5 +163,36 @@ class Product extends Model
     public function getMaxProducibleQuantity(): int
     {
         return \App\Models\Recipe::getMaxProducibleQuantity($this->id);
+    }
+    /**
+     * Sync Stock and Cost based on Recipes
+     * This should be called whenever ingredients change
+     */
+    public function syncStockAndCost(): void
+    {
+        // Only sync if product has recipes
+        if ($this->recipes()->count() === 0) {
+            return;
+        }
+
+        // 1. Calculate Cost (HPP)
+        $newCost = $this->calculateCOGS();
+        
+        // 2. Calculate Max Producible Stock
+        $newStock = $this->getMaxProducibleQuantity();
+        
+        // 3. Determine Status
+        $newStatus = $newStock > 0 ? 'available' : 'unavailable';
+        
+        // 4. Update Product
+        // Use quiet update to avoid triggering other events if necessary, 
+        // but here we want standard update
+        $this->update([
+            'cost' => $newCost,
+            'stock' => $newStock,
+            'status' => $newStatus
+        ]);
+        
+        Log::info("Synced Product {$this->name} (ID: {$this->id}): Cost={$newCost}, Stock={$newStock}, Status={$newStatus}");
     }
 }

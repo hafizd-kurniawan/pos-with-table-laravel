@@ -16,8 +16,11 @@ class StockTransactionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $tenantId = \Illuminate\Support\Facades\Auth::user()->tenant_id;
+
         $query = DB::table('stock_transactions')
                   ->join('products', 'stock_transactions.product_id', '=', 'products.id')
+                  ->where('products.tenant_id', $tenantId) // SECURE: Filter by tenant
                   ->select([
                       'stock_transactions.*',
                       'products.name as product_name',
@@ -58,8 +61,15 @@ class StockTransactionController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $tenantId = \Illuminate\Support\Facades\Auth::user()->tenant_id;
+        
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('products', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'type' => 'required|in:in,out',
             'quantity' => 'required|integer|min:1',
             'notes' => 'nullable|string'
@@ -134,9 +144,16 @@ class StockTransactionController extends Controller
      */
     public function batch(Request $request): JsonResponse
     {
+        $tenantId = \Illuminate\Support\Facades\Auth::user()->tenant_id;
+
         $request->validate([
             'transactions' => 'required|array',
-            'transactions.*.product_id' => 'required|exists:products,id',
+            'transactions.*.product_id' => [
+                'required',
+                \Illuminate\Validation\Rule::exists('products', 'id')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                }),
+            ],
             'transactions.*.type' => 'required|in:in,out',
             'transactions.*.quantity' => 'required|integer|min:1',
             'transactions.*.notes' => 'nullable|string',

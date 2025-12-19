@@ -55,7 +55,7 @@ class RecentOrdersWidget extends BaseWidget
                 
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable(),
                 
                 Tables\Columns\BadgeColumn::make('status')

@@ -13,6 +13,7 @@ use App\Models\IngredientCategory;
 use App\Models\Supplier;
 use App\Models\StockMovement;
 use App\Models\PurchaseOrder;
+use App\Models\StockOpname;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\{StockSummaryExport, StockMovementsExport, PurchaseOrdersExport};
@@ -53,6 +54,7 @@ class InventoryReports extends Page implements HasForms
     public $purchaseOrders = [];
     public $lowStockItems = [];
     public $categoryValue = [];
+    public $varianceAnalysis = [];
     
     public function mount(): void
     {
@@ -65,6 +67,7 @@ class InventoryReports extends Page implements HasForms
         $this->loadStockMovements();
         $this->loadPurchaseOrders();
         $this->loadCategoryValue();
+        $this->loadVarianceAnalysis();
     }
     
     public function loadStockSummary(): void
@@ -187,6 +190,35 @@ class InventoryReports extends Page implements HasForms
             })
             ->toArray();
     }
+
+    public function loadVarianceAnalysis(): void
+    {
+        $this->varianceAnalysis = StockOpname::where('tenant_id', auth()->user()->tenant_id)
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [
+                $this->startDate . ' 00:00:00', 
+                $this->endDate . ' 23:59:59'
+            ])
+            ->with(['items.ingredient'])
+            ->latest()
+            ->get()
+            ->map(function ($opname) {
+                $totalVarianceValue = $opname->items->sum(function ($item) {
+                    return ($item->actual_stock - $item->system_stock) * $item->ingredient->cost_per_unit;
+                });
+
+                return [
+                    'id' => $opname->id,
+                    'date' => $opname->created_at->format('d M Y H:i'),
+                    'opname_number' => $opname->opname_number,
+                    'items_count' => $opname->items->count(),
+                    'total_variance_value' => $totalVarianceValue,
+                    'status' => $opname->status,
+                    'notes' => $opname->notes,
+                ];
+            })
+            ->toArray();
+    }
     
     public function updatedActiveTab($tab): void
     {
@@ -224,9 +256,7 @@ class InventoryReports extends Page implements HasForms
      */
     public function formatStock($value): string
     {
-        return ($value == floor($value)) 
-            ? number_format($value, 0, ',', '.') 
-            : number_format($value, 2, ',', '.');
+        return \App\Helpers\FormatHelper::formatStock($value);
     }
     
     /**
