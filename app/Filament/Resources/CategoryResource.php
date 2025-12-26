@@ -66,17 +66,20 @@ class CategoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label(__('resource.category.name'))
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('description')
-                    ->label(__('resource.product.description'))
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\FileUpload::make('image')
-                    ->label(__('resource.product.image'))
-                    ->image(),
+                Forms\Components\Section::make(__('resource.category.label'))
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label(__('resource.category.name'))
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('description')
+                            ->label(__('resource.product.description'))
+                            ->maxLength(255)
+                            ->default(null),
+                        Forms\Components\FileUpload::make('image')
+                            ->label(__('resource.product.image'))
+                            ->image(),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -86,21 +89,24 @@ class CategoryResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('resource.category.name'))
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+                
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('resource.product.description'))
-                    ->searchable(),
+                    ->searchable()
+                    ->color('gray'),
+
                 Tables\Columns\ImageColumn::make('image')
-                    ->label(__('resource.product.image')),
+                    ->label(__('resource.product.image'))
+                    ->circular(),
+                
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('resource.general.updated_at'))
-                    ->dateTime()
-                    ->sortable()
+                    ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

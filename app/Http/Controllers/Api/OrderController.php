@@ -48,11 +48,11 @@ class OrderController extends Controller
             $order->payment_amount = $grossAmount; // Save payment amount
             $order->completed_at = now();
             
-            // CRITICAL FIX: Only decrease stock if it wasn't already decreased at creation
-            // QRIS orders created via Web OrderController ALREADY decreased stock.
-            if ($order->payment_method !== 'qris') { 
-                 $this->decreaseProductStock($order);
-            }
+            // CRITICAL FIX: Stock is already decreased at creation (for both Cash and QRIS now)
+            // if ($order->payment_method !== 'qris') { 
+            //      $this->decreaseProductStock($order);
+            // }
+            Log::info("Payment confirmed for order {$order->code}. Stock was already reserved.");
             
             // Save FIRST to ensure status is updated even if notification fails
             $order->save();
@@ -68,9 +68,9 @@ class OrderController extends Controller
             
             // CRITICAL FIX: Restore stock if it was reserved (QRIS orders)
             // QRIS orders reserved stock at creation, so we must release it on failure/expiry
-            if ($order->payment_method === 'qris') {
-                 $this->releaseStock($order);
-                 Log::info("Stock restored for expired/cancelled QRIS order: {$order->code}");
+            // if ($order->payment_method === 'qris') {
+                 $this->restoreProductStock($order); // Renamed from releaseStock to match method name
+                 Log::info("Stock restored for expired/cancelled order: {$order->code}");
                  
                  // Release Table
                  if ($order->table_id) {
@@ -83,7 +83,7 @@ class OrderController extends Controller
                          Log::info("Table {$table->name} released due to expired/cancelled order");
                      }
                  }
-            }
+            // }
             $order->save();
         } elseif ($transaction === 'pending') {
             $order->status = 'pending';
@@ -241,6 +241,27 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'payment_method' => $paymentMethod,
                 ]);
+
+                // AUTOMATIC CASH SALES TRACKING (Phase 7)
+                // Find active session for this cashier/user
+                $activeSession = \App\Models\CashierSession::where('user_id', $user->id)
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'open')
+                    ->first();
+
+                if ($activeSession) {
+                    $activeSession->increment('cash_sales', $order->total_amount);
+                    Log::info('Cash Sales incremented for session', [
+                        'session_id' => $activeSession->id,
+                        'amount' => $order->total_amount,
+                        'new_total' => $activeSession->fresh()->cash_sales
+                    ]);
+                } else {
+                    Log::warning('No active session found for cashier. Cash Sales NOT incremented.', [
+                        'user_id' => $user->id
+                    ]);
+                }
+
             } else {
                 Log::info('Non-cash payment - stock will be decreased after payment confirmation', [
                     'order_id' => $order->id,
@@ -383,6 +404,7 @@ class OrderController extends Controller
             
             // Validasi input
             $request->validate([
+                'tenant_id' => 'required|integer|exists:tenants,id', // CRITICAL: Required for public endpoint isolation
                 'customer_name' => 'required|string',
                 'customer_phone' => 'nullable|string',
                 'customer_email' => 'nullable|email',
@@ -448,11 +470,23 @@ class OrderController extends Controller
                 $addonsData = [];
                 if (isset($item['addons']) && is_array($item['addons'])) {
                     foreach ($item['addons'] as $addon) {
-                        $addonPrice = $addon['price'];
+                        // SECURITY FIX: Fetch addon from DB to get real price
+                        $addonModel = \App\Models\ProductAddon::find($addon['id']);
+                        
+                        if ($addonModel) {
+                            $addonPrice = $addonModel->price;
+                            $addonName = $addonModel->name;
+                        } else {
+                            // Fallback if not found (should not happen due to validation, but safe fallback)
+                            \Log::warning('Addon not found during calculation', ['id' => $addon['id']]);
+                            $addonPrice = $addon['price']; 
+                            $addonName = $addon['name'];
+                        }
+
                         $addonsTotal += $addonPrice;
                         $addonsData[] = [
                             'product_addon_id' => $addon['id'],
-                            'name' => $addon['name'],
+                            'name' => $addonName,
                             'price' => $addonPrice
                         ];
                     }
@@ -581,6 +615,10 @@ class OrderController extends Controller
             // Simpan QR string
             $order->qr_string = $qris->qr_string ?? null;
             $order->payment_url = $qris->actions[0]->url ?? null;
+            // Reserve Stock IMMEDIATELY
+            $this->decreaseProductStock($order);
+            Log::info("Stock reserved for QRIS order: {$order->code}");
+
             $order->save();
 
             return response()->json([
@@ -1001,5 +1039,66 @@ class OrderController extends Controller
                 'message' => 'Failed to save order: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Refund an order
+     */
+    public function refund(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'reason' => 'required|string',
+            'restore_stock' => 'boolean',
+            'pin' => 'nullable|string', // Future: Validate PIN
+        ]);
+
+        $order = Order::find($request->order_id);
+
+        if ($order->status === 'refunded') {
+            return response()->json(['message' => 'Order already refunded'], 400);
+        }
+
+        if ($order->status !== 'paid' && $order->status !== 'completed' && $order->status !== 'complete') {
+            return response()->json(['message' => 'Only paid orders can be refunded'], 400);
+        }
+
+        // 1. Update Order Status
+        $order->status = 'refunded';
+        $order->payment_status = 'refunded';
+        $order->save();
+
+        // 2. Restore Stock (Optional)
+        if ($request->boolean('restore_stock', true)) {
+            $this->restoreProductStock($order);
+        }
+
+        // 3. Create Cashier Transaction (Pay Out)
+        // Find active session for the user who processed the refund (or the original cashier?)
+        // Ideally, it should be the CURRENT active session of the user performing the refund.
+        $user = $request->user();
+        $session = \App\Models\CashierSession::where('user_id', $user->id)
+            ->where('status', 'open')
+            ->first();
+
+        if ($session) {
+            \App\Models\CashierSessionTransaction::create([
+                'cashier_session_id' => $session->id,
+                'type' => 'out',
+                'amount' => $order->total_amount,
+                'description' => "Refund Order #{$order->code}: {$request->reason}",
+            ]);
+            
+            // Update session totals
+            $session->total_pay_out += $order->total_amount;
+            $session->save();
+        } else {
+            Log::warning("Refund processed for Order #{$order->code} but no active session found for user {$user->id}");
+        }
+
+        return response()->json([
+            'message' => 'Order refunded successfully',
+            'order' => $order
+        ]);
     }
 }

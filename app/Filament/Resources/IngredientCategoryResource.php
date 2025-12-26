@@ -89,7 +89,7 @@ class IngredientCategoryResource extends Resource
                             ->default(0)
                             ->required()
                             ->helperText(__('resource.ingredient_category.helpers.sort_order')),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -97,28 +97,23 @@ class IngredientCategoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->label(__('resource.ingredient_category.sort_order'))
-                    ->sortable()
-                    ->badge()
-                    ->color('gray'),
-                
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('resource.ingredient_category.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
                 
-                Tables\Columns\TextColumn::make('sku_prefix')
-                    ->label(__('resource.ingredient_category.sku_prefix'))
-                    ->badge()
-                    ->color('primary'),
-                
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('resource.ingredient_category.description'))
                     ->searchable()
                     ->limit(50)
-                    ->toggleable(),
+                    ->color('gray'),
+
+                Tables\Columns\TextColumn::make('sku_prefix')
+                    ->label(__('resource.ingredient_category.sku_prefix'))
+                    ->badge()
+                    ->color('primary')
+                    ->sortable(),
                 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.ingredient_category.status'))
@@ -130,14 +125,22 @@ class IngredientCategoryResource extends Resource
                         'active' => __('resource.general.statuses.active'),
                         'inactive' => __('resource.general.statuses.inactive'),
                         default => $state,
-                    }),
-                
+                    })
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('ingredients_count')
                     ->label(__('resource.ingredient_category.ingredients_count'))
                     ->counts('ingredients')
                     ->badge()
                     ->color('info')
                     ->sortable(),
+                
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label(__('resource.ingredient_category.sort_order'))
+                    ->sortable()
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))

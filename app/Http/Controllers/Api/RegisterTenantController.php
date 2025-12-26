@@ -9,10 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Database\Seeders\RoleSeeder;
 use Database\Seeders\DefaultTenantSettingsSeeder;
-use Database\Seeders\OrderSettingsSeeder;
-use Database\Seeders\TakeawayTableSeeder;
 
 class RegisterTenantController extends Controller
 {

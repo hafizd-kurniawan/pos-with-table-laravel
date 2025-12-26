@@ -109,7 +109,7 @@ class SettingResource extends Resource
                             ->label(__('resource.discount.description')) // Reusing description label
                             ->columnSpanFull(),
                     ])
-                    ->columns(2),
+                    ->columns(['default' => 1, 'sm' => 2]),
                 
                 Forms\Components\Section::make('Value Configuration')
                     ->schema([
@@ -189,7 +189,7 @@ class SettingResource extends Resource
                     ->fontFamily('mono')
                     ->color('gray')
                     ->label(__('resource.setting.key')),
-                
+                    
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
                     ->label(__('resource.setting.value'))
@@ -199,14 +199,8 @@ class SettingResource extends Resource
                         }
                         return $state;
                     })
-                    ->tooltip(function ($record) {
-                        $value = $record->value;
-                        if (is_array($value)) {
-                            return json_encode($value, JSON_PRETTY_PRINT);
-                        }
-                        return $value;
-                    }),
-                
+                    ->color('gray'),
+
                 Tables\Columns\TextColumn::make('group')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -225,13 +219,8 @@ class SettingResource extends Resource
                         'notification' => __('resource.setting.groups.notification'),
                         default => $state,
                     })
-                    ->label(__('resource.setting.group')),
-                
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->label(__('resource.general.updated_at'))
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label(__('resource.setting.group'))
+                    ->sortable(),
             ])
             ->defaultSort('group')
             ->filters([

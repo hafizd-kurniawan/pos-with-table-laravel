@@ -65,6 +65,7 @@ class PosSettingsController extends Controller
                     'enable_discount' => !$discounts->isEmpty(),
                     'enable_tax' => !$taxes->isEmpty(),
                     'enable_service_charge' => !$services->isEmpty(),
+                    'blind_close' => true, // Default to true for security
                 ],
             ]
         ]);

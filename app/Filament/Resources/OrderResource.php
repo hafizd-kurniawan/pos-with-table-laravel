@@ -66,56 +66,59 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('code')
-                    ->label(__('resource.order.code'))
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('table_id')
-                    ->label(__('resource.order.table'))
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('total_amount')
-                    ->label(__('resource.order.total_amount'))
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('status')
-                    ->label(__('resource.order.status'))
-                    ->required(),
-                Forms\Components\DateTimePicker::make('placed_at')
-                    ->label(__('resource.order.placed_at'))
-                    ->required(),
-                Forms\Components\DateTimePicker::make('completed_at')
-                    ->label(__('resource.order.completed_at')),
-                Forms\Components\TextInput::make('payment_method')
-                    ->label(__('resource.order.payment_method'))
-                    ->required()
-                    ->maxLength(255)
-                    ->default('qris'),
-                Forms\Components\Textarea::make('notes')
-                    ->label(__('resource.order.notes'))
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('customer_name')
-                    ->label(__('resource.order.customer_name'))
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('customer_phone')
-                    ->label(__('resource.order.customer_phone'))
-                    ->tel()
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('customer_email')
-                    ->label(__('resource.order.customer_email'))
-                    ->email()
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\Textarea::make('qr_string')
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('meta')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('payment_url')
-                    ->label(__('resource.order.payment_url'))
-                    ->maxLength(255)
-                    ->default(null),
+                Forms\Components\Section::make(__('resource.order.label'))
+                    ->schema([
+                        Forms\Components\TextInput::make('code')
+                            ->label(__('resource.order.code'))
+                            ->maxLength(255)
+                            ->default(null),
+                        Forms\Components\TextInput::make('table_id')
+                            ->label(__('resource.order.table'))
+                            ->required()
+                            ->numeric(),
+                        Forms\Components\TextInput::make('total_amount')
+                            ->label(__('resource.order.total_amount'))
+                            ->required()
+                            ->numeric(),
+                        Forms\Components\TextInput::make('status')
+                            ->label(__('resource.order.status'))
+                            ->required(),
+                        Forms\Components\DateTimePicker::make('placed_at')
+                            ->label(__('resource.order.placed_at'))
+                            ->required(),
+                        Forms\Components\DateTimePicker::make('completed_at')
+                            ->label(__('resource.order.completed_at')),
+                        Forms\Components\TextInput::make('payment_method')
+                            ->label(__('resource.order.payment_method'))
+                            ->required()
+                            ->maxLength(255)
+                            ->default('qris'),
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('resource.order.notes'))
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('customer_name')
+                            ->label(__('resource.order.customer_name'))
+                            ->maxLength(255)
+                            ->default(null),
+                        Forms\Components\TextInput::make('customer_phone')
+                            ->label(__('resource.order.customer_phone'))
+                            ->tel()
+                            ->maxLength(255)
+                            ->default(null),
+                        Forms\Components\TextInput::make('customer_email')
+                            ->label(__('resource.order.customer_email'))
+                            ->email()
+                            ->maxLength(255)
+                            ->default(null),
+                        Forms\Components\Textarea::make('qr_string')
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('meta')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('payment_url')
+                            ->label(__('resource.order.payment_url'))
+                            ->maxLength(255)
+                            ->default(null),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -125,48 +128,51 @@ class OrderResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->label(__('resource.order.code'))
-                    ->searchable(),
+                    ->weight('bold')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('customer_name')
+                    ->label(__('resource.order.customer_name'))
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('table_id')
                     ->label(__('resource.order.table'))
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('info')
+                    ->formatStateUsing(fn ($state) => 'Table ' . $state),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label(__('resource.order.total_amount'))
                     ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable()
-                    ->alignEnd(),
+                    ->weight('bold')
+                    ->color('primary'),
                 Tables\Columns\TextColumn::make('status')
-                    ->label(__('resource.order.status')),
+                    ->label(__('resource.order.status'))
+                    ->badge()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('placed_at')
                     ->label(__('resource.order.placed_at'))
-                    ->dateTime('d M Y H:i')
-                    ->sortable(),
-
+                    ->dateTime('d M Y, H:i')
+                    ->sortable()
+                    ->color('gray'),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label(__('resource.order.payment_method'))
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('customer_name')
-                    ->label(__('resource.order.customer_name'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('customer_phone')
                     ->label(__('resource.order.customer_phone'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('customer_email')
                     ->label(__('resource.order.customer_email'))
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('resource.general.created_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('resource.general.updated_at'))
-                    ->dateTime()
-                    ->sortable()
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('payment_url')
                     ->label(__('resource.order.payment_url'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('placed_at', 'desc')
             ->filters([

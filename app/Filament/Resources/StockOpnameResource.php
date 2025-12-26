@@ -50,32 +50,35 @@ class StockOpnameResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('opname_number')
-                    ->label(__('resource.stock_opname.opname_number'))
-                    ->disabled()
-                    ->dehydrated(false)
-                    ->default(fn() => __('resource.ingredient.helpers.auto_generated')),
-                
-                Forms\Components\DatePicker::make('opname_date')
-                    ->label(__('resource.stock_opname.opname_date'))
-                    ->default(now())
-                    ->required(),
-                
-                Forms\Components\Select::make('status')
-                    ->label(__('resource.stock_opname.status'))
-                    ->options([
-                        'draft' => __('resource.stock_opname.statuses.draft'),
-                        'completed' => __('resource.stock_opname.statuses.completed'),
-                    ])
-                    ->default('draft')
-                    ->required()
-                    ->disabled(fn ($record) => $record && $record->status === 'completed')
-                    ->helperText(__('resource.stock_opname.helpers.status')),
-                
-                Forms\Components\Textarea::make('notes')
-                    ->label(__('resource.stock_opname.notes'))
-                    ->rows(3)
-                    ->columnSpanFull(),
+                Forms\Components\Section::make(__('resource.stock_opname.label') . ' Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('opname_number')
+                            ->label(__('resource.stock_opname.opname_number'))
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->default(fn() => __('resource.ingredient.helpers.auto_generated')),
+                        
+                        Forms\Components\DatePicker::make('opname_date')
+                            ->label(__('resource.stock_opname.opname_date'))
+                            ->default(now())
+                            ->required(),
+                        
+                        Forms\Components\Select::make('status')
+                            ->label(__('resource.stock_opname.status'))
+                            ->options([
+                                'draft' => __('resource.stock_opname.statuses.draft'),
+                                'completed' => __('resource.stock_opname.statuses.completed'),
+                            ])
+                            ->default('draft')
+                            ->required()
+                            ->disabled(fn ($record) => $record && $record->status === 'completed')
+                            ->helperText(__('resource.stock_opname.helpers.status')),
+                        
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('resource.stock_opname.notes'))
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])->columns(['default' => 1, 'sm' => 2]),
                 
                 Forms\Components\Section::make(__('resource.stock_opname.items.label'))
                     ->schema([
@@ -144,7 +147,7 @@ class StockOpnameResource extends Resource
                                 
                                 Forms\Components\Hidden::make('unit'),
                             ])
-                            ->columns(5)
+                            ->columns(['default' => 1, 'md' => 5])
                             ->defaultItems(1)
                             ->createItemButtonLabel(__('resource.stock_opname.items.add_item'))
                             ->reorderableWithButtons()
@@ -176,7 +179,7 @@ class StockOpnameResource extends Resource
                     ->label(__('resource.stock_opname.opname_date'))
                     ->date('d M Y')
                     ->sortable(),
-                
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.stock_opname.status'))
                     ->colors([
@@ -187,13 +190,15 @@ class StockOpnameResource extends Resource
                         'draft' => __('resource.stock_opname.statuses.draft'),
                         'completed' => __('resource.stock_opname.statuses.completed'),
                         default => ucfirst($state),
-                    }),
+                    })
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label(__('resource.stock_opname.items_count'))
                     ->counts('items')
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('resource.stock_opname.created_by'))

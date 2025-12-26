@@ -114,8 +114,8 @@ class UnitResource extends Resource
                                     ->default(0)
                                     ->label(__('resource.unit.sort_order'))
                                     ->helperText(__('resource.unit.helpers.sort_order')),
-                            ])->columns(2),
-                    ])->columns(2),
+                            ])->columns(['default' => 1, 'sm' => 2]),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -135,7 +135,7 @@ class UnitResource extends Resource
                     ->badge()
                     ->color('gray')
                     ->copyable(),
-                
+
                 Tables\Columns\BadgeColumn::make('type')
                     ->label(__('resource.unit.type'))
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -150,7 +150,8 @@ class UnitResource extends Resource
                         'info' => 'volume',
                         'success' => 'count',
                         'secondary' => 'general',
-                    ]),
+                    ])
+                    ->sortable(),
                 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.unit.status'))
@@ -162,12 +163,13 @@ class UnitResource extends Resource
                     ->colors([
                         'success' => 'active',
                         'danger' => 'inactive',
-                    ]),
-                
+                    ])
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('sort_order')
                     ->sortable()
                     ->label(__('resource.unit.sort_order'))
-                    ->alignCenter(),
+                    ->color('gray'),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('d/m/Y H:i')

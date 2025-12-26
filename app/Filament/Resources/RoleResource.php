@@ -100,7 +100,7 @@ class RoleResource extends Resource
                             ->disabled()
                             ->columnSpan(1),
                     ])
-                    ->columns(2),
+                    ->columns(['default' => 1, 'sm' => 2]),
                 
                 Forms\Components\Section::make(__('resource.role.permissions'))
                     ->description(__('resource.role.helpers.permissions'))
@@ -140,14 +140,14 @@ class RoleResource extends Resource
                     ->sortable()
                     ->weight('bold')
                     ->label(__('resource.role.name'))
-                    ->icon('heroicon-o-shield-check'),
+                    ->icon('heroicon-m-shield-check'),
                 
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
                     ->searchable()
                     ->label(__('resource.role.description'))
-                    ->toggleable(),
-                
+                    ->color('gray'),
+
                 Tables\Columns\TextColumn::make('users_count')
                     ->label(__('resource.user.plural_label'))
                     ->counts('users')
@@ -167,14 +167,16 @@ class RoleResource extends Resource
                     ->boolean()
                     ->trueIcon('heroicon-o-check-badge')
                     ->falseIcon('heroicon-o-x-circle')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\IconColumn::make('is_system')
                     ->label(__('resource.role.is_system'))
                     ->boolean()
                     ->trueIcon('heroicon-o-lock-closed')
                     ->falseIcon('heroicon-o-lock-open')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

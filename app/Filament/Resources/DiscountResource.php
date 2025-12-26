@@ -75,7 +75,7 @@ class DiscountResource extends Resource
                             ->label(__('resource.discount.description'))
                             ->rows(3)
                             ->columnSpanFull(),
-                    ])->columns(1),
+                    ])->columns(['default' => 1, 'sm' => 2]),
 
                 Forms\Components\Section::make(__('resource.discount.label') . ' Details')
                     ->schema([
@@ -113,7 +113,7 @@ class DiscountResource extends Resource
                             ->label(__('resource.discount.expired_date'))
                             ->helperText(__('resource.discount.helpers.expiry'))
                             ->after('today'),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -124,7 +124,17 @@ class DiscountResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
+                    ->weight('bold')
                     ->label(__('resource.discount.name')),
+                
+                Tables\Columns\TextColumn::make('value')
+                    ->label(__('resource.discount.value'))
+                    ->formatStateUsing(fn ($record) => 
+                        $record->type === 'percentage' 
+                            ? $record->value . '%' 
+                            : \App\Helpers\FormatHelper::formatCurrency($record->value)
+                    )
+                    ->color('gray'),
 
                 Tables\Columns\BadgeColumn::make('type')
                     ->colors([
@@ -136,16 +146,9 @@ class DiscountResource extends Resource
                         'fixed' => __('resource.discount.types.fixed'),
                         default => $state,
                     })
-                    ->label(__('resource.discount.type')),
-
-                Tables\Columns\TextColumn::make('value')
-                    ->label(__('resource.discount.value'))
-                    ->formatStateUsing(fn ($record) => 
-                        $record->type === 'percentage' 
-                            ? $record->value . '%' 
-                            : \App\Helpers\FormatHelper::formatCurrency($record->value)
-                    ),
-
+                    ->label(__('resource.discount.type'))
+                    ->sortable(),
+                
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'success' => 'active',
@@ -156,13 +159,15 @@ class DiscountResource extends Resource
                         'inactive' => __('resource.discount.statuses.inactive'),
                         default => $state,
                     })
-                    ->label(__('resource.discount.status')),
-
+                    ->label(__('resource.discount.status'))
+                    ->sortable(),
+                
                 Tables\Columns\TextColumn::make('expired_date')
                     ->date('M j, Y')
                     ->sortable()
                     ->label(__('resource.discount.expired_date'))
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y H:i')

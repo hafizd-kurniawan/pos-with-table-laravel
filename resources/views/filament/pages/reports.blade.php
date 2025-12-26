@@ -645,7 +645,7 @@
         @if(count($topProducts) > 0)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 {{ __('report.top_products.title') }}</h3>
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b dark:border-gray-700">
@@ -674,6 +674,37 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @foreach($topProducts as $index => $product)
+                        <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300">
+                                        {{ $index + 1 }}
+                                    </span>
+                                    <div>
+                                        <div class="font-bold text-gray-900 dark:text-white">{{ $product['name'] }}</div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">{{ $product['category'] }}</div>
+                                    </div>
+                                </div>
+                                <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
+                                    {{ $product['percentage'] }}%
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center mt-3 pt-2 border-t dark:border-gray-700">
+                                 <div class="text-sm">
+                                    <span class="text-gray-500 dark:text-gray-400">Qty:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-white">{{ $product['quantity'] }}</span>
+                                 </div>
+                                 <div class="font-bold text-gray-900 dark:text-white">
+                                    Rp {{ number_format($product['total'], 0, ',', '.') }}
+                                 </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         @endif
@@ -718,30 +749,56 @@
                 
                 {{-- Daily Breakdown Table --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-indigo-600 dark:bg-indigo-800 text-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.day') }}</th>
-                                <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.date') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.orders') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.revenue') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($dailySummary['weekly_trend']['days'] as $day)
-                            <tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors
-                                @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) bg-green-50 dark:bg-green-900/20 @endif">
-                                <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">
-                                    {{ $day['day_short'] }}
-                                    @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) 🏆 @endif
-                                </td>
-                                <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ \Carbon\Carbon::parse($day['date'])->format('d M') }}</td>
-                                <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ $day['orders'] }}</td>
-                                <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">Rp {{ number_format($day['revenue'], 0, ',', '.') }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-indigo-600 dark:bg-indigo-800 text-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.day') }}</th>
+                                    <th class="px-4 py-3 text-left">{{ __('report.weekly_trend.date') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.orders') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.weekly_trend.revenue') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($dailySummary['weekly_trend']['days'] as $day)
+                                <tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors
+                                    @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) bg-green-50 dark:bg-green-900/20 @endif">
+                                    <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">
+                                        {{ $day['day_short'] }}
+                                        @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) 🏆 @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ \Carbon\Carbon::parse($day['date'])->format('d M') }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ $day['orders'] }}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">Rp {{ number_format($day['revenue'], 0, ',', '.') }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {{-- Mobile Card View --}}
+                    <div class="grid grid-cols-1 gap-4 md:hidden p-4">
+                        @foreach($dailySummary['weekly_trend']['days'] as $day)
+                            <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm
+                                @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) border-green-500 ring-1 ring-green-500 @endif">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="font-bold text-gray-900 dark:text-white">
+                                        {{ $day['day_short'] }}
+                                        @if($day['revenue'] == $dailySummary['weekly_trend']['summary']['best_day']['revenue']) 🏆 @endif
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($day['date'])->format('d M') }}</div>
+                                </div>
+                                <div class="flex justify-between items-center mt-2">
+                                     <div class="text-sm text-gray-600 dark:text-gray-300">
+                                        {{ $day['orders'] }} Orders
+                                     </div>
+                                     <div class="font-bold text-gray-900 dark:text-white">
+                                        Rp {{ number_format($day['revenue'], 0, ',', '.') }}
+                                     </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         @endif
@@ -775,49 +832,89 @@
                 
                 {{-- Alert Details --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-red-600 dark:bg-red-800 text-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.product') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.stock') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.sold_today') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.out_in') }}</th>
-                                <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.recommendation') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($dailySummary['stock_alerts']['alerts'] as $alert)
-                            <tr class="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">
-                                    @if($alert['alert_level'] === 'critical') 🔴 @endif
-                                    @if($alert['alert_level'] === 'warning') 🟡 @endif
-                                    @if($alert['alert_level'] === 'watch') 🔵 @endif
-                                    {{ $alert['product_name'] }}
-                                </td>
-                                <td class="px-4 py-3 text-center font-bold
-                                    @if($alert['alert_level'] === 'critical') text-red-600 dark:text-red-400 @endif
-                                    @if($alert['alert_level'] === 'warning') text-yellow-600 dark:text-yellow-400 @endif
-                                    @if($alert['alert_level'] === 'watch') text-blue-600 dark:text-blue-400 @endif">
-                                    {{ $alert['current_stock'] }}
-                                </td>
-                                <td class="px-4 py-3 text-center text-gray-800 dark:text-white">{{ $alert['sold_today'] }}</td>
-                                <td class="px-4 py-3 text-center font-medium">
-                                    @if($alert['days_until_stockout'] <= 2)
-                                        <span class="text-red-600 dark:text-red-400 font-bold">{{ $alert['days_until_stockout'] }} hari ⚠️</span>
-                                    @else
-                                        <span class="text-gray-600 dark:text-gray-400">{{ $alert['days_until_stockout'] }} hari</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-1 text-xs font-medium rounded
-                                        @if($alert['recommendation'] === 'Reorder NOW!') bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 @else bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 @endif">
-                                        {{ $alert['recommendation'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-red-600 dark:bg-red-800 text-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.product') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.stock') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.sold_today') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.stock_alerts.out_in') }}</th>
+                                    <th class="px-4 py-3 text-left">{{ __('report.stock_alerts.recommendation') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($dailySummary['stock_alerts']['alerts'] as $alert)
+                                <tr class="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                    <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">
+                                        @if($alert['alert_level'] === 'critical') 🔴 @endif
+                                        @if($alert['alert_level'] === 'warning') 🟡 @endif
+                                        @if($alert['alert_level'] === 'watch') 🔵 @endif
+                                        {{ $alert['product_name'] }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center font-bold
+                                        @if($alert['alert_level'] === 'critical') text-red-600 dark:text-red-400 @endif
+                                        @if($alert['alert_level'] === 'warning') text-yellow-600 dark:text-yellow-400 @endif
+                                        @if($alert['alert_level'] === 'watch') text-blue-600 dark:text-blue-400 @endif">
+                                        {{ $alert['current_stock'] }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-gray-800 dark:text-white">{{ $alert['sold_today'] }}</td>
+                                    <td class="px-4 py-3 text-center font-medium">
+                                        @if($alert['days_until_stockout'] <= 2)
+                                            <span class="text-red-600 dark:text-red-400 font-bold">{{ $alert['days_until_stockout'] }} hari ⚠️</span>
+                                        @else
+                                            <span class="text-gray-600 dark:text-gray-400">{{ $alert['days_until_stockout'] }} hari</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 text-xs font-medium rounded
+                                            @if($alert['recommendation'] === 'Reorder NOW!') bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 @else bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 @endif">
+                                            {{ $alert['recommendation'] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {{-- Mobile Card View --}}
+                    <div class="grid grid-cols-1 gap-4 md:hidden p-4">
+                        @foreach($dailySummary['stock_alerts']['alerts'] as $alert)
+                            <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="font-medium text-gray-800 dark:text-white">
+                                        @if($alert['alert_level'] === 'critical') 🔴 @endif
+                                        @if($alert['alert_level'] === 'warning') 🟡 @endif
+                                        @if($alert['alert_level'] === 'watch') 🔵 @endif
+                                        {{ $alert['product_name'] }}
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-sm mt-3 border-t dark:border-gray-700 pt-2">
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Stock</div>
+                                        <div class="font-bold
+                                            @if($alert['alert_level'] === 'critical') text-red-600 dark:text-red-400 @endif
+                                            @if($alert['alert_level'] === 'warning') text-yellow-600 dark:text-yellow-400 @endif
+                                            @if($alert['alert_level'] === 'watch') text-blue-600 dark:text-blue-400 @endif">
+                                            {{ $alert['current_stock'] }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Sold</div>
+                                        <div class="font-semibold text-gray-800 dark:text-white">{{ $alert['sold_today'] }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Out In</div>
+                                        <div class="font-semibold text-gray-800 dark:text-white">{{ $alert['days_until_stockout'] }}d</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                                    {{ $alert['recommendation'] }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         @endif
@@ -850,31 +947,62 @@
                 
                 {{-- Staff Leaderboard --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-green-600 dark:bg-green-800 text-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left">{{ __('report.staff_performance.rank') }}</th>
-                                <th class="px-4 py-3 text-left">{{ __('report.staff_performance.name') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.staff_performance.orders') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.staff_performance.revenue') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.staff_performance.performance') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($dailySummary['staff_performance']['staff'] as $staff)
-                            <tr class="hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors
-                                @if($staff['badge'] === 'top_performer') bg-yellow-50 dark:bg-yellow-900/20 @endif">
-                                <td class="px-4 py-3 font-bold text-lg text-gray-800 dark:text-white">
-                                    @if($staff['rank'] === 1) 🏆
-                                    @elseif($staff['rank'] === 2) 🥈
-                                    @elseif($staff['rank'] === 3) 🥉
-                                    @else {{ $staff['rank'] }}
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">{{ $staff['user_name'] }}</td>
-                                <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">{{ $staff['total_orders'] }}</td>
-                                <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">Rp {{ number_format($staff['total_revenue'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-center">
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-green-600 dark:bg-green-800 text-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">{{ __('report.staff_performance.rank') }}</th>
+                                    <th class="px-4 py-3 text-left">{{ __('report.staff_performance.name') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.staff_performance.orders') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.staff_performance.revenue') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.staff_performance.performance') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($dailySummary['staff_performance']['staff'] as $staff)
+                                <tr class="hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors
+                                    @if($staff['badge'] === 'top_performer') bg-yellow-50 dark:bg-yellow-900/20 @endif">
+                                    <td class="px-4 py-3 font-bold text-lg text-gray-800 dark:text-white">
+                                        @if($staff['rank'] === 1) 🏆
+                                        @elseif($staff['rank'] === 2) 🥈
+                                        @elseif($staff['rank'] === 3) 🥉
+                                        @else {{ $staff['rank'] }}
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">{{ $staff['user_name'] }}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">{{ $staff['total_orders'] }}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-white">Rp {{ number_format($staff['total_revenue'], 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="px-2 py-1 text-xs font-medium rounded
+                                            @if($staff['badge'] === 'top_performer') bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300
+                                            @elseif($staff['badge'] === 'above_average') bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300
+                                            @else bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
+                                            @endif">
+                                            @if($staff['performance_vs_avg'] > 0) +@endif{{ $staff['performance_vs_avg'] }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {{-- Mobile Card View --}}
+                    <div class="grid grid-cols-1 gap-4 md:hidden p-4">
+                        @foreach($dailySummary['staff_performance']['staff'] as $staff)
+                            <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm
+                                @if($staff['badge'] === 'top_performer') border-yellow-400 ring-1 ring-yellow-400 @endif">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xl">
+                                            @if($staff['rank'] === 1) 🏆
+                                            @elseif($staff['rank'] === 2) 🥈
+                                            @elseif($staff['rank'] === 3) 🥉
+                                            @else #{{ $staff['rank'] }}
+                                            @endif
+                                        </span>
+                                        <div class="font-bold text-gray-900 dark:text-white">{{ $staff['user_name'] }}</div>
+                                    </div>
                                     <span class="px-2 py-1 text-xs font-medium rounded
                                         @if($staff['badge'] === 'top_performer') bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300
                                         @elseif($staff['badge'] === 'above_average') bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300
@@ -882,11 +1010,20 @@
                                         @endif">
                                         @if($staff['performance_vs_avg'] > 0) +@endif{{ $staff['performance_vs_avg'] }}%
                                     </span>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-sm mt-2 border-t dark:border-gray-700 pt-2">
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Orders</div>
+                                        <div class="font-semibold text-gray-800 dark:text-white">{{ $staff['total_orders'] }}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Revenue</div>
+                                        <div class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($staff['total_revenue'], 0, ',', '.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         @endif
@@ -958,26 +1095,48 @@
                     <div class="px-4 py-3 bg-yellow-600 dark:bg-yellow-800">
                         <h4 class="font-bold text-white">{{ __('report.profit_analysis.product_profitability') }}</h4>
                     </div>
-                    <table class="w-full text-sm">
-                        <thead class="bg-yellow-100 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-300">
-                            <tr>
-                                <th class="px-4 py-3 text-left">{{ __('report.profit_analysis.product') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.qty') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.revenue') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.cogs') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.profit') }}</th>
-                                <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.margin') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach(array_slice($dailySummary['profit_analysis']['products'], 0, 10) as $product)
-                            <tr class="hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors">
-                                <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">{{ $product['product_name'] }}</td>
-                                <td class="px-4 py-3 text-center text-gray-800 dark:text-white">{{ $product['quantity_sold'] }}</td>
-                                <td class="px-4 py-3 text-right text-gray-800 dark:text-white">Rp {{ number_format($product['revenue'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">Rp {{ number_format($product['cogs'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400">Rp {{ number_format($product['profit'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-center">
+                    <div class="hidden md:block overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-yellow-100 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">{{ __('report.profit_analysis.product') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.qty') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.revenue') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.cogs') }}</th>
+                                    <th class="px-4 py-3 text-right">{{ __('report.profit_analysis.profit') }}</th>
+                                    <th class="px-4 py-3 text-center">{{ __('report.profit_analysis.margin') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach(array_slice($dailySummary['profit_analysis']['products'], 0, 10) as $product)
+                                <tr class="hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors">
+                                    <td class="px-4 py-3 font-medium text-gray-800 dark:text-white">{{ $product['product_name'] }}</td>
+                                    <td class="px-4 py-3 text-center text-gray-800 dark:text-white">{{ $product['quantity_sold'] }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-800 dark:text-white">Rp {{ number_format($product['revenue'], 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">Rp {{ number_format($product['cogs'], 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-right font-bold text-green-600 dark:text-green-400">Rp {{ number_format($product['profit'], 0, ',', '.') }}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="px-2 py-1 text-xs font-medium rounded
+                                            @if($product['margin'] >= 50) bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300
+                                            @elseif($product['margin'] >= 30) bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300
+                                            @elseif($product['margin'] >= 20) bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300
+                                            @else bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300
+                                            @endif">
+                                            {{ $product['margin'] }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {{-- Mobile Card View --}}
+                    <div class="grid grid-cols-1 gap-4 md:hidden p-4">
+                        @foreach(array_slice($dailySummary['profit_analysis']['products'], 0, 10) as $product)
+                            <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="font-bold text-gray-900 dark:text-white">{{ $product['product_name'] }}</div>
                                     <span class="px-2 py-1 text-xs font-medium rounded
                                         @if($product['margin'] >= 50) bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300
                                         @elseif($product['margin'] >= 30) bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300
@@ -986,11 +1145,24 @@
                                         @endif">
                                         {{ $product['margin'] }}%
                                     </span>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                                    <div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Sold</div>
+                                        <div class="font-semibold text-gray-800 dark:text-white">{{ $product['quantity_sold'] }}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Profit</div>
+                                        <div class="font-bold text-green-600 dark:text-green-400">Rp {{ number_format($product['profit'], 0, ',', '.') }}</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-500 flex justify-between border-t dark:border-gray-700 pt-1">
+                                    <span>Rev: Rp {{ number_format($product['revenue'], 0, ',', '.') }}</span>
+                                    <span>COGS: Rp {{ number_format($product['cogs'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
                 @endif
             </div>
@@ -1013,7 +1185,7 @@
         @if(isset($topProducts) && count($topProducts) > 0)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">🏆 {{ __('report.top_products.title') }}</h3>
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
@@ -1046,6 +1218,34 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @foreach($topProducts as $index => $product)
+                        <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="flex items-center justify-center w-6 h-6 rounded-full {{ $index == 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800' }} text-xs font-bold">
+                                        {{ $index + 1 }}
+                                    </span>
+                                    <div class="font-semibold text-gray-900 dark:text-white">{{ $product['name'] }}</div>
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                    {{ $product['percentage'] }}%
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center mt-3 pt-2 border-t dark:border-gray-700">
+                                 <div class="text-sm">
+                                    <span class="text-gray-500 dark:text-gray-400">Qty:</span>
+                                    <span class="font-semibold text-gray-800 dark:text-white">{{ number_format($product['quantity'], 0) }}</span>
+                                 </div>
+                                 <div class="font-bold text-green-600">
+                                    Rp {{ number_format($product['total'], 0, ',', '.') }}
+                                 </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         @endif
@@ -1132,7 +1332,7 @@
         @if(isset($periodSummary['staff_performance']) && count($periodSummary['staff_performance']['staff']) > 0)
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
             <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white">👨‍💼 {{ __('report.staff_performance.title') }}</h3>
-            <div class="overflow-x-auto">
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -1163,6 +1363,36 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            {{-- Mobile Card View --}}
+            <div class="grid grid-cols-1 gap-4 md:hidden">
+                @foreach($periodSummary['staff_performance']['staff'] as $staff)
+                    <div class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="flex items-center justify-center w-6 h-6 rounded-full {{ $staff['rank'] == 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800' }} text-xs font-bold">
+                                    {{ $staff['rank'] }}
+                                </span>
+                                <div class="font-semibold text-gray-900 dark:text-white">{{ $staff['name'] }}</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm mt-2 border-t dark:border-gray-700 pt-2">
+                            <div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Orders</div>
+                                <div class="font-semibold text-gray-800 dark:text-white">{{ $staff['total_orders'] }}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Avg</div>
+                                <div class="font-semibold text-gray-800 dark:text-white">Rp {{ number_format($staff['average_transaction'], 0, ',', '.') }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Total</div>
+                                <div class="font-bold text-green-600">Rp {{ number_format($staff['total_sales'], 0, ',', '.') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </div>
         @endif

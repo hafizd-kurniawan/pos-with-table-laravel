@@ -95,6 +95,28 @@ class PermissionSeeder extends Seeder
             // Kitchen Display System (KDS) Group
             ['name' => 'View KDS', 'slug' => 'view_kds', 'group' => 'kds', 'description' => 'Access Kitchen Display System'],
             ['name' => 'Manage KDS Status', 'slug' => 'manage_kds_status', 'group' => 'kds', 'description' => 'Update order status from KDS'],
+
+            // Attendance Group
+            ['name' => 'View Attendances', 'slug' => 'view_attendances', 'group' => 'attendance', 'description' => 'View all employee attendances'],
+            ['name' => 'Create Attendances', 'slug' => 'create_attendances', 'group' => 'attendance', 'description' => 'Manually create attendance records'],
+            ['name' => 'Edit Attendances', 'slug' => 'edit_attendances', 'group' => 'attendance', 'description' => 'Edit attendance records'],
+            ['name' => 'Delete Attendances', 'slug' => 'delete_attendances', 'group' => 'attendance', 'description' => 'Delete attendance records'],
+            ['name' => 'Self Attendance', 'slug' => 'self_attendance', 'group' => 'attendance', 'description' => 'Can clock in/out for self'],
+
+            // Shifts Group
+            ['name' => 'View Shifts', 'slug' => 'view_shifts', 'group' => 'shifts', 'description' => 'View work shifts'],
+            ['name' => 'Create Shifts', 'slug' => 'create_shifts', 'group' => 'shifts', 'description' => 'Create new shifts'],
+            ['name' => 'Edit Shifts', 'slug' => 'edit_shifts', 'group' => 'shifts', 'description' => 'Edit shifts'],
+            ['name' => 'Delete Shifts', 'slug' => 'delete_shifts', 'group' => 'shifts', 'description' => 'Delete shifts'],
+
+            // Leaves Group
+            ['name' => 'View Leaves', 'slug' => 'view_leaves', 'group' => 'leaves', 'description' => 'View all leave requests'],
+            ['name' => 'Create Leaves', 'slug' => 'create_leaves', 'group' => 'leaves', 'description' => 'Create leave requests (Admin)'],
+            ['name' => 'Edit Leaves', 'slug' => 'edit_leaves', 'group' => 'leaves', 'description' => 'Edit leave requests'],
+            ['name' => 'Delete Leaves', 'slug' => 'delete_leaves', 'group' => 'leaves', 'description' => 'Delete leave requests'],
+            ['name' => 'Approve Leaves', 'slug' => 'approve_leaves', 'group' => 'leaves', 'description' => 'Approve or reject leave requests'],
+            ['name' => 'View My Leaves', 'slug' => 'view_my_leaves', 'group' => 'leaves', 'description' => 'View own leave history'],
+            ['name' => 'Request Leaves', 'slug' => 'request_leaves', 'group' => 'leaves', 'description' => 'Request new leave'],
         ];
 
         foreach ($permissions as $permission) {

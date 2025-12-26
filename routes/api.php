@@ -198,6 +198,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     // ORDERS
     Route::get('/orders', [\App\Http\Controllers\Api\OrderController::class, 'index']);
     Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'store']);
+    Route::post('/orders/refund', [\App\Http\Controllers\Api\OrderController::class, 'refund']);
     Route::get('/orders/completed', [\App\Http\Controllers\Api\OrderController::class, 'completedOrders']);
     Route::get('/orders/paid', [\App\Http\Controllers\Api\OrderController::class, 'paidOrders']);
     Route::get('/orders/cooking', [\App\Http\Controllers\Api\OrderController::class, 'cookingOrders']);
@@ -252,4 +253,27 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     
     // DASHBOARD SUMMARY (for Flutter)
     Route::get('/dashboard/today-summary', [\App\Http\Controllers\Api\DashboardController::class, 'todaySummary']);
+
+    // SHIFT MANAGEMENT (Cashier Sessions)
+    Route::prefix('shift')->group(function () {
+        Route::get('/current', [\App\Http\Controllers\Api\CashierSessionController::class, 'current']);
+        Route::get('/history', [\App\Http\Controllers\Api\CashierSessionController::class, 'history']); // List history
+        Route::post('/open', [\App\Http\Controllers\Api\CashierSessionController::class, 'open']);
+        Route::post('/close', [\App\Http\Controllers\Api\CashierSessionController::class, 'close']);
+        Route::post('/transaction', [\App\Http\Controllers\Api\CashierSessionController::class, 'transaction']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\CashierSessionController::class, 'show']); // Detail (Must be last)
+    });
+
+    // ATTENDANCE
+    Route::post('/attendance/clock-in', [\App\Http\Controllers\Api\AttendanceController::class, 'clockIn']);
+    Route::post('/attendance/clock-out', [\App\Http\Controllers\Api\AttendanceController::class, 'clockOut']);
+    Route::get('/attendance/history', [\App\Http\Controllers\Api\AttendanceController::class, 'history']);
+    Route::get('/attendance/today', [\App\Http\Controllers\Api\AttendanceController::class, 'todayStatus']);
+
+    // LEAVES
+    Route::get('/leaves', [\App\Http\Controllers\Api\LeaveController::class, 'index']);
+    Route::post('/leaves', [\App\Http\Controllers\Api\LeaveController::class, 'store']);
+
+    // SHIFTS
+    Route::get('/shifts', [\App\Http\Controllers\Api\ShiftController::class, 'index']);
 });

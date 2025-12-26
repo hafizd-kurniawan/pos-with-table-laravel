@@ -101,7 +101,7 @@ class TableResource extends Resource
                             ->default(null)
                             ->disabled()
                             ->helperText(__('resource.table.helpers.qr_code')),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
 
                 Forms\Components\Section::make(__('resource.table.label') . ' Configuration')
                     ->schema([
@@ -137,7 +137,7 @@ class TableResource extends Resource
                             ->label(__('resource.table.reservation_time'))
                             ->helperText(__('resource.table.helpers.reservation_time'))
                             ->seconds(false),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -172,89 +172,34 @@ class TableResource extends Resource
                     ->tooltip(function (TableModel $record): ?string {
                         return $record->location;
                     })
+                    ->color('gray')
                     ->toggleable(),
-                    
-                // NEW: Customer Name from reservation
-                Tables\Columns\TextColumn::make('customer_name')
-                    ->label(__('resource.order.customer_name'))
-                    ->searchable()
-                    ->placeholder(__('resource.table.placeholders.no_customer'))
-                    ->weight('medium')
-                    ->icon('heroicon-m-user')
-                    ->color(fn ($state) => $state ? 'success' : 'gray')
-                    ->toggleable(),
-                    
-                // NEW: Customer Phone from reservation
-                Tables\Columns\TextColumn::make('customer_phone')
-                    ->label(__('resource.order.customer_phone'))
-                    ->searchable()
-                    ->placeholder(__('resource.table.placeholders.no_phone'))
-                    ->icon('heroicon-m-phone')
-                    ->copyable()
-                    ->copyMessage(__('resource.table.messages.phone_copied'))
-                    ->color(fn ($state) => $state ? 'info' : 'gray')
-                    ->toggleable(),
-                    
-                Tables\Columns\ImageColumn::make('qr_code_image')
-                    ->label(__('resource.table.qr_code'))
-                    ->square()
-                    ->size(60)
-                    ->getStateUsing(function (TableModel $record) {
-                        // Use stored QR code or generate safe URL
-                        $url = $record->qr_code;
-                        if (empty($url)) {
-                            $url = $record->qr_url;
-                        }
-                        return QRCodeService::generateDataUrl($url, 'svg', 200);
-                    })
-                    ->tooltip('Preview QR Code')
-                    ->toggleable(),
-                    
-                Tables\Columns\TextColumn::make('qr_url')
-                    ->label(__('resource.table.order_url'))
-                    ->getStateUsing(function (TableModel $record) {
-                        return $record->qr_code ?: $record->qr_url;
-                    })
-                    ->copyable()
-                    ->copyMessage(__('resource.table.messages.url_copied'))
-                    ->copyMessageDuration(1500)
-                    ->icon('heroicon-m-link')
-                    ->limit(35)
-                    ->tooltip('Klik untuk copy URL')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                    
-                Tables\Columns\TextColumn::make('status')
+
+                Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.table.status'))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'available' => 'success',
-                        'occupied' => 'warning', 
-                        'reserved' => 'info',
-                        'maintenance' => 'danger',
-                        default => 'gray',
-                    })
-                    ->icon(fn (string $state): string => match ($state) {
-                        'available' => 'heroicon-m-check-circle',
-                        'occupied' => 'heroicon-m-user-group',
-                        'reserved' => 'heroicon-m-clock',
-                        'maintenance' => 'heroicon-m-wrench-screwdriver',
-                        default => 'heroicon-m-question-mark-circle',
-                    })
+                    ->colors([
+                        'success' => 'available',
+                        'warning' => 'occupied', 
+                        'info' => 'reserved',
+                        'danger' => 'maintenance',
+                        'gray' => 'default',
+                    ])
+                    ->icons([
+                        'heroicon-m-check-circle' => 'available',
+                        'heroicon-m-user-group' => 'occupied',
+                        'heroicon-m-clock' => 'reserved',
+                        'heroicon-m-wrench-screwdriver' => 'maintenance',
+                        'heroicon-m-question-mark-circle' => 'default',
+                    ])
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'available' => __('resource.table.statuses.available'),
                         'occupied' => __('resource.table.statuses.occupied'),
                         'reserved' => __('resource.table.statuses.reserved'),
                         'maintenance' => __('resource.table.statuses.maintenance'),
                         default => ucfirst($state),
-                    }),
+                    })
+                    ->sortable(),
                     
-                Tables\Columns\TextColumn::make('capacity')
-                    ->label(__('resource.table.capacity'))
-                    ->numeric()
-                    ->sortable()
-                    ->suffix(' ' . __('resource.unit.types.count'))
-                    ->alignCenter(),
-
                 Tables\Columns\TextColumn::make('party_size')
                     ->label(__('resource.table.current_party'))
                     ->numeric()
@@ -270,7 +215,63 @@ class TableResource extends Resource
                         default => 'success'
                     })
                     ->icon(fn ($state) => $state > 0 ? 'heroicon-m-users' : 'heroicon-m-user-minus')
-                    ->alignCenter(),
+                    ->sortable(),
+
+                // NEW: Customer Name from reservation
+                Tables\Columns\TextColumn::make('customer_name')
+                    ->label(__('resource.order.customer_name'))
+                    ->searchable()
+                    ->placeholder(__('resource.table.placeholders.no_customer'))
+                    ->weight('medium')
+                    ->icon('heroicon-m-user')
+                    ->color(fn ($state) => $state ? 'success' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                // NEW: Customer Phone from reservation
+                Tables\Columns\TextColumn::make('customer_phone')
+                    ->label(__('resource.order.customer_phone'))
+                    ->searchable()
+                    ->placeholder(__('resource.table.placeholders.no_phone'))
+                    ->icon('heroicon-m-phone')
+                    ->copyable()
+                    ->copyMessage(__('resource.table.messages.phone_copied'))
+                    ->color(fn ($state) => $state ? 'info' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                Tables\Columns\ImageColumn::make('qr_code_image')
+                    ->label(__('resource.table.qr_code'))
+                    ->square()
+                    ->size(60)
+                    ->getStateUsing(function (TableModel $record) {
+                        // Use stored QR code or generate safe URL
+                        $url = $record->qr_code;
+                        if (empty($url)) {
+                            $url = $record->qr_url;
+                        }
+                        return QRCodeService::generateDataUrl($url, 'svg', 200);
+                    })
+                    ->tooltip('Preview QR Code')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                Tables\Columns\TextColumn::make('qr_url')
+                    ->label(__('resource.table.order_url'))
+                    ->getStateUsing(function (TableModel $record) {
+                        return $record->qr_code ?: $record->qr_url;
+                    })
+                    ->copyable()
+                    ->copyMessage(__('resource.table.messages.url_copied'))
+                    ->copyMessageDuration(1500)
+                    ->icon('heroicon-m-link')
+                    ->limit(35)
+                    ->tooltip('Klik untuk copy URL')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                Tables\Columns\TextColumn::make('capacity')
+                    ->label(__('resource.table.capacity'))
+                    ->numeric()
+                    ->sortable()
+                    ->suffix(' ' . __('resource.unit.types.count'))
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('reservation_time')
                     ->label(__('resource.table.reserved_until'))
@@ -286,7 +287,7 @@ class TableResource extends Resource
                         if (!$reservation) return 'Reserved until: ' . $record->reservation_time->format('M j, Y H:i');
                         return "Reservation by: {$reservation->customer_name}\nParty Size: {$reservation->party_size}\nStatus: " . ucfirst($reservation->status);
                     })
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))

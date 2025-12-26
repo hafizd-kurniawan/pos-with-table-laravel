@@ -36,6 +36,10 @@ return [
             'change_password' => 'Ganti Password',
             'order_settings' => 'Pengaturan Pesanan',
         ],
+        'empty' => [
+            'heading' => 'Data Tidak Ditemukan',
+            'description' => 'Belum ada data yang tersedia di sini. Mulailah dengan membuat data baru!',
+        ],
     ],
     'product' => [
         'label' => 'Produk',

@@ -43,8 +43,8 @@
     <div x-data="{ activeTab: @entangle('activeTab').defer }" x-init="if(!activeTab) activeTab = 'stock-summary'">
         {{-- Tabs Navigation --}}
         <div class="mb-6">
-            <div class="border-b border-gray-200 bg-white rounded-t-lg">
-                <nav class="-mb-px flex space-x-8 px-4">
+            <div class="border-b border-gray-200 bg-white rounded-t-lg overflow-x-auto">
+                <nav class="-mb-px flex space-x-8 px-4 min-w-max">
                     <button @click="activeTab = 'stock-summary'" 
                         :class="activeTab === 'stock-summary' ? 'border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-all">
@@ -110,7 +110,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
@@ -166,6 +166,49 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @forelse($stockSummary as $item)
+                        <div class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ $item['name'] }}</div>
+                                    <div class="text-xs text-gray-500">{{ $item['sku'] }} • {{ $item['category'] }}</div>
+                                </div>
+                                <div>
+                                    @if($item['status'] === 'safe')
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Safe</span>
+                                    @elseif($item['status'] === 'low')
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Low</span>
+                                    @elseif($item['status'] === 'critical')
+                                        <span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">Critical</span>
+                                    @elseif($item['status'] === 'out_of_stock')
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Out</span>
+                                    @else
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">{{ ucfirst($item['status']) }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm mt-3 border-t pt-2">
+                                <div>
+                                    <div class="text-gray-500 text-xs">Stock</div>
+                                    <div class="font-medium">{{ $this->formatStock($item['current_stock']) }} {{ $item['unit'] }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-500 text-xs">Value</div>
+                                    <div class="font-medium">Rp {{ number_format($item['stock_value'], 0, ',', '.') }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 text-xs">Min Stock</div>
+                                    <div class="font-medium">{{ $this->formatStock($item['min_stock']) }} {{ $item['unit'] }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center p-4 text-gray-500">No data available</div>
+                    @endforelse
+                </div>
             </x-filament::card>
         </div>
 
@@ -176,7 +219,7 @@
                     <p class="text-sm text-gray-600">{{ __('report.inventory.low_stock.description') }}</p>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
@@ -209,6 +252,32 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @forelse($lowStockItems as $item)
+                        <div class="bg-white border border-red-200 rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="font-bold text-gray-900">{{ $item['name'] }}</div>
+                                <div class="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded">Shortage: {{ $this->formatStock($item['shortage']) }}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm mt-3 border-t pt-2">
+                                <div>
+                                    <div class="text-gray-500 text-xs">Current Stock</div>
+                                    <div class="font-medium text-red-600">{{ $this->formatStock($item['current_stock']) }} {{ $item['unit'] }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-500 text-xs">Min Stock</div>
+                                    <div class="font-medium">{{ $this->formatStock($item['min_stock']) }} {{ $item['unit'] }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center p-4 text-green-600">
+                            ✅ {{ __('report.inventory.low_stock.all_good') }}
+                        </div>
+                    @endforelse
                 </div>
             </x-filament::card>
         </div>
@@ -268,7 +337,7 @@
                 </div>
 
                 {{-- Table --}}
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
@@ -321,6 +390,50 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @forelse($stockMovements as $movement)
+                        <div class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ $movement['ingredient'] }}</div>
+                                    <div class="text-xs text-gray-500">{{ $movement['date'] }}</div>
+                                </div>
+                                <div>
+                                    @if($movement['type'] === 'in')
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">IN</span>
+                                    @elseif($movement['type'] === 'out')
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">OUT</span>
+                                    @elseif($movement['type'] === 'adjustment')
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">ADJ</span>
+                                    @else
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">{{ strtoupper($movement['type']) }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                 <div class="text-sm font-medium">
+                                    {{ $this->formatStock($movement['quantity']) }} {{ $movement['unit'] }}
+                                 </div>
+                                 <div class="text-xs text-gray-500">
+                                    {{ $movement['user'] }}
+                                 </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 border-t pt-2">
+                                <div>Before: {{ $this->formatStock($movement['stock_before']) }}</div>
+                                <div class="text-right">After: {{ $this->formatStock($movement['stock_after']) }}</div>
+                            </div>
+                             @if($movement['notes'])
+                                <div class="mt-2 text-xs text-gray-600 italic bg-gray-50 p-2 rounded">
+                                    "{{ $movement['notes'] }}"
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="text-center p-4 text-gray-500">{{ __('report.inventory.stock_movements.no_data') }}</div>
+                    @endforelse
                 </div>
             </x-filament::card>
         </div>
@@ -397,7 +510,7 @@
                 </div>
 
                 {{-- Table --}}
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
@@ -452,6 +565,49 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @forelse($purchaseOrders as $po)
+                        <div class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ $po['supplier'] }}</div>
+                                    <div class="text-xs text-blue-600 font-mono">{{ $po['po_number'] }}</div>
+                                </div>
+                                <div>
+                                    @if($po['status'] === 'draft')
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Draft</span>
+                                    @elseif($po['status'] === 'sent')
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Sent</span>
+                                    @elseif($po['status'] === 'received')
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Received</span>
+                                    @elseif($po['status'] === 'cancelled')
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Cancelled</span>
+                                    @else
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">{{ ucfirst($po['status']) }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                                <div>
+                                    <div class="text-gray-500 text-xs">Date</div>
+                                    <div>{{ $po['order_date'] }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-gray-500 text-xs">Total</div>
+                                    <div class="font-bold">Rp {{ number_format($po['total_amount'], 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2 border-t flex justify-between text-xs text-gray-500">
+                                <div>{{ $po['items_count'] }} items</div>
+                                <div>{{ $po['received_date'] ?? '-' }}</div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center p-4 text-gray-500">{{ __('report.inventory.purchase_orders.no_data') }}</div>
+                    @endforelse
                 </div>
             </x-filament::card>
         </div>
@@ -538,7 +694,7 @@
                 </div>
 
                 {{-- Table --}}
-                <div class="overflow-x-auto">
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
@@ -579,6 +735,38 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Card View --}}
+                <div class="grid grid-cols-1 gap-4 md:hidden">
+                    @forelse($varianceAnalysis as $opname)
+                        <div class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-gray-900">{{ $opname['opname_number'] }}</div>
+                                    <div class="text-xs text-gray-500">{{ $opname['date'] }}</div>
+                                </div>
+                                <div>
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">{{ ucfirst($opname['status']) }}</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                 <div class="text-sm">
+                                    {{ $opname['items_count'] }} Items
+                                 </div>
+                                 <div class="font-bold {{ $opname['total_variance_value'] < 0 ? 'text-red-600' : ($opname['total_variance_value'] > 0 ? 'text-green-600' : 'text-gray-600') }}">
+                                    Rp {{ number_format($opname['total_variance_value'], 0, ',', '.') }}
+                                 </div>
+                            </div>
+                             @if($opname['notes'])
+                                <div class="mt-2 text-xs text-gray-600 italic bg-gray-50 p-2 rounded">
+                                    "{{ $opname['notes'] }}"
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="text-center p-4 text-gray-500">No Stock Opname data found.</div>
+                    @endforelse
                 </div>
             </x-filament::card>
         </div>

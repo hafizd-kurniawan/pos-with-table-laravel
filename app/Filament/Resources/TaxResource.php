@@ -66,49 +66,52 @@ class TaxResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255)
-                    ->label(__('resource.tax.name'))
-                    ->placeholder(__('resource.tax.placeholders.name'))
-                    ->helperText(__('resource.tax.helpers.name')),
-                
-                Forms\Components\Select::make('type')
-                    ->required()
-                    ->options([
-                        'pajak' => __('resource.tax.types.tax'),
-                        'layanan' => __('resource.tax.types.service'),
-                    ])
-                    ->default('pajak')
-                    ->label(__('resource.tax.type'))
-                    ->helperText(__('resource.tax.helpers.type')),
-                
-                Forms\Components\TextInput::make('value')
-                    ->required()
-                    ->numeric()
-                    ->suffix('%')
-                    ->minValue(0)
-                    ->maxValue(100)
-                    ->default(11)
-                    ->label(__('resource.tax.value'))
-                    ->placeholder(__('resource.tax.placeholders.value'))
-                    ->helperText(__('resource.tax.helpers.value')),
-                
-                Forms\Components\Select::make('status')
-                    ->required()
-                    ->options([
-                        'active' => __('resource.tax.statuses.active'),
-                        'inactive' => __('resource.tax.statuses.inactive'),
-                    ])
-                    ->default('active')
-                    ->label(__('resource.tax.status'))
-                    ->helperText(__('resource.tax.helpers.status')),
-                
-                Forms\Components\Textarea::make('description')
-                    ->columnSpanFull()
-                    ->label(__('resource.tax.description'))
-                    ->placeholder(__('resource.tax.placeholders.description'))
-                    ->rows(3),
+                Forms\Components\Section::make(__('resource.tax.label') . ' Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255)
+                            ->label(__('resource.tax.name'))
+                            ->placeholder(__('resource.tax.placeholders.name'))
+                            ->helperText(__('resource.tax.helpers.name')),
+                        
+                        Forms\Components\Select::make('type')
+                            ->required()
+                            ->options([
+                                'pajak' => __('resource.tax.types.tax'),
+                                'layanan' => __('resource.tax.types.service'),
+                            ])
+                            ->default('pajak')
+                            ->label(__('resource.tax.type'))
+                            ->helperText(__('resource.tax.helpers.type')),
+                        
+                        Forms\Components\TextInput::make('value')
+                            ->required()
+                            ->numeric()
+                            ->suffix('%')
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->default(11)
+                            ->label(__('resource.tax.value'))
+                            ->placeholder(__('resource.tax.placeholders.value'))
+                            ->helperText(__('resource.tax.helpers.value')),
+                        
+                        Forms\Components\Select::make('status')
+                            ->required()
+                            ->options([
+                                'active' => __('resource.tax.statuses.active'),
+                                'inactive' => __('resource.tax.statuses.inactive'),
+                            ])
+                            ->default('active')
+                            ->label(__('resource.tax.status'))
+                            ->helperText(__('resource.tax.helpers.status')),
+                        
+                        Forms\Components\Textarea::make('description')
+                            ->columnSpanFull()
+                            ->label(__('resource.tax.description'))
+                            ->placeholder(__('resource.tax.placeholders.description'))
+                            ->rows(3),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -116,11 +119,18 @@ class TaxResource extends Resource
     {
         return $table
             ->columns([
+
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('resource.tax.name'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
                 
+                Tables\Columns\TextColumn::make('description')
+                    ->label(__('resource.tax.description'))
+                    ->limit(50)
+                    ->color('gray'),
+
                 Tables\Columns\BadgeColumn::make('type')
                     ->label(__('resource.tax.type'))
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -131,13 +141,14 @@ class TaxResource extends Resource
                     ->colors([
                         'primary' => 'pajak',
                         'success' => 'layanan',
-                    ]),
+                    ])
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('value')
                     ->label(__('resource.tax.value'))
                     ->formatStateUsing(fn ($state) => $state . '%')
                     ->sortable()
-                    ->alignCenter(),
+                    ->weight('bold'),
                 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.tax.status'))
@@ -149,12 +160,8 @@ class TaxResource extends Resource
                     ->colors([
                         'success' => 'active',
                         'danger' => 'inactive',
-                    ]),
-                
-                Tables\Columns\TextColumn::make('description')
-                    ->label(__('resource.tax.description'))
-                    ->limit(50)
-                    ->toggleable(),
+                    ])
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))

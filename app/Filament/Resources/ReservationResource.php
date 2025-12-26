@@ -60,7 +60,7 @@ class ReservationResource extends Resource
                             ->email()
                             ->maxLength(255)
                             ->label(__('resource.reservation.email')),
-                    ])->columns(3),
+                    ])->columns(['default' => 1, 'sm' => 3]),
 
                 Forms\Components\Section::make(__('resource.reservation.label'))
                     ->schema([
@@ -175,7 +175,7 @@ class ReservationResource extends Resource
                             ])
                             ->default('pending')
                             ->label(__('resource.reservation.status')),
-                    ])->columns(3),
+                    ])->columns(['default' => 1, 'sm' => 3]),
 
                 Forms\Components\Section::make(__('resource.general.additional_info'))
                     ->schema([
@@ -188,7 +188,7 @@ class ReservationResource extends Resource
                             ->label(__('resource.reservation.special_requests'))
                             ->helperText(__('resource.reservation.helpers.special_requests'))
                             ->rows(3),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -207,30 +207,12 @@ class ReservationResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
-
-                Tables\Columns\TextColumn::make('customer_phone')
-                    ->label(__('resource.reservation.phone'))
-                    ->searchable()
-                    ->copyable()
-                    ->copyMessage('Phone copied!')
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('party_size')
-                    ->label(__('resource.reservation.party_size'))
-                    ->numeric()
-                    ->sortable()
-                    ->suffix(' people')
-                    ->alignCenter(),
-
+                    
                 Tables\Columns\TextColumn::make('reservation_date')
                     ->label(__('resource.reservation.reservation_date'))
                     ->date('M j, Y')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('reservation_time')
-                    ->label(__('resource.reservation.reservation_time'))
-                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('H:i'))
-                    ->sortable(),
+                    ->sortable()
+                    ->color('gray'),
 
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.reservation.status'))
@@ -260,6 +242,25 @@ class ReservationResource extends Resource
                         default => ucfirst($state),
                     })
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('reservation_time')
+                    ->label(__('resource.reservation.reservation_time'))
+                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('H:i'))
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('party_size')
+                    ->label(__('resource.reservation.party_size'))
+                    ->numeric()
+                    ->suffix(' people')
+                    ->color('gray')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('customer_phone')
+                    ->label(__('resource.reservation.phone'))
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessage('Phone copied!')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.reservation.created_at'))

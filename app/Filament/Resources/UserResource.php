@@ -111,7 +111,7 @@ class UserResource extends Resource
                             ->helperText('Select the role for this user')
                             ->columnSpan(1),
                     ])
-                    ->columns(2),
+                    ->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -129,7 +129,8 @@ class UserResource extends Resource
                     ->label(__('resource.user.email'))
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-o-envelope'),
+                    ->icon('heroicon-m-envelope')
+                    ->color('gray'),
                 
                 Tables\Columns\TextColumn::make('role.name')
                     ->label(__('resource.user.roles'))
@@ -145,7 +146,7 @@ class UserResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-                
+
                 Tables\Columns\IconColumn::make('is_login')
                     ->label('Online')
                     ->boolean()
@@ -160,7 +161,8 @@ class UserResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->since()
-                    ->toggleable(),
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('role')

@@ -57,4 +57,38 @@ class OrderObserver
             ]);
         }
     }
+    /**
+     * Handle the Order "deleted" event.
+     */
+    public function deleted(Order $order): void
+    {
+        try {
+            Log::info("Order deleted, attempting to restore stock", ['order_id' => $order->id]);
+
+            // 1. Restore Direct Stock Products
+            foreach ($order->orderItems as $orderItem) {
+                $product = $orderItem->product;
+                if ($product && $product->recipes()->doesntExist()) {
+                    $product->increment('stock', $orderItem->quantity);
+                    Log::info("Restored direct stock for product", [
+                        'product_id' => $product->id,
+                        'quantity' => $orderItem->quantity
+                    ]);
+                }
+            }
+
+            // 2. Restore Recipe Ingredients
+            // We use InventoryService to handle complex recipe restoration
+            $inventoryService = app(\App\Services\InventoryService::class);
+            $inventoryService->restoreStockForOrder($order->id);
+            
+            Log::info("Stock restoration completed for deleted order", ['order_id' => $order->id]);
+
+        } catch (\Exception $e) {
+            Log::error("Failed to restore stock for deleted order: " . $e->getMessage(), [
+                'order_id' => $order->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
 }

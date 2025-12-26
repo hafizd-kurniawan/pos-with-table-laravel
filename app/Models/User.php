@@ -120,6 +120,14 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Alias for hasPermission to support standard naming
+     */
+    public function hasPermissionTo(string $permission): bool
+    {
+        return $this->hasPermission($permission);
+    }
+
+    /**
      * Check if user has specific role
      */
     public function hasRole(string $roleSlug): bool

@@ -148,7 +148,7 @@ class PurchaseOrderResource extends Resource
                                             }
                                         }
                                     })
-                                    ->columnSpan(2),
+                                    ->columnSpan(['default' => 1, 'md' => 2]),
                                 
                                 Forms\Components\TextInput::make('quantity')
                                     ->label(__('resource.purchase_order.items.quantity'))
@@ -188,9 +188,9 @@ class PurchaseOrderResource extends Resource
                                 Forms\Components\Textarea::make('notes')
                                     ->label(__('resource.purchase_order.items.notes'))
                                     ->rows(1)
-                                    ->columnSpan(5),
+                                    ->columnSpanFull(),
                             ])
-                            ->columns(5)
+                            ->columns(['default' => 1, 'md' => 5])
                             ->defaultItems(1)
                             ->createItemButtonLabel(__('resource.purchase_order.items.add_item'))
                             ->reorderableWithButtons()
@@ -223,18 +223,7 @@ class PurchaseOrderResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
-                
-                Tables\Columns\TextColumn::make('order_date')
-                    ->label(__('resource.purchase_order.order_date'))
-                    ->date('d M Y')
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('expected_delivery_date')
-                    ->label(__('resource.purchase_order.expected_delivery_date'))
-                    ->date('d M Y')
-                    ->sortable()
-                    ->toggleable(),
-                
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->label(__('resource.purchase_order.status'))
                     ->colors([
@@ -249,14 +238,26 @@ class PurchaseOrderResource extends Resource
                         'received' => __('resource.purchase_order.statuses.received'),
                         'cancelled' => __('resource.purchase_order.statuses.cancelled'),
                         default => ucfirst($state),
-                    }),
+                    })
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label(__('resource.purchase_order.total_amount'))
                     ->formatStateUsing(fn ($state) => \App\Helpers\FormatHelper::formatCurrency($state))
                     ->sortable()
-                    ->alignEnd()
                     ->weight('bold'),
+                
+                Tables\Columns\TextColumn::make('order_date')
+                    ->label(__('resource.purchase_order.order_date'))
+                    ->date('d M Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
+                Tables\Columns\TextColumn::make('expected_delivery_date')
+                    ->label(__('resource.purchase_order.expected_delivery_date'))
+                    ->date('d M Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label(__('resource.purchase_order.created_by'))

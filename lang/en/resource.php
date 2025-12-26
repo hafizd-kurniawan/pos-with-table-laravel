@@ -36,6 +36,10 @@ return [
             'change_password' => 'Change Password',
             'order_settings' => 'Order Settings',
         ],
+        'empty' => [
+            'heading' => 'No Data Found',
+            'description' => 'It looks like there are no records here yet. Start by creating a new one!',
+        ],
     ],
     'product' => [
         'label' => 'Product',

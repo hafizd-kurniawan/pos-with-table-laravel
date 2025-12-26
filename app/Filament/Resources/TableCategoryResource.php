@@ -99,7 +99,7 @@ class TableCategoryResource extends Resource
                             ->label(__('resource.table_category.is_active'))
                             ->default(true)
                             ->helperText(__('resource.table_category.helpers.is_active')),
-                    ])->columns(2),
+                    ])->columns(['default' => 1, 'sm' => 2]),
             ]);
     }
 
@@ -112,10 +112,18 @@ class TableCategoryResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
+                
+                Tables\Columns\TextColumn::make('description')
+                    ->label(__('resource.table_category.description'))
+                    ->limit(50)
+                    ->color('gray')
+                    ->tooltip(function (TableCategory $record): ?string {
+                        if (!$record->description) {
+                            return null;
+                        }
 
-                Tables\Columns\TextColumn::make('icon')
-                    ->label(__('resource.table_category.icon'))
-                    ->formatStateUsing(fn ($state) => $state ? $state . ' Icon' : 'No Icon'),
+                        return $record->description;
+                    }),
 
                 Tables\Columns\BadgeColumn::make('color')
                     ->label(__('resource.table_category.color'))
@@ -138,32 +146,28 @@ class TableCategoryResource extends Resource
                         'fuchsia' => 'primary',
                         'pink' => 'primary',
                         'rose' => 'danger',
-                    ]),
-
+                    ])
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('tables_count')
                     ->label(__('resource.table_category.tables_count'))
                     ->counts('tables')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('description')
-                    ->label(__('resource.table_category.description'))
-                    ->limit(50)
-                    ->tooltip(function (TableCategory $record): ?string {
-                        if (!$record->description) {
-                            return null;
-                        }
-
-                        return $record->description;
-                    }),
-
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->label(__('resource.table_category.sort_order'))
-                    ->sortable(),
-
+                    
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('resource.table_category.is_active'))
                     ->boolean()
                     ->sortable(),
+                
+                Tables\Columns\TextColumn::make('icon')
+                    ->label(__('resource.table_category.icon'))
+                    ->formatStateUsing(fn ($state) => $state ? $state . ' Icon' : 'No Icon')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label(__('resource.table_category.sort_order'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))

@@ -57,7 +57,7 @@ class SupplierResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->placeholder(__('resource.supplier.placeholders.name'))
-                            ->columnSpan(2),
+                            ->columnSpan(['default' => 1, 'sm' => 2, 'lg' => 2]),
                         
                         Forms\Components\TextInput::make('code')
                             ->label(__('resource.supplier.code'))
@@ -65,7 +65,7 @@ class SupplierResource extends Resource
                             ->dehydrated(false)
                             ->default(fn() => __('resource.supplier.helpers.auto_generated'))
                             ->helperText(__('resource.supplier.helpers.code'))
-                            ->columnSpan(1),
+                            ->columnSpan(['default' => 1, 'sm' => 1, 'lg' => 1]),
                         
                         Forms\Components\Select::make('status')
                             ->label(__('resource.supplier.status'))
@@ -75,8 +75,8 @@ class SupplierResource extends Resource
                             ])
                             ->default('active')
                             ->required()
-                            ->columnSpan(1),
-                    ])->columns(4),
+                            ->columnSpan(['default' => 1, 'sm' => 1, 'lg' => 1]),
+                    ])->columns(['default' => 1, 'sm' => 2, 'lg' => 4]),
                 
                 Forms\Components\Section::make(__('resource.supplier.contact_info'))
                     ->schema([
@@ -98,7 +98,7 @@ class SupplierResource extends Resource
                             ->label(__('resource.supplier.address'))
                             ->rows(3)
                             ->columnSpanFull(),
-                    ])->columns(3),
+                    ])->columns(['default' => 1, 'sm' => 3]),
                 
                 Forms\Components\Section::make(__('resource.supplier.notes'))
                     ->schema([
@@ -114,6 +114,12 @@ class SupplierResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->label(__('resource.supplier.name'))
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+                
                 Tables\Columns\TextColumn::make('code')
                     ->label(__('resource.supplier.code'))
                     ->searchable()
@@ -122,28 +128,23 @@ class SupplierResource extends Resource
                     ->color('primary')
                     ->copyable(),
                 
-                Tables\Columns\TextColumn::make('name')
-                    ->label(__('resource.supplier.name'))
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
-                
                 Tables\Columns\TextColumn::make('contact_person')
                     ->label(__('resource.supplier.contact_person'))
                     ->searchable()
+                    ->icon('heroicon-m-user')
+                    ->color('gray')
                     ->toggleable(),
-                
+
                 Tables\Columns\TextColumn::make('phone')
                     ->label(__('resource.supplier.phone'))
                     ->searchable()
-                    ->icon('heroicon-o-phone')
-                    ->copyable(),
+                    ->icon('heroicon-m-phone')
+                    ->toggleable(),
                 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('resource.supplier.email'))
                     ->searchable()
-                    ->icon('heroicon-o-envelope')
-                    ->copyable()
+                    ->icon('heroicon-m-envelope')
                     ->toggleable(),
                 
                 Tables\Columns\BadgeColumn::make('status')
@@ -156,13 +157,16 @@ class SupplierResource extends Resource
                         'active' => __('resource.general.statuses.active'),
                         'inactive' => __('resource.general.statuses.inactive'),
                         default => $state,
-                    }),
-                
+                    })
+                    ->sortable(),
+
+                // Hidden columns
                 Tables\Columns\TextColumn::make('ingredients_count')
                     ->label(__('resource.ingredient_category.ingredients_count'))
                     ->counts('ingredients')
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('resource.general.created_at'))

@@ -166,3 +166,13 @@ if (!function_exists('get_active_service_charge')) {
         return $services->sum('value');
     }
 }
+
+if (!function_exists('format_rupiah')) {
+    /**
+     * Format number to Rupiah currency
+     */
+    function format_rupiah($number)
+    {
+        return 'Rp ' . number_format($number, 0, ',', '.');
+    }
+}

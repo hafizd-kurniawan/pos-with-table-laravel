@@ -72,6 +72,10 @@ class RoleSeeder extends Seeder
                 'manage_discounts', 'manage_taxes', 'manage_service_charges',
                 'view_printers', 'create_printers', 'edit_printers', 'delete_printers',
                 'view_kds', 'manage_kds_status',
+                // New Features
+                'view_attendances', 'self_attendance',
+                'view_shifts', 'create_shifts', 'edit_shifts', 'delete_shifts',
+                'view_leaves', 'approve_leaves', 'view_my_leaves', 'request_leaves',
             ];
             $managerRole->permissions()->sync($permissions->whereIn('slug', $managerPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;
@@ -93,6 +97,8 @@ class RoleSeeder extends Seeder
                 'view_products', // Can view products to take orders
                 'view_tables', 'manage_table_status',
                 'process_payments', 'view_payment_history',
+                // New Features
+                'self_attendance', 'view_my_leaves', 'request_leaves',
             ];
             $cashierRole->permissions()->sync($permissions->whereIn('slug', $cashierPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;
@@ -113,6 +119,8 @@ class RoleSeeder extends Seeder
                 'view_orders', 'manage_order_status', // Can see orders and mark as cooking/ready
                 'view_products', // Can view menu items
                 'view_kds', 'manage_kds_status', // KDS Access
+                // New Features
+                'self_attendance', 'view_my_leaves', 'request_leaves',
             ];
             $chefRole->permissions()->sync($permissions->whereIn('slug', $chefPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;
@@ -133,6 +141,8 @@ class RoleSeeder extends Seeder
                 'view_orders', 'create_orders', 'manage_order_status', // Can create orders and mark as served
                 'view_products',
                 'view_tables', 'manage_table_status', // Can manage table status
+                // New Features
+                'self_attendance', 'view_my_leaves', 'request_leaves',
             ];
             $waiterRole->permissions()->sync($permissions->whereIn('slug', $waiterPermissions)->pluck('id')->toArray());
             $totalRolesCreated++;
