@@ -22,9 +22,9 @@ class UnitResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
     
-    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?string $navigationGroup = '1. Setup & Master Data';
     
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
 
     public static function getModelLabel(): string
     {

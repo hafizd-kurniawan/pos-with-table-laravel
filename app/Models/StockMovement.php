@@ -14,6 +14,7 @@ class StockMovement extends Model
     const TYPE_IN = 'in';
     const TYPE_OUT = 'out';
     const TYPE_ADJUSTMENT = 'adjustment';
+    const TYPE_WASTE = 'waste';
 
     protected $fillable = [
         'tenant_id',

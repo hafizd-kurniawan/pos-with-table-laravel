@@ -24,7 +24,7 @@ class TableResource extends Resource
     protected static ?string $model = TableModel::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
-    protected static ?string $navigationGroup = 'Operations';
+    protected static ?string $navigationGroup = '2. Table Management';
     protected static ?int $navigationSort = 2;
 
     public static function getModelLabel(): string

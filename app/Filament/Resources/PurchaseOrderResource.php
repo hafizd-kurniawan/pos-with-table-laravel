@@ -22,14 +22,9 @@ class PurchaseOrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     
-    protected static ?string $navigationGroup = 'Inventory';
-    
-    public static function getNavigationGroup(): ?string
-    {
-        return __('resource.general.navigation.inventory');
-    }
-    
-    protected static ?int $navigationSort = 3;
+    protected static ?string $navigationGroup = '3. Inventory Operations';
+
+    protected static ?int $navigationSort = 1;
 
     public static function getModelLabel(): string
     {

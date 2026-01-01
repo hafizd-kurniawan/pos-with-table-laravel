@@ -17,6 +17,8 @@ class MyLeavesResource extends Resource
     protected static ?string $model = Leave::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationGroup = '5. HR & Team';
+    protected static ?int $navigationSort = 5;
     
     protected static ?string $navigationLabel = 'My Leaves';
     

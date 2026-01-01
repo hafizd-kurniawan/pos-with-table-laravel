@@ -184,7 +184,8 @@ class OrderController extends Controller
             }
 
             $order = \App\Models\Order::create([
-                'code' => 'TRX-' . strtoupper(uniqid()),
+                // SECURITY FIX: Randomize Order Code
+                'code' => 'TRX-' . strtoupper(\Illuminate\Support\Str::random(10)),
                 'status' => $paymentMethod === 'cash' ? 'paid' : 'completed',
                 'placed_at' => now(),
                 'customer_name' => $request->input('customer_name', 'Anonymous'),
@@ -421,7 +422,10 @@ class OrderController extends Controller
             ]);
 
             $tableNumber = $request->table_number;
-            $table = \App\Models\Table::where('name', $tableNumber)->firstOrFail();
+            // SECURITY FIX: Enforce tenant_id to prevent cross-tenant table access
+            $table = \App\Models\Table::where('name', $tableNumber)
+                ->where('tenant_id', $request->tenant_id)
+                ->firstOrFail();
             
             // Hitung total dengan memvalidasi dan mengambil harga dari database jika diperlukan
             $cartItems = $request->cart_items;
@@ -454,15 +458,8 @@ class OrderController extends Controller
                     }
                 }
                 
-                // Gunakan harga dari database jika harga dari Flutter kosong/0
-                $price = ($item['price'] > 0) ? $item['price'] : $product->price;
-                if ($item['price'] <= 0) {
-                    \Log::warning('Flutter sent price 0, using DB price', [
-                        'product_id' => $item['product_id'],
-                        'flutter_price' => $item['price'],
-                        'db_price' => $product->price
-                    ]);
-                }
+                // SECURITY FIX: Always use database price, ignore client price
+                $price = $product->price;
                 $item['price'] = $price; // Update harga untuk konsistensi
                 
                 // Calculate Addons Total
@@ -477,10 +474,9 @@ class OrderController extends Controller
                             $addonPrice = $addonModel->price;
                             $addonName = $addonModel->name;
                         } else {
-                            // Fallback if not found (should not happen due to validation, but safe fallback)
+                            // If addon not found, skip it or throw error. Skipping for now to avoid breaking flow if ID is bad.
                             \Log::warning('Addon not found during calculation', ['id' => $addon['id']]);
-                            $addonPrice = $addon['price']; 
-                            $addonName = $addon['name'];
+                            continue; 
                         }
 
                         $addonsTotal += $addonPrice;
@@ -495,10 +491,9 @@ class OrderController extends Controller
                 $item['addons_data'] = $addonsData; // Store for later use
                 $subtotal += ((int) $price + $addonsTotal) * (int) $item['qty'];
                 
-                \Log::info('Product price validation', [
+                \Log::info('Product price validation (Secure)', [
                     'product_id' => $item['product_id'],
                     'name' => $product->name,
-                    'flutter_price' => $item['price'],
                     'db_price' => $product->price,
                     'addons_total' => $addonsTotal,
                     'final_price' => $price
@@ -524,7 +519,8 @@ class OrderController extends Controller
             // Buat order
             $order = \App\Models\Order::create([
                 'table_id' => $table->id,
-                'code' => 'JG-' . now()->format('ymd-') . \Illuminate\Support\Str::padLeft(\App\Models\Order::whereDate('created_at', now())->count() + 1, 4, '0'),
+                // SECURITY FIX: Randomize Order Code to prevent enumeration
+                'code' => 'JG-' . strtoupper(\Illuminate\Support\Str::random(10)),
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
                 'placed_at' => now(),
@@ -840,16 +836,21 @@ class OrderController extends Controller
                     $addonsData = [];
                     if (isset($item['addons']) && is_array($item['addons'])) {
                         foreach ($item['addons'] as $addon) {
-                            // Ideally we should validate addon price against DB, but for now we trust the ID exists
-                            // and use the sent price (or fetch if critical). 
-                            // Assuming addon price is static or we trust the client for now (to match Flutter logic).
-                            // Better: Fetch ProductAddon if possible.
-                            // Let's just use the sent price for simplicity as ProductAddon model might be complex to fetch here without eager loading.
-                            $addonPrice = $addon['price'];
+                            // SECURITY FIX: Fetch addon from DB to get real price
+                            $addonModel = \App\Models\ProductAddon::find($addon['id']);
+                            
+                            if ($addonModel) {
+                                $addonPrice = $addonModel->price;
+                                $addonName = $addonModel->name;
+                            } else {
+                                \Log::warning('Addon not found during calculation (SaveOrder)', ['id' => $addon['id']]);
+                                continue;
+                            }
+
                             $addonsTotal += $addonPrice;
                             $addonsData[] = [
                                 'product_addon_id' => $addon['id'],
-                                'name' => $addon['name'],
+                                'name' => $addonName,
                                 'price' => $addonPrice
                             ];
                         }
@@ -928,7 +929,8 @@ class OrderController extends Controller
 
                 $order = \App\Models\Order::create([
                     'tenant_id' => $tenantId,
-                    'code' => 'POS-' . strtoupper(uniqid()),
+                    // SECURITY FIX: Randomize Order Code
+                    'code' => 'POS-' . strtoupper(\Illuminate\Support\Str::random(10)),
                     'status' => $request->input('status', 'paid'),
                     'placed_at' => $request->input('transaction_time', now()),
                     'completed_at' => $request->input('status') === 'paid' ? now() : null,

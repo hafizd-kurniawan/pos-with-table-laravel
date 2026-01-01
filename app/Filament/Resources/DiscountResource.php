@@ -21,8 +21,8 @@ class DiscountResource extends Resource
     protected static ?string $model = Discount::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Finance';
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationGroup = '1. Setup & Master Data';
+    protected static ?int $navigationSort = 9;
 
     public static function getModelLabel(): string
     {

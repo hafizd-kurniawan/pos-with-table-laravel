@@ -22,9 +22,9 @@ class OrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     
-    protected static ?string $navigationGroup = 'Operations';
+    protected static ?string $navigationGroup = '4. Daily Operations';
     
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     public static function getModelLabel(): string
     {

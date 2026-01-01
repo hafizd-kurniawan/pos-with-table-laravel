@@ -22,13 +22,8 @@ class IngredientCategoryResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     
-    protected static ?string $navigationGroup = 'Inventory';
-    
-    public static function getNavigationGroup(): ?string
-    {
-        return __('resource.general.navigation.inventory');
-    }
-    
+    protected static ?string $navigationGroup = '1. Setup & Master Data';
+
     protected static ?int $navigationSort = 2;
     
     public static function getModelLabel(): string

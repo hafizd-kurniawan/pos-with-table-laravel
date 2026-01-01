@@ -1,0 +1,46 @@
+/* Sidebar Connector Lines */
+.fi-sidebar-group-items > li {
+    position: relative;
+}
+
+/* Vertical Line */
+.fi-sidebar-group-items {
+    position: relative;
+    border-left: 2px solid rgba(128, 128, 128, 0.2); /* Subtle gray line */
+    margin-left: 1.75rem; /* Adjust based on icon center */
+    padding-left: 0.5rem;
+}
+
+/* Dot for each item */
+.fi-sidebar-item-button::before {
+    content: '';
+    position: absolute;
+    left: -1.35rem; /* Position on the line */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: rgba(128, 128, 128, 0.5);
+    border-radius: 50%;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+/* Active State Dot */
+.fi-sidebar-item-button.fi-active::before {
+    background-color: rgb(245, 158, 11); /* Amber-500 matches primary */
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+    width: 10px;
+    height: 10px;
+    left: -1.4rem;
+}
+
+/* Hover State Dot */
+.fi-sidebar-item-button:hover::before {
+    background-color: rgb(245, 158, 11);
+}
+
+/* Hide default group border if any */
+.fi-sidebar-group {
+    gap: 0.5rem;
+}

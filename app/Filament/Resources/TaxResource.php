@@ -22,9 +22,9 @@ class TaxResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
     
-    protected static ?string $navigationGroup = 'Finance';
+    protected static ?string $navigationGroup = '1. Setup & Master Data';
     
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 10;
 
     public static function getModelLabel(): string
     {

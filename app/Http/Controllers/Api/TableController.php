@@ -237,6 +237,7 @@ class TableController extends Controller
         ]);
 
         $tables = Table::where('category_id', $request->category_id)
+                      ->where('name', 'not like', 'Takeaway%')
                       ->with('category')
                       ->orderBy('name')
                       ->get();
@@ -253,12 +254,18 @@ class TableController extends Controller
      */
     public function categories(): JsonResponse
     {
-        $categories = \App\Models\TableCategory::active()->ordered()->get();
+        $categories = \App\Models\TableCategory::active()
+            ->where('name', '!=', 'Takeaway')
+            ->ordered()
+            ->get();
 
         $categoryCounts = $categories->map(function ($category) {
-            $total = Table::where('category_id', $category->id)->count();
+            $total = Table::where('category_id', $category->id)
+                ->where('name', 'not like', 'Takeaway%')
+                ->count();
             $available = Table::where('category_id', $category->id)
                              ->where('status', 'available')
+                             ->where('name', 'not like', 'Takeaway%')
                              ->count();
             
             return [

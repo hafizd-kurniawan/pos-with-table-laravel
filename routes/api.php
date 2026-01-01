@@ -134,6 +134,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::put('/ingredients/{id}', [\App\Http\Controllers\Api\IngredientController::class, 'update']);
     Route::delete('/ingredients/{id}', [\App\Http\Controllers\Api\IngredientController::class, 'destroy']);
     Route::post('/ingredients/{id}/adjust-stock', [\App\Http\Controllers\Api\IngredientController::class, 'adjustStock']);
+    Route::post('/ingredients/{id}/waste', [\App\Http\Controllers\Api\IngredientController::class, 'waste']);
     Route::get('/ingredients/{id}/stock-history', [\App\Http\Controllers\Api\IngredientController::class, 'stockHistory']);
     Route::get('/ingredients-low-stock', [\App\Http\Controllers\Api\IngredientController::class, 'lowStock']);
     Route::get('/ingredients-categories', [\App\Http\Controllers\Api\IngredientController::class, 'categories']);

@@ -252,6 +252,33 @@ class IngredientController extends Controller
     }
 
     /**
+     * Log waste for ingredient
+     */
+    public function waste(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'quantity' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:255',
+        ]);
+        
+        try {
+            $result = $this->inventoryService->logWaste(
+                ingredientId: $id,
+                quantity: $validated['quantity'],
+                reason: $validated['reason'],
+                userId: Auth::id()
+            );
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * Get stock movement history
      */
     public function stockHistory($id, Request $request)

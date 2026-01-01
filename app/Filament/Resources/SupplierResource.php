@@ -22,14 +22,9 @@ class SupplierResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
     
-    protected static ?string $navigationGroup = 'Inventory';
-    
-    public static function getNavigationGroup(): ?string
-    {
-        return __('resource.general.navigation.inventory');
-    }
-    
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationGroup = '1. Setup & Master Data';
+
+    protected static ?int $navigationSort = 4;
 
     public static function getModelLabel(): string
     {

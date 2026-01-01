@@ -22,14 +22,9 @@ class StockOpnameResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
     
-    protected static ?string $navigationGroup = 'Inventory';
-    
-    public static function getNavigationGroup(): ?string
-    {
-        return __('resource.general.navigation.inventory');
-    }
-    
-    protected static ?int $navigationSort = 4;
+    protected static ?string $navigationGroup = '3. Inventory Operations';
+
+    protected static ?int $navigationSort = 2;
 
     public static function getModelLabel(): string
     {

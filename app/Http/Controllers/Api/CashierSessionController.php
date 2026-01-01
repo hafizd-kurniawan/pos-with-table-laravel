@@ -323,12 +323,26 @@ class CashierSessionController extends Controller
 
         $expectedEndingCash = $session->starting_cash + $cashSales + $session->total_pay_in - $session->total_pay_out - $cashRefunds;
 
+        // Calculate Payment Breakdown
+        $paymentBreakdown = $orders->groupBy('payment_method')->map(function ($group, $method) {
+            return [
+                'method' => $method,
+                'transactions' => $group->count(),
+                'gross_sales' => $group->sum('subtotal'),
+                'tax' => $group->sum('tax_amount'),
+                'service' => $group->sum('service_charge_amount'),
+                'discount' => $group->sum('discount_amount'),
+                'net_sales' => $group->sum('total_amount'),
+            ];
+        })->values();
+
         return [
             'cash_sales' => $cashSales,
             'cash_refunds' => $cashRefunds,
             'expected_ending_cash' => $expectedEndingCash,
             'total_orders' => $orders->count(),
             'total_sales' => $orders->sum('total_amount'), // All methods
+            'payment_breakdown' => $paymentBreakdown,
         ];
     }
 }
