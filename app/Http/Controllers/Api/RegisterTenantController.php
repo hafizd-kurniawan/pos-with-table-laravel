@@ -99,23 +99,74 @@ class RegisterTenantController extends Controller
 
     private function seedRoles($tenantId)
     {
-        $roles = [
-            ['name' => 'Admin', 'slug' => 'admin', 'description' => 'Administrator'],
-            ['name' => 'Cashier', 'slug' => 'cashier', 'description' => 'Cashier'],
-            ['name' => 'Kitchen Staff', 'slug' => 'kitchen', 'description' => 'Kitchen Staff'],
-            ['name' => 'Waiter', 'slug' => 'waiter', 'description' => 'Waiter'],
-        ];
+        // Get all permissions
+        $allPermissions = \App\Models\Permission::all();
+        
+        // 1. Admin Role (Full Access)
+        $adminRole = \App\Models\Role::create([
+            'tenant_id' => $tenantId,
+            'name' => 'Admin',
+            'slug' => 'admin',
+            'description' => 'Administrator - Full Access',
+            'is_default' => true,
+            'is_system' => true,
+        ]);
+        $adminRole->permissions()->sync($allPermissions->pluck('id'));
 
-        foreach ($roles as $role) {
-            DB::table('roles')->insert([
-                'tenant_id' => $tenantId,
-                'name' => $role['name'],
-                'slug' => $role['slug'],
-                'description' => $role['description'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        // 2. Cashier Role
+        $cashierPermissions = [
+            'view_dashboard',
+            'view_orders', 'create_orders', 'manage_order_status',
+            'view_products',
+            'view_tables', 'manage_table_status',
+            'process_payments', 'view_payment_history',
+            'self_attendance', 'view_my_leaves', 'request_leaves',
+        ];
+        $cashierRole = \App\Models\Role::create([
+            'tenant_id' => $tenantId,
+            'name' => 'Cashier',
+            'slug' => 'cashier',
+            'description' => 'Cashier - Process payments',
+            'is_default' => false,
+            'is_system' => true,
+        ]);
+        $cashierRole->permissions()->sync($allPermissions->whereIn('slug', $cashierPermissions)->pluck('id'));
+
+        // 3. Kitchen Staff (Chef) Role
+        $chefPermissions = [
+            'view_dashboard',
+            'view_orders', 'manage_order_status',
+            'view_products',
+            'view_kds', 'manage_kds_status',
+            'self_attendance', 'view_my_leaves', 'request_leaves',
+        ];
+        $kitchenRole = \App\Models\Role::create([
+            'tenant_id' => $tenantId,
+            'name' => 'Kitchen Staff',
+            'slug' => 'kitchen', // Kept 'kitchen' slug to match existing logic if any
+            'description' => 'Kitchen Staff - Manage KDS',
+            'is_default' => false,
+            'is_system' => true,
+        ]);
+        $kitchenRole->permissions()->sync($allPermissions->whereIn('slug', $chefPermissions)->pluck('id'));
+
+        // 4. Waiter Role
+        $waiterPermissions = [
+            'view_dashboard',
+            'view_orders', 'create_orders', 'manage_order_status',
+            'view_products',
+            'view_tables', 'manage_table_status',
+            'self_attendance', 'view_my_leaves', 'request_leaves',
+        ];
+        $waiterRole = \App\Models\Role::create([
+            'tenant_id' => $tenantId,
+            'name' => 'Waiter',
+            'slug' => 'waiter',
+            'description' => 'Waiter - Take orders',
+            'is_default' => false,
+            'is_system' => true,
+        ]);
+        $waiterRole->permissions()->sync($allPermissions->whereIn('slug', $waiterPermissions)->pluck('id'));
     }
 
     private function createDefaultSettings($tenantId)

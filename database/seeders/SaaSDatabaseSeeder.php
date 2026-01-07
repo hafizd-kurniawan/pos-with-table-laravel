@@ -71,7 +71,7 @@ class SaaSDatabaseSeeder extends Seeder
         
         if ($defaultTenant) {
             User::firstOrCreate(
-                ['email' => 'admin@posrestaurant.com'],
+                ['email' => 'admin@hayo.com'],
                 [
                     'name' => 'Tenant Admin',
                     'password' => Hash::make('password'),
@@ -116,7 +116,7 @@ class SaaSDatabaseSeeder extends Seeder
             $this->command->info('');
             $this->command->info('🏢 Default Tenant Login:');
             $this->command->info('   URL: /admin/login');
-            $this->command->info('   Email: admin@posrestaurant.com');
+            $this->command->info('   Email: admin@hayo.com');
             $this->command->info('   Password: password');
         }
         

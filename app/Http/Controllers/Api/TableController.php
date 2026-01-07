@@ -186,22 +186,36 @@ class TableController extends Controller
             'status' => 'required|in:available,occupied,reserved,pending_bill',
             'customer_name' => 'nullable|string',
             'customer_phone' => 'nullable|string',
-            'party_size' => 'nullable|integer|min:1'
+            'party_size' => 'nullable|integer|min:1',
+            'reservation_time' => 'nullable|date',
+            'special_notes' => 'nullable|string'
         ]);
 
         $updateData = ['status' => $request->status];
 
-        if ($request->status === 'occupied' || $request->status === 'reserved') {
+        if ($request->status === 'occupied') {
             $updateData['customer_name'] = $request->customer_name;
             $updateData['customer_phone'] = $request->customer_phone;
             $updateData['party_size'] = $request->party_size;
             $updateData['occupied_at'] = now();
+            // Clear reservation data if switching to occupied
+            $updateData['reservation_time'] = null;
+            $updateData['special_notes'] = null;
+        } elseif ($request->status === 'reserved') {
+            $updateData['customer_name'] = $request->customer_name;
+            $updateData['customer_phone'] = $request->customer_phone;
+            $updateData['party_size'] = $request->party_size;
+            $updateData['reservation_time'] = $request->reservation_time;
+            $updateData['special_notes'] = $request->special_notes;
+            $updateData['occupied_at'] = null;
         } elseif ($request->status === 'available') {
             $updateData['customer_name'] = null;
             $updateData['customer_phone'] = null;
             $updateData['party_size'] = null;
             $updateData['occupied_at'] = null;
             $updateData['order_id'] = null;
+            $updateData['reservation_time'] = null;
+            $updateData['special_notes'] = null;
         }
 
         $table->update($updateData);

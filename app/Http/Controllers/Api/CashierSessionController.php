@@ -37,28 +37,21 @@ class CashierSessionController extends Controller
         // Calculate current stats on the fly
         $stats = $this->calculateSessionStats($session);
 
-        // Fetch ACTIVE orders (paid) for manual "Pay In"
-        // Same logic as show()
-        $activeOrders = Order::where('tenant_id', $session->tenant_id)
+        // Disable manual Pay In for orders to prevent double counting
+        $activeOrders = [];
+
+        // Get recent cash orders for display only
+        $recentCashOrders = Order::where('tenant_id', $tenantId)
             ->where('created_at', '>=', $session->started_at)
-            // No ended_at check for current session as it is open
-            ->where('status', 'paid') 
+            ->where('status', 'paid')
+            ->where('payment_method', 'cash')
             ->with(['orderItems.product'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Filter out orders that have already been added as transactions
-        $existingDescriptions = $session->transactions->pluck('description')->map(function ($desc) {
-            return strtolower($desc);
-        })->toArray();
-
-        $activeOrders = $activeOrders->filter(function ($order) use ($existingDescriptions) {
-            $expectedDescription = strtolower("Pay In from " . $order->code);
-            return !in_array($expectedDescription, $existingDescriptions);
-        })->values();
-
         $sessionData = $session->toArray();
         $sessionData['active_orders'] = $activeOrders;
+        $sessionData['recent_cash_orders'] = $recentCashOrders;
 
         return response()->json([
             'success' => true,
@@ -271,30 +264,8 @@ class CashierSessionController extends Controller
 
         $session->orders = $orders;
 
-        // Fetch ACTIVE orders (pending, cooking, served) for manual "Pay In"
-        // This allows cashiers to manually add money from ongoing orders if needed
-        $activeOrders = Order::where('tenant_id', $session->tenant_id)
-            ->where('created_at', '>=', $session->started_at)
-            ->when($session->ended_at, function($q) use ($session) {
-                $q->where('created_at', '<=', $session->ended_at);
-            })
-            ->where('status', 'paid') // Only PAID orders
-            ->with(['orderItems.product'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Filter out orders that have already been added as transactions
-        // We assume the description format is "Pay In from {OrderCode}"
-        $existingDescriptions = $session->transactions->pluck('description')->map(function ($desc) {
-            return strtolower($desc);
-        })->toArray();
-
-        $activeOrders = $activeOrders->filter(function ($order) use ($existingDescriptions) {
-            $expectedDescription = strtolower("Pay In from " . $order->code);
-            return !in_array($expectedDescription, $existingDescriptions);
-        })->values(); // Reset keys
-
-        $session->active_orders = $activeOrders;
+        // Disable manual Pay In for orders
+        $session->active_orders = [];
 
         return response()->json([
             'success' => true,
@@ -321,7 +292,13 @@ class CashierSessionController extends Controller
         // Assuming no refunds implemented yet, but placeholder:
         $cashRefunds = 0; 
 
-        $expectedEndingCash = $session->starting_cash + $cashSales + $session->total_pay_in - $session->total_pay_out - $cashRefunds;
+        // Calculate real Pay In (excluding redundant POS Pay Ins)
+        $realPayIn = $session->transactions()
+            ->where('type', 'in')
+            ->where('description', 'not like', 'Pay In from POS-%')
+            ->sum('amount');
+
+        $expectedEndingCash = $session->starting_cash + $cashSales + $realPayIn - $session->total_pay_out - $cashRefunds;
 
         // Calculate Payment Breakdown
         $paymentBreakdown = $orders->groupBy('payment_method')->map(function ($group, $method) {

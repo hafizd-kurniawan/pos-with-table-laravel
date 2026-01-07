@@ -68,7 +68,13 @@ class CashierSessionResource extends Resource
                         Infolists\Components\TextEntry::make('total_pay_in')
                             ->label('Pemasukan Lain (Pay In)')
                             ->formatStateUsing(fn ($state) => format_rupiah($state))
-                            ->color('warning'),
+                            ->color('warning')
+                            ->state(function ($record) {
+                                return $record->transactions()
+                                    ->where('type', 'in')
+                                    ->where('description', 'not like', 'Pay In from POS-%')
+                                    ->sum('amount');
+                            }),
 
                         Infolists\Components\TextEntry::make('total_pay_out')
                             ->label('Pengeluaran (Pay Out)')
@@ -86,7 +92,12 @@ class CashierSessionResource extends Resource
                                     ->where('payment_method', 'cash')
                                     ->sum('total_amount');
                                 
-                                return $record->starting_cash + $cashSales + $record->total_pay_in - $record->total_pay_out;
+                                $realPayIn = $record->transactions()
+                                    ->where('type', 'in')
+                                    ->where('description', 'not like', 'Pay In from POS-%')
+                                    ->sum('amount');
+
+                                return $record->starting_cash + $cashSales + $realPayIn - $record->total_pay_out;
                             }),
 
                         Infolists\Components\TextEntry::make('ending_cash')

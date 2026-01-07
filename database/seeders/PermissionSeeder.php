@@ -117,6 +117,37 @@ class PermissionSeeder extends Seeder
             ['name' => 'Approve Leaves', 'slug' => 'approve_leaves', 'group' => 'leaves', 'description' => 'Approve or reject leave requests'],
             ['name' => 'View My Leaves', 'slug' => 'view_my_leaves', 'group' => 'leaves', 'description' => 'View own leave history'],
             ['name' => 'Request Leaves', 'slug' => 'request_leaves', 'group' => 'leaves', 'description' => 'Request new leave'],
+
+            // Suppliers Group (NEW)
+            ['name' => 'View Suppliers', 'slug' => 'view_suppliers', 'group' => 'inventory', 'description' => 'View suppliers list'],
+            ['name' => 'Create Suppliers', 'slug' => 'create_suppliers', 'group' => 'inventory', 'description' => 'Add new suppliers'],
+            ['name' => 'Edit Suppliers', 'slug' => 'edit_suppliers', 'group' => 'inventory', 'description' => 'Edit suppliers'],
+            ['name' => 'Delete Suppliers', 'slug' => 'delete_suppliers', 'group' => 'inventory', 'description' => 'Delete suppliers'],
+
+            // Purchase Orders Group (NEW)
+            ['name' => 'View Purchase Orders', 'slug' => 'view_purchase_orders', 'group' => 'inventory', 'description' => 'View purchase orders'],
+            ['name' => 'Create Purchase Orders', 'slug' => 'create_purchase_orders', 'group' => 'inventory', 'description' => 'Create purchase orders'],
+            ['name' => 'Edit Purchase Orders', 'slug' => 'edit_purchase_orders', 'group' => 'inventory', 'description' => 'Edit purchase orders'],
+            ['name' => 'Delete Purchase Orders', 'slug' => 'delete_purchase_orders', 'group' => 'inventory', 'description' => 'Delete purchase orders'],
+            
+            // Stock Opname Group (NEW)
+            ['name' => 'View Stock Opnames', 'slug' => 'view_stock_opnames', 'group' => 'inventory', 'description' => 'View stock opnames'],
+            ['name' => 'Create Stock Opnames', 'slug' => 'create_stock_opnames', 'group' => 'inventory', 'description' => 'Create stock opnames'],
+            ['name' => 'Edit Stock Opnames', 'slug' => 'edit_stock_opnames', 'group' => 'inventory', 'description' => 'Edit stock opnames'],
+            ['name' => 'Delete Stock Opnames', 'slug' => 'delete_stock_opnames', 'group' => 'inventory', 'description' => 'Delete stock opnames'],
+            ['name' => 'Process Stock Opnames', 'slug' => 'process_stock_opnames', 'group' => 'inventory', 'description' => 'Process/Adjust stock opnames'],
+
+            // Ingredients Group (NEW)
+            ['name' => 'View Ingredients', 'slug' => 'view_ingredients', 'group' => 'products', 'description' => 'View ingredients'],
+            ['name' => 'Create Ingredients', 'slug' => 'create_ingredients', 'group' => 'products', 'description' => 'Create ingredients'],
+            ['name' => 'Edit Ingredients', 'slug' => 'edit_ingredients', 'group' => 'products', 'description' => 'Edit ingredients'],
+            ['name' => 'Delete Ingredients', 'slug' => 'delete_ingredients', 'group' => 'products', 'description' => 'Delete ingredients'],
+            
+            // Ingredient Categories Group (NEW)
+            ['name' => 'View Ingredient Categories', 'slug' => 'view_ingredient_categories', 'group' => 'products', 'description' => 'View ingredient categories'],
+            ['name' => 'Create Ingredient Categories', 'slug' => 'create_ingredient_categories', 'group' => 'products', 'description' => 'Create ingredient categories'],
+            ['name' => 'Edit Ingredient Categories', 'slug' => 'edit_ingredient_categories', 'group' => 'products', 'description' => 'Edit ingredient categories'],
+            ['name' => 'Delete Ingredient Categories', 'slug' => 'delete_ingredient_categories', 'group' => 'products', 'description' => 'Delete ingredient categories'],
         ];
 
         foreach ($permissions as $permission) {
