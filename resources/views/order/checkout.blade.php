@@ -124,10 +124,21 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp (Opsional)</label>
-                    <input type="tel" name="customer_phone" x-model="customer.phone"
+                    <input type="tel" name="customer_phone" x-model="customer.phone" 
+                           @input.debounce.500ms="checkMember()"
                            class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-black focus:border-transparent transition"
                            placeholder="08xxxxxxxxxx">
-                    <p class="text-xs text-gray-500 mt-1">Kami akan mengirimkan notifikasi status pesanan.</p>
+                    
+                    <!-- Member Info Display -->
+                    <div x-show="member.found" class="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-blue-800" x-text="'Halo, ' + member.name + '!'"></p>
+                            <p class="text-xs text-blue-600" x-text="'Poin Anda: ' + member.points"></p>
+                        </div>
+                        <div class="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Member</div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 mt-1" x-show="!member.found">Kami akan mengirimkan notifikasi status pesanan.</p>
                 </div>
             </div>
         </div>
@@ -195,6 +206,11 @@
                 name: '',
                 phone: ''
             },
+            member: {
+                found: false,
+                name: '',
+                points: 0
+            },
             
             // Settings from backend
             taxPercentage: {{ $autoTax ? $autoTax->value : 0 }},
@@ -208,7 +224,46 @@
                 const savedPhone = localStorage.getItem('customer_phone');
                 
                 if (savedName) this.customer.name = savedName;
-                if (savedPhone) this.customer.phone = savedPhone;
+                if (savedPhone) {
+                    this.customer.phone = savedPhone;
+                    this.checkMember(); // Auto check if phone exists
+                }
+            },
+            
+            async checkMember() {
+                if (!this.customer.phone || this.customer.phone.length < 9) {
+                    this.member.found = false;
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('{{ route('order.check-member', $table->tenantIdentifier) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ phone: this.customer.phone })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.member.found = true;
+                        this.member.name = data.member.name;
+                        this.member.points = data.member.points;
+                        
+                        // Auto-fill name if empty
+                        if (!this.customer.name) {
+                            this.customer.name = data.member.name;
+                        }
+                    } else {
+                        this.member.found = false;
+                    }
+                } catch (error) {
+                    console.error('Error checking member:', error);
+                    this.member.found = false;
+                }
             },
 
             saveCustomerData() {

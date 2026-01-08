@@ -101,6 +101,7 @@ class SettingResource extends Resource
                                 'appearance' => __('resource.setting.groups.appearance'),
                                 'payment' => __('resource.setting.groups.payment'),
                                 'notification' => __('resource.setting.groups.notification'),
+                                'loyalty' => 'Loyalty Program',
                             ])
                             ->label(__('resource.setting.group')),
                         
@@ -231,6 +232,7 @@ class SettingResource extends Resource
                         'appearance' => __('resource.setting.groups.appearance'),
                         'payment' => __('resource.setting.groups.payment'),
                         'notification' => __('resource.setting.groups.notification'),
+                        'loyalty' => 'Loyalty Program',
                     ])
                     ->label(__('resource.setting.group')),
             ])

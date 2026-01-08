@@ -786,6 +786,8 @@ class OrderController extends Controller
                 'order_type' => 'nullable|string',
                 'payment_status' => 'nullable|string',
                 'cashier_name' => 'nullable|string',
+                'member_id' => 'nullable|integer|exists:members,id',
+                'redeem_points' => 'nullable|integer|min:0',
             ]);
 
             return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $validatedData, $tenantId) {
@@ -870,8 +872,37 @@ class OrderController extends Controller
                     ];
                 }
 
-                // 3. Calculate Discount
+                // 3. Calculate Discount & Member Points
                 $discountAmount = 0;
+                $pointDiscount = 0;
+                
+                // Handle Member Points Redemption
+                if ($request->member_id && $request->redeem_points > 0) {
+                    $member = \App\Models\Member::where('id', $request->member_id)
+                        ->where('tenant_id', $tenantId)
+                        ->lockForUpdate()
+                        ->first();
+                        
+                    if ($member && $member->total_points >= $request->redeem_points) {
+                        // Fetch settings
+                        $redemptionValue = (int) \App\Models\Setting::get('loyalty_redemption_value', 1);
+                        
+                        // Calculate discount
+                        $pointDiscount = $request->redeem_points * $redemptionValue;
+                        
+                        // Deduct points
+                        $member->decrement('total_points', $request->redeem_points);
+                        
+                        // Record History (Redeem) - Create placeholder, update order_id later if needed
+                        // Note: We don't have order_id yet. We can create it here and link it later, 
+                        // OR just create it without order_id first? 
+                        // Better: We will create the history AFTER order is created, but we need to track this event.
+                        // Let's defer history creation to step 7 (after order creation).
+                    } else {
+                        throw new \Exception("Insufficient points. Available: " . ($member->total_points ?? 0));
+                    }
+                }
+
                 // Fix: Ensure discount_id is null if 0
                 $discountId = ($request->discount_id && $request->discount_id > 0) ? $request->discount_id : null;
                 
@@ -892,7 +923,13 @@ class OrderController extends Controller
                     $discountAmount = min($request->discount_amount, $serverSubtotal);
                 }
                 
-                $discountAmount = round($discountAmount);
+                // Combine Normal Discount + Point Discount
+                $totalDiscount = $discountAmount + $pointDiscount;
+                
+                // Cap total discount at subtotal
+                $totalDiscount = min($totalDiscount, $serverSubtotal);
+                
+                $discountAmount = round($totalDiscount);
                 $subtotalAfterDiscount = max(0, $serverSubtotal - $discountAmount);
 
                 // 4. Calculate Tax & Service (Fetch from DB for security)
@@ -939,6 +976,7 @@ class OrderController extends Controller
                     'customer_email' => $request->input('customer_email', ''),
                     'notes' => $request->input('notes', ''),
                     'table_id' => $tableId,
+                    'member_id' => $request->member_id, // Save Member ID
                     'order_type' => $request->input('order_type', 'dine_in'),
                     'payment_method' => $validatedData['payment_method'],
                     'payment_status' => $request->input('payment_status', 'paid'),
@@ -968,17 +1006,19 @@ class OrderController extends Controller
                         'total' => $item['total'],
                         'notes' => $item['notes'],
                     ]);
-
+                    
                     // Save Addons
                     if (!empty($item['addons'])) {
                         foreach ($item['addons'] as $addon) {
                             $orderItem->addons()->create([
+                                'tenant_id' => $tenantId,
                                 'product_addon_id' => $addon['product_addon_id'],
                                 'name' => $addon['name'],
                                 'price' => $addon['price'],
                             ]);
                         }
                     }
+
 
                     // Decrement Stock Logic (Hybrid)
                     if ($item['product']->recipes->isEmpty()) {
@@ -1000,9 +1040,43 @@ class OrderController extends Controller
                     $inventoryService->deductStockForOrder($order->id);
                     Log::info('🥦 Ingredient Stock processed for order', ['order_id' => $order->id]);
                 } catch (\Exception $e) {
-                    // Log error but don't fail the order if ingredient deduction fails? 
-                    // NO, we should fail the transaction if ingredients can't be deducted to maintain consistency.
                     throw new \Exception("Failed to process ingredient stock: " . $e->getMessage());
+                }
+
+                // 8. LOYALTY SYSTEM: Process History & Earn Points
+                if ($request->member_id) {
+                    // Record Redemption History if any
+                    if ($pointDiscount > 0) {
+                        \App\Models\MemberPointHistory::create([
+                            'member_id' => $request->member_id,
+                            'order_id' => $order->id,
+                            'type' => 'redeem',
+                            'points' => $request->redeem_points,
+                            'description' => "Redeemed for Order #{$order->code}",
+                        ]);
+                    }
+
+                    // Calculate Earned Points
+                    // Use Total Amount (Net after discount)
+                    $earningRate = (int) \App\Models\Setting::get('loyalty_earning_rate', 10000);
+                    $earnPoints = $earningRate > 0 ? floor($serverTotal / $earningRate) : 0;
+                    
+                    if ($earnPoints > 0) {
+                        $member = \App\Models\Member::find($request->member_id);
+                        if ($member) {
+                            $member->increment('total_points', $earnPoints);
+                            
+                            \App\Models\MemberPointHistory::create([
+                                'member_id' => $request->member_id,
+                                'order_id' => $order->id,
+                                'type' => 'earn',
+                                'points' => $earnPoints,
+                                'description' => "Earned from Order #{$order->code}",
+                            ]);
+                            
+                            Log::info('🌟 Points Earned', ['member' => $member->name, 'points' => $earnPoints]);
+                        }
+                    }
                 }
 
                 Log::info('✅ Order created securely', ['id' => $order->id, 'total' => $serverTotal]);
@@ -1102,5 +1176,40 @@ class OrderController extends Controller
             'message' => 'Order refunded successfully',
             'order' => $order
         ]);
+    }
+
+    /**
+     * Send order items to kitchen (Update status from HOLD to PENDING)
+     */
+    public function sendToKitchen(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+
+        // Update all HOLD items to PENDING
+        $updatedCount = 0;
+        foreach ($order->orderItems as $item) {
+            if ($item->status === \App\Models\OrderItem::STATUS_HOLD) {
+                $item->status = \App\Models\OrderItem::STATUS_PENDING;
+                $item->save();
+                $updatedCount++;
+            }
+        }
+
+        if ($updatedCount > 0) {
+            // Update Order status to 'cooking' to move it from Paid -> Cooking tab
+            $order->status = 'cooking';
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$updatedCount} items sent to kitchen.",
+                'order' => $order->fresh()
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => "No items to send (Status not HOLD).",
+        ], 400);
     }
 }

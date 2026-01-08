@@ -163,6 +163,10 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/api-taxes', [\App\Http\Controllers\Api\TaxController::class, 'index']);
     Route::post('/api-taxes', [\App\Http\Controllers\Api\TaxController::class, 'store']);
 
+    // LOYALTY (MEMBER)
+    Route::get('/members/check', [\App\Http\Controllers\Api\MemberController::class, 'check']);
+    Route::post('/members', [\App\Http\Controllers\Api\MemberController::class, 'register']);
+
     // STOCK MANAGEMENT
     Route::post('/stock/check', [\App\Http\Controllers\Api\StockController::class, 'checkStock']);
     Route::post('/stock/validate-order', [\App\Http\Controllers\Api\StockController::class, 'validateOrder']);
@@ -204,12 +208,23 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/orders/paid', [\App\Http\Controllers\Api\OrderController::class, 'paidOrders']);
     Route::get('/orders/cooking', [\App\Http\Controllers\Api\OrderController::class, 'cookingOrders']);
     Route::put('/orders/{order}/status', [\App\Http\Controllers\Api\OrderController::class, 'updateStatus']);
+    Route::post('/orders/{order}/send-to-kitchen', [\App\Http\Controllers\Api\OrderController::class, 'sendToKitchen']); // NEW: Confirm order to kitchen
     
     // ORDERS - Flutter Compatible Routes  
     Route::post('/save-order', [\App\Http\Controllers\Api\OrderController::class, 'saveOrder']);
     Route::get('/order-item', [\App\Http\Controllers\Api\OrderController::class, 'orderItems']);
     Route::get('/order-sales', [\App\Http\Controllers\Api\OrderController::class, 'orderSales']);
     Route::get('/summary', [\App\Http\Controllers\Api\OrderController::class, 'summary']);
+
+    // KITCHEN DISPLAY SYSTEM (KDS)
+    Route::get('/kitchen/orders', [\App\Http\Controllers\Api\KitchenController::class, 'index']);
+    Route::post('/kitchen/order-items/{id}/status', [\App\Http\Controllers\Api\KitchenController::class, 'updateStatus']);
+
+    // WAITER
+    Route::get('/waiter/ready-items', [\App\Http\Controllers\Api\WaiterController::class, 'readyToServe']);
+    Route::post('/waiter/serve-item/{id}', [\App\Http\Controllers\Api\WaiterController::class, 'serveItem']);
+    Route::post('/waiter/take-item/{id}', [\App\Http\Controllers\Api\WaiterController::class, 'takeItem']); // NEW: Take
+    Route::get('/waiter/my-tasks', [\App\Http\Controllers\Api\WaiterController::class, 'myTasks']); // NEW: My Tasks
 
     // REPORTS (Enhanced)
     Route::get('/reports/summary', [\App\Http\Controllers\Api\ReportController::class, 'summary']);

@@ -103,6 +103,9 @@ Route::get('/order/{tenantIdentifier}/{tablenumber}/qris/{code}', [OrderControll
 Route::post('/order/{tenantIdentifier}/{tablenumber}/qris/{code}/confirm', [OrderController::class, 'qrisConfirm'])->name('order.qris.confirm');
 Route::get('/order/{tenantIdentifier}/{tablenumber}/qris/{code}/check-status', [OrderController::class, 'checkPaymentStatus'])->name('order.qris.check-status');
 
+// Check Member Route
+Route::post('/order/{tenantIdentifier}/check-member', [OrderController::class, 'checkMember'])->name('order.check-member');
+
 // DEBUG route untuk testing (development only)
 Route::post('/debug/order/{tenantIdentifier}/{tablenumber}/qris/{code}/force-success', [OrderController::class, 'forcePaymentSuccess'])->name('debug.order.force-success');
 

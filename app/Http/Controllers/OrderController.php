@@ -22,6 +22,7 @@ use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 use App\Models\User;
 use App\Models\Tenant;
 use App\Traits\ManagesStock;
+use App\Models\Member;
 
 class OrderController extends Controller
 {
@@ -2144,4 +2145,55 @@ class OrderController extends Controller
         abort(404, 'Tenant not found. Please check your QR code or URL.');
     }
 
+    /**
+     * Check Member by Phone (Self Order)
+     */
+    public function checkMember(Request $request, $tenantIdentifier)
+    {
+        try {
+            $tenant = $this->getTenantFromIdentifier($tenantIdentifier);
+            $phone = $request->input('phone');
+
+            if (empty($phone)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Phone number is required'
+                ]);
+            }
+
+            // Normalisasi nomor telepon (jika perlu)
+            // Misal: hapus spasi/dash logic sederhana
+            $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+
+            // Cari member berdasarkan no HP di tenant ini
+            $member = Member::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->where('phone', $cleanPhone) // Asumsi phone disimpan bersih, atau gunakan LIKE di sisi user
+                ->orWhere('phone', $phone)    // Try exact match too
+                ->first();
+
+            if ($member) {
+                return response()->json([
+                    'success' => true,
+                    'member' => [
+                        'name' => $member->name,
+                        'points' => $member->total_points,
+                        'phone' => $member->phone
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Member not found'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Check Member Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking member'
+            ], 500);
+        }
+    }
 }
